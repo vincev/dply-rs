@@ -219,9 +219,7 @@ fn name(input: &str) -> IResult<&str, &str, VerboseError<&str>> {
 }
 
 fn identifier(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
-    map(preceded(ws, name), |s| {
-        Expr::Identifier(s.to_string())
-    })(input)
+    map(preceded(ws, name), |s| Expr::Identifier(s.to_string()))(input)
 }
 
 fn string(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {

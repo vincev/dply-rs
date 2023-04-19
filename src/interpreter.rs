@@ -13,9 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Data manipulation tool inspired by the [dplyr](https://dplyr.tidyverse.org/) grammar.
-#![warn(clippy::all, rust_2018_idioms, missing_docs)]
+//! Interpreter for dply expressions.
+use anyhow::Result;
 
-pub mod interpreter;
-mod parser;
-mod typing;
+use crate::{parser, typing};
+
+/// Evaluates a dply script.
+pub fn eval(input: &str) -> Result<()> {
+    let exprs = parser::parse(input)?;
+
+    for expr in &exprs {
+        typing::pipeline(expr)?;
+    }
+
+    for expr in exprs {
+        println!("{expr}\n");
+    }
+
+    Ok(())
+}

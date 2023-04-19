@@ -20,7 +20,7 @@ use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;
 
-use dply::parser;
+use dply::interpreter;
 
 /// Cli interface.
 #[derive(Parser)]
@@ -48,10 +48,7 @@ fn main() -> Result<()> {
         input
     };
 
-    let exprs = parser::parse(&input)?;
-    for expr in exprs {
-        println!("{expr}\n");
-    }
+    interpreter::eval(&input)?;
 
     Ok(())
 }
