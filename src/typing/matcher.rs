@@ -235,14 +235,63 @@ where
                     matcher(rhs, m)?;
                 }
 
-                if !is_logical(lhs) && !is_logical(rhs) {
+                if !is_logical(lhs) {
                     m.matches(lhs)?;
+                }
+
+                if !is_logical(rhs) {
                     m.matches(rhs)?;
                 }
 
                 Ok(())
             }
             _ => Err(MatchError::new("Not a logical expression")),
+        }
+    }
+
+    move |expr: &Expr| -> MatchResult { matcher(expr, &m) }
+}
+
+/// Matches an arithmetic operation
+pub fn match_arith<M>(m: M) -> impl Fn(&Expr) -> MatchResult
+where
+    M: Matcher,
+{
+    fn is_arith(expr: &Expr) -> bool {
+        matches!(
+            expr,
+            Expr::BinaryOp(_, Operator::Plus, _)
+                | Expr::BinaryOp(_, Operator::Minus, _)
+                | Expr::BinaryOp(_, Operator::Divide, _)
+                | Expr::BinaryOp(_, Operator::Multiply, _)
+        )
+    }
+
+    fn matcher<M: Matcher>(expr: &Expr, m: &M) -> MatchResult {
+        match expr {
+            Expr::BinaryOp(lhs, Operator::Plus, rhs)
+            | Expr::BinaryOp(lhs, Operator::Minus, rhs)
+            | Expr::BinaryOp(lhs, Operator::Divide, rhs)
+            | Expr::BinaryOp(lhs, Operator::Multiply, rhs) => {
+                if is_arith(lhs) {
+                    matcher(lhs, m)?;
+                }
+
+                if is_arith(rhs) {
+                    matcher(rhs, m)?;
+                }
+
+                if !is_arith(lhs) {
+                    m.matches(lhs)?;
+                }
+
+                if !is_arith(rhs) {
+                    m.matches(rhs)?;
+                }
+
+                Ok(())
+            }
+            _ => Err(MatchError::new("Not an arithmetic expression")),
         }
     }
 

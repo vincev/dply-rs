@@ -43,11 +43,11 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_filter)
         .or(match_glimpse)
         .or(match_group_by)
+        .or(match_mutate)
         .or(match_parquet)
-        .or(match_rename)
         .or(match_relocate)
+        .or(match_rename)
         .or(match_select)
-        .or(match_function("mutate"))
         .or(match_function("summarize"))
         .matches(expr)
 }
@@ -139,6 +139,25 @@ fn match_group_by(expr: &Expr) -> MatchResult {
         .matches(expr)
 }
 
+/// Checks arguments for mutate call.
+fn match_mutate(expr: &Expr) -> MatchResult {
+    // mutate(gain = dep_delay - arr_delay * delay_adj)
+    // mutate(gain = dep_delay + arr_delay * mean(delay_adj))
+    // mutate(gain = dep_delay - median(arr_delay))
+    let operand = match_identifier
+        .or(match_number)
+        .or(match_column_fn("min"))
+        .or(match_column_fn("max"))
+        .or(match_column_fn("mean"))
+        .or(match_column_fn("median"));
+    let arith_op = match_arith(operand);
+
+    match_function("mutate")
+        .and(match_min_args(1))
+        .and(match_args(match_assign(match_identifier, arith_op)))
+        .matches(expr)
+}
+
 /// Checks arguments for parquet call.
 fn match_parquet(expr: &Expr) -> MatchResult {
     // parquet("flights.parquet")
@@ -216,4 +235,12 @@ fn match_select(expr: &Expr) -> MatchResult {
         .and(match_min_args(1))
         .and(match_args(args))
         .matches(expr)
+}
+
+/// Matches a function that takes a column identifier as parameter.
+fn match_column_fn(name: &str) -> impl Matcher {
+    match_function(name)
+        .and(match_min_args(1))
+        .and(match_max_args(1))
+        .and(match_args(match_identifier))
 }
