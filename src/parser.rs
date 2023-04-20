@@ -38,8 +38,6 @@ pub enum Expr {
     BinaryOp(Box<Expr>, Operator, Box<Expr>),
     /// Unary operation
     UnaryOp(Operator, Box<Expr>),
-    /// Expression grouping
-    Group(Vec<Expr>),
     /// An identifier
     Identifier(String),
     /// A string literal
@@ -110,13 +108,6 @@ impl Expr {
                 expr.visit(visitor)?;
                 visitor.post_unary_op(op)?;
             }
-            Expr::Group(exprs) => {
-                visitor.pre_group(exprs.len())?;
-                for expr in exprs {
-                    expr.visit(visitor)?;
-                }
-                visitor.post_group(exprs.len())?;
-            }
             Expr::Identifier(id) => visitor.identifier(id)?,
             Expr::String(s) => visitor.string(s)?,
             Expr::Number(v) => visitor.number(*v)?,
@@ -177,16 +168,6 @@ pub trait Visitor {
         Err(anyhow!("Visitor post_unary_op not implemented!"))
     }
 
-    /// Called before visiting an array expression.
-    fn pre_group(&mut self, len: usize) -> Result<()> {
-        Err(anyhow!("Visitor pre_array not implemented!"))
-    }
-
-    /// Called after  visiting an array expression.
-    fn post_group(&mut self, len: usize) -> Result<()> {
-        Err(anyhow!("Visitor post_array not implemented!"))
-    }
-
     /// Visit an identifier.
     fn identifier(&mut self, value: &str) -> Result<()> {
         Err(anyhow!("Visitor identifier not implemented!"))
@@ -230,20 +211,17 @@ fn string(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     )(input)
 }
 
-/// A group expression `(a == b & c == d) | f != g` or `a in (1,2,3)`.
+/// A group expression `(a == b & c == d) | f != g`.
 fn group(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     context(
         "group",
-        map(
-            preceded(
-                multispace0,
-                delimited(
-                    char('('),
-                    separated_list0(preceded(multispace0, char(',')), argument),
-                    cut(preceded(multispace0, char(')'))),
-                ),
+        preceded(
+            multispace0,
+            delimited(
+                char('('),
+                preceded(multispace0, argument),
+                cut(preceded(multispace0, char(')'))),
             ),
-            Expr::Group,
         ),
     )(input)
 }
@@ -493,18 +471,6 @@ impl Visitor for DisplayVisitor {
     fn post_unary_op(&mut self, op: &Operator) -> Result<()> {
         self.depth -= 2;
         self.write(format!("post_unary_op: {:?}", op));
-        Ok(())
-    }
-
-    fn pre_group(&mut self, len: usize) -> Result<()> {
-        self.write(format!("pre_group: {len}"));
-        self.depth += 2;
-        Ok(())
-    }
-
-    fn post_group(&mut self, len: usize) -> Result<()> {
-        self.depth -= 2;
-        self.write(format!("post_group: {len}"));
         Ok(())
     }
 
@@ -844,18 +810,16 @@ mod tests {
                 pre_pipeline
                   pre_function: filter(1)
                     pre_binary_op: And
-                      pre_group: 1
-                        pre_binary_op: Or
-                          pre_binary_op: Eq
-                            identifier: month
-                            number: 12
-                          post_binary_op: Eq
-                          pre_binary_op: Eq
-                            identifier: day
-                            number: 23
-                          post_binary_op: Eq
-                        post_binary_op: Or
-                      post_group: 1
+                      pre_binary_op: Or
+                        pre_binary_op: Eq
+                          identifier: month
+                          number: 12
+                        post_binary_op: Eq
+                        pre_binary_op: Eq
+                          identifier: day
+                          number: 23
+                        post_binary_op: Eq
+                      post_binary_op: Or
                       pre_binary_op: Eq
                         identifier: year
                         number: 2023
@@ -881,18 +845,16 @@ mod tests {
                         identifier: month
                         number: 12
                       post_binary_op: Eq
-                      pre_group: 1
-                        pre_binary_op: And
-                          pre_binary_op: Eq
-                            identifier: day
-                            number: 23
-                          post_binary_op: Eq
-                          pre_binary_op: Eq
-                            identifier: year
-                            number: 2023
-                          post_binary_op: Eq
-                        post_binary_op: And
-                      post_group: 1
+                      pre_binary_op: And
+                        pre_binary_op: Eq
+                          identifier: day
+                          number: 23
+                        post_binary_op: Eq
+                        pre_binary_op: Eq
+                          identifier: year
+                          number: 2023
+                        post_binary_op: Eq
+                      post_binary_op: And
                     post_binary_op: Or
                   post_function: filter(1)
                 post_pipeline"#
@@ -910,12 +872,10 @@ mod tests {
                 pre_pipeline
                   pre_function: filter(1)
                     pre_binary_op: And
-                      pre_group: 1
-                        pre_binary_op: Eq
-                          identifier: day
-                          number: 23
-                        post_binary_op: Eq
-                      post_group: 1
+                      pre_binary_op: Eq
+                        identifier: day
+                        number: 23
+                      post_binary_op: Eq
                       pre_binary_op: Eq
                         identifier: year
                         number: 2023

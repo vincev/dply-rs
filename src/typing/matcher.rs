@@ -190,13 +190,72 @@ where
     }
 }
 
+/// Matches a comparison with lhs and rhs matchers.
+pub fn match_compare<L, R>(l: L, r: R) -> impl Fn(&Expr) -> MatchResult
+where
+    L: Matcher,
+    R: Matcher,
+{
+    move |expr: &Expr| -> MatchResult {
+        match expr {
+            Expr::BinaryOp(lhs, Operator::Eq, rhs)
+            | Expr::BinaryOp(lhs, Operator::NotEq, rhs)
+            | Expr::BinaryOp(lhs, Operator::Lt, rhs)
+            | Expr::BinaryOp(lhs, Operator::LtEq, rhs)
+            | Expr::BinaryOp(lhs, Operator::Gt, rhs)
+            | Expr::BinaryOp(lhs, Operator::GtEq, rhs) => {
+                l.matches(lhs)?;
+                r.matches(rhs)
+            }
+            _ => Err(MatchError::new("Not a compare expression")),
+        }
+    }
+}
+
+/// Matches a logical operator operands with the given matcher.
+pub fn match_logical<M>(m: M) -> impl Fn(&Expr) -> MatchResult
+where
+    M: Matcher,
+{
+    fn is_logical(expr: &Expr) -> bool {
+        matches!(
+            expr,
+            Expr::BinaryOp(_, Operator::And, _) | Expr::BinaryOp(_, Operator::Or, _)
+        )
+    }
+
+    fn matcher<M: Matcher>(expr: &Expr, m: &M) -> MatchResult {
+        match expr {
+            Expr::BinaryOp(lhs, Operator::And, rhs) | Expr::BinaryOp(lhs, Operator::Or, rhs) => {
+                if is_logical(lhs) {
+                    matcher(lhs, m)?;
+                }
+
+                if is_logical(rhs) {
+                    matcher(rhs, m)?;
+                }
+
+                if !is_logical(lhs) && !is_logical(rhs) {
+                    m.matches(lhs)?;
+                    m.matches(rhs)?;
+                }
+
+                Ok(())
+            }
+            _ => Err(MatchError::new("Not a logical expression")),
+        }
+    }
+
+    move |expr: &Expr| -> MatchResult { matcher(expr, &m) }
+}
+
 /// Matches an identifier by name.
 pub fn match_named(name: &str) -> impl Fn(&Expr) -> MatchResult {
     let name = name.to_string();
     move |expr: &Expr| -> MatchResult {
         match expr {
             Expr::Identifier(s) if s == &name => Ok(()),
-            Expr::Identifier(s) => Err(MatchError::new(format!("Unexpeted identifier {s}"))),
+            Expr::Identifier(s) => Err(MatchError::new(format!("Unexpected identifier {s}"))),
             _ => Err(MatchError::new("Not an identifier")),
         }
     }

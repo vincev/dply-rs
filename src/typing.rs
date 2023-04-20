@@ -40,13 +40,13 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_count)
         .or(match_csv)
         .or(match_distinct)
+        .or(match_filter)
         .or(match_glimpse)
         .or(match_group_by)
         .or(match_parquet)
         .or(match_rename)
         .or(match_relocate)
         .or(match_select)
-        .or(match_function("filter"))
         .or(match_function("mutate"))
         .or(match_function("summarize"))
         .matches(expr)
@@ -98,6 +98,27 @@ fn match_distinct(expr: &Expr) -> MatchResult {
     // distinct(year, month)
     match_function("distinct")
         .and(match_args(match_identifier))
+        .matches(expr)
+}
+
+/// Checks arguments for filter call.
+fn match_filter(expr: &Expr) -> MatchResult {
+    // filter(year == 2023 & month > 1 | day < 5)
+    // filter(year == 2023, month > 1, day < 5)
+    // filter((year == 2023 | month > 1) & day < 5)
+    let compare_op = || {
+        let rhs_cmp = match_identifier
+            .or(match_number)
+            .or(match_string)
+            .or(match_bool);
+        match_compare(match_identifier, rhs_cmp)
+    };
+
+    let logic_op = match_logical(compare_op());
+
+    match_function("filter")
+        .and(match_min_args(1))
+        .and(match_args(compare_op().or(logic_op)))
         .matches(expr)
 }
 
