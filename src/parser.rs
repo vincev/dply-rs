@@ -219,7 +219,7 @@ fn group(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
             multispace0,
             delimited(
                 char('('),
-                preceded(multispace0, argument),
+                preceded(multispace0, alt((arith_op, argument))),
                 cut(preceded(multispace0, char(')'))),
             ),
         ),
@@ -882,6 +882,41 @@ mod tests {
                       post_binary_op: Eq
                     post_binary_op: And
                   post_function: filter(1)
+                post_pipeline"#
+            )
+        );
+
+        let text = indoc! {r#"
+            mutate(a1 = (a2 + a3) / 2, a1 = a2 + a3 / 2)
+        "#};
+
+        assert_parser!(
+            text,
+            indoc!(
+                r#"
+                pre_pipeline
+                  pre_function: mutate(2)
+                    pre_binary_op: Assign
+                      identifier: a1
+                      pre_binary_op: Divide
+                        pre_binary_op: Plus
+                          identifier: a2
+                          identifier: a3
+                        post_binary_op: Plus
+                        number: 2
+                      post_binary_op: Divide
+                    post_binary_op: Assign
+                    pre_binary_op: Assign
+                      identifier: a1
+                      pre_binary_op: Plus
+                        identifier: a2
+                        pre_binary_op: Divide
+                          identifier: a3
+                          number: 2
+                        post_binary_op: Divide
+                      post_binary_op: Plus
+                    post_binary_op: Assign
+                  post_function: mutate(2)
                 post_pipeline"#
             )
         );
