@@ -160,6 +160,20 @@ where
     }
 }
 
+/// Matches an optional argument at the given index.
+pub fn match_opt_arg<M>(idx: usize, m: M) -> impl Fn(&Expr) -> MatchResult
+where
+    M: Matcher,
+{
+    move |expr: &Expr| -> MatchResult {
+        match expr {
+            Expr::Function(_, args) if idx < args.len() => m.matches(&args[idx]),
+            Expr::Function(_, _) => Ok(()),
+            _ => Err(MatchError::new("Not a function expression")),
+        }
+    }
+}
+
 /// Matches an assignment with lhs and rhs matchers.
 pub fn match_assign<L, R>(l: L, r: R) -> impl Fn(&Expr) -> MatchResult
 where

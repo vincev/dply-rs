@@ -88,7 +88,7 @@ fn match_csv(expr: &Expr) -> MatchResult {
     match_function("csv")
         .and(match_max_args(2))
         .and(match_arg(0, match_string))
-        .and(match_args(match_string.or(overwrite_opt)))
+        .and(match_opt_arg(1, overwrite_opt))
         .matches(expr)
 }
 
@@ -127,7 +127,7 @@ fn match_parquet(expr: &Expr) -> MatchResult {
     match_function("parquet")
         .and(match_max_args(2))
         .and(match_arg(0, match_string))
-        .and(match_args(match_string.or(overwrite_opt)))
+        .and(match_opt_arg(1, overwrite_opt))
         .matches(expr)
 }
 
