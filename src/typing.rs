@@ -48,7 +48,7 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_relocate)
         .or(match_rename)
         .or(match_select)
-        .or(match_function("summarize"))
+        .or(match_summarize)
         .matches(expr)
 }
 
@@ -234,6 +234,22 @@ fn match_select(expr: &Expr) -> MatchResult {
     match_function("select")
         .and(match_min_args(1))
         .and(match_args(args))
+        .matches(expr)
+}
+
+/// Checks arguments for summarize call.
+fn match_summarize(expr: &Expr) -> MatchResult {
+    // mutate(n = n(), days = sum(days))
+    let n_fn = match_function("n").and(match_max_args(0));
+
+    let summarize_op = n_fn
+        .or(match_column_fn("sum"))
+        .or(match_column_fn("mean"))
+        .or(match_column_fn("median"));
+
+    match_function("summarize")
+        .and(match_min_args(1))
+        .and(match_args(match_assign(match_identifier, summarize_op)))
         .matches(expr)
 }
 
