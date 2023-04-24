@@ -16,7 +16,7 @@
 //! Checks pipeline functions and arguments types.
 use anyhow::{anyhow, Result};
 
-use crate::parser::{Expr, Operator};
+use crate::parser::Expr;
 use matcher::*;
 
 mod matcher;
@@ -62,8 +62,7 @@ fn match_arrange(expr: &Expr) -> MatchResult {
         .and(match_args(match_identifier));
 
     match_function("arrange")
-        .and(match_min_args(1))
-        .and(match_args(match_identifier.or(desc_fn)))
+        .and_fail(match_min_args(1).and(match_args(match_identifier.or(desc_fn))))
         .matches(expr)
 }
 
@@ -75,7 +74,7 @@ fn match_count(expr: &Expr) -> MatchResult {
     let sort_opt = match_assign(match_named("sort"), match_bool);
 
     match_function("count")
-        .and(match_args(match_identifier.or(sort_opt)))
+        .and_fail(match_args(match_identifier.or(sort_opt)))
         .matches(expr)
 }
 
@@ -86,9 +85,11 @@ fn match_csv(expr: &Expr) -> MatchResult {
     let overwrite_opt = match_assign(match_named("overwrite"), match_bool);
 
     match_function("csv")
-        .and(match_max_args(2))
-        .and(match_arg(0, match_string))
-        .and(match_opt_arg(1, overwrite_opt))
+        .and_fail(
+            match_max_args(2)
+                .and(match_arg(0, match_string))
+                .and(match_opt_arg(1, overwrite_opt)),
+        )
         .matches(expr)
 }
 
@@ -97,7 +98,7 @@ fn match_distinct(expr: &Expr) -> MatchResult {
     // distinct()
     // distinct(year, month)
     match_function("distinct")
-        .and(match_args(match_identifier))
+        .and_fail(match_args(match_identifier))
         .matches(expr)
 }
 
@@ -117,8 +118,7 @@ fn match_filter(expr: &Expr) -> MatchResult {
     let logic_op = match_logical(compare_op());
 
     match_function("filter")
-        .and(match_min_args(1))
-        .and(match_args(compare_op().or(logic_op)))
+        .and_fail(match_min_args(1).and(match_args(compare_op().or(logic_op))))
         .matches(expr)
 }
 
@@ -126,7 +126,7 @@ fn match_filter(expr: &Expr) -> MatchResult {
 fn match_glimpse(expr: &Expr) -> MatchResult {
     // glimpse()
     match_function("glimpse")
-        .and(match_max_args(0))
+        .and_fail(match_max_args(0))
         .matches(expr)
 }
 
@@ -134,8 +134,7 @@ fn match_glimpse(expr: &Expr) -> MatchResult {
 fn match_group_by(expr: &Expr) -> MatchResult {
     // group_by(year, month)
     match_function("group_by")
-        .and(match_min_args(1))
-        .and(match_args(match_identifier))
+        .and_fail(match_min_args(1).and(match_args(match_identifier)))
         .matches(expr)
 }
 
@@ -153,8 +152,7 @@ fn match_mutate(expr: &Expr) -> MatchResult {
     let arith_op = match_arith(operand);
 
     match_function("mutate")
-        .and(match_min_args(1))
-        .and(match_args(match_assign(match_identifier, arith_op)))
+        .and_fail(match_min_args(1).and(match_args(match_assign(match_identifier, arith_op))))
         .matches(expr)
 }
 
@@ -165,9 +163,11 @@ fn match_parquet(expr: &Expr) -> MatchResult {
     let overwrite_opt = match_assign(match_named("overwrite"), match_bool);
 
     match_function("parquet")
-        .and(match_max_args(2))
-        .and(match_arg(0, match_string))
-        .and(match_opt_arg(1, overwrite_opt))
+        .and_fail(
+            match_max_args(2)
+                .and(match_arg(0, match_string))
+                .and(match_opt_arg(1, overwrite_opt)),
+        )
         .matches(expr)
 }
 
@@ -186,8 +186,7 @@ fn match_relocate(expr: &Expr) -> MatchResult {
     let args = match_identifier.or(before_opt).or(after_opt);
 
     match_function("relocate")
-        .and(match_min_args(1))
-        .and(match_args(args))
+        .and_fail(match_min_args(1).and(match_args(args)))
         .matches(expr)
 }
 
@@ -197,8 +196,7 @@ fn match_rename(expr: &Expr) -> MatchResult {
     let rename_opt = match_assign(match_identifier, match_identifier);
 
     match_function("rename")
-        .and(match_min_args(1))
-        .and(match_args(rename_opt))
+        .and_fail(match_min_args(1).and(match_args(rename_opt)))
         .matches(expr)
 }
 
@@ -232,8 +230,7 @@ fn match_select(expr: &Expr) -> MatchResult {
         .or(ends_with_fn);
 
     match_function("select")
-        .and(match_min_args(1))
-        .and(match_args(args))
+        .and_fail(match_min_args(1).and(match_args(args)))
         .matches(expr)
 }
 
@@ -248,8 +245,7 @@ fn match_summarize(expr: &Expr) -> MatchResult {
         .or(match_column_fn("median"));
 
     match_function("summarize")
-        .and(match_min_args(1))
-        .and(match_args(match_assign(match_identifier, summarize_op)))
+        .and_fail(match_min_args(1).and(match_args(match_assign(match_identifier, summarize_op))))
         .matches(expr)
 }
 

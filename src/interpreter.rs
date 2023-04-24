@@ -27,7 +27,7 @@ pub fn eval(input: &str) -> Result<()> {
     }
 
     for expr in exprs {
-        println!("{expr}\n");
+        println!("{expr}");
     }
 
     Ok(())

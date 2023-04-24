@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Parser for dply expressions.
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use nom::branch::alt;
 use nom::bytes::complete::{is_a, is_not, tag};
 use nom::character::complete::{alpha1, alphanumeric1, char, multispace0, newline};
@@ -25,10 +25,8 @@ use nom::number::complete::double;
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 use nom::{IResult, Offset};
 use std::fmt;
-use std::io::Write;
 
 /// A parsed dply expression.
-#[derive(Debug)]
 pub enum Expr {
     /// A pipeline of data manipulation expressions.
     Pipeline(Vec<Expr>),
@@ -79,108 +77,109 @@ pub enum Operator {
     Assign,
 }
 
-impl Expr {
-    /// Visits the expression tree.
-    pub fn visit<V: Visitor>(&self, visitor: &mut V) -> Result<()> {
-        match self {
-            Expr::Pipeline(exprs) => {
-                visitor.pre_pipeline()?;
-                for expr in exprs {
-                    expr.visit(visitor)?;
-                }
-                visitor.post_pipeline()?;
-            }
-            Expr::Function(name, args) => {
-                visitor.pre_function(name, args.len())?;
-                for expr in args {
-                    expr.visit(visitor)?;
-                }
-                visitor.post_function(name, args.len())?;
-            }
-            Expr::BinaryOp(lhs, op, rhs) => {
-                visitor.pre_binary_op(op)?;
-                lhs.visit(visitor)?;
-                rhs.visit(visitor)?;
-                visitor.post_binary_op(op)?;
-            }
-            Expr::UnaryOp(op, expr) => {
-                visitor.pre_unary_op(op)?;
-                expr.visit(visitor)?;
-                visitor.post_unary_op(op)?;
-            }
-            Expr::Identifier(id) => visitor.identifier(id)?,
-            Expr::String(s) => visitor.string(s)?,
-            Expr::Number(v) => visitor.number(*v)?,
-        }
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let op = match self {
+            Operator::Eq => "==",
+            Operator::NotEq => "!=",
+            Operator::Lt => "<",
+            Operator::LtEq => "<=",
+            Operator::Gt => ">",
+            Operator::GtEq => ">=",
+            Operator::Plus => "+",
+            Operator::Minus => "-",
+            Operator::Multiply => "*",
+            Operator::Divide => "/",
+            Operator::And => "&",
+            Operator::Or => "|",
+            Operator::Not => "!",
+            Operator::Assign => "=",
+        };
 
-        Ok(())
+        write!(f, "{op}")
     }
 }
 
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut v = DisplayVisitor::default();
-        self.visit(&mut v).unwrap();
-        write!(f, "{}", v.output())
+        match self {
+            Expr::Pipeline(exprs) => {
+                for (idx, expr) in exprs.iter().enumerate() {
+                    if idx > 0 {
+                        write!(f, " | ")?;
+                    }
+                    expr.fmt(f)?;
+                }
+                Ok(())
+            }
+            Expr::Function(name, args) => {
+                write!(f, "{name}(")?;
+                for (idx, arg) in args.iter().enumerate() {
+                    if idx > 0 {
+                        write!(f, ", ")?;
+                    }
+                    arg.fmt(f)?;
+                }
+                write!(f, ")")
+            }
+            Expr::BinaryOp(lhs, op, rhs) => {
+                lhs.fmt(f)?;
+                write!(f, " {op} ")?;
+                rhs.fmt(f)
+            }
+            Expr::UnaryOp(op, expr) => {
+                write!(f, "{op}")?;
+                expr.fmt(f)
+            }
+            Expr::Identifier(n) => write!(f, "{n}"),
+            Expr::String(s) => write!(f, r#""{s}""#),
+            Expr::Number(n) => write!(f, "{n}"),
+        }
     }
 }
 
-/// Visitor for expressions tree.
-#[allow(unused_variables)]
-pub trait Visitor {
-    /// Called before visiting a pipeline expression.
-    fn pre_pipeline(&mut self) -> Result<()> {
-        Err(anyhow!("Visitor pre_pipeline not implemented!"))
+impl fmt::Debug for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_debug(self, 0, f)
+    }
+}
+
+fn fmt_debug(expr: &Expr, indent: usize, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    macro_rules! windent {
+        ($dst:expr, $($arg:tt)*) => {
+            writeln!($dst, "{:1$}{2:}", "", indent, format_args!($($arg)*))
+        }
     }
 
-    /// Called after visiting a pipeline expression.
-    fn post_pipeline(&mut self) -> Result<()> {
-        Err(anyhow!("Visitor post_pipeline not implemented!"))
-    }
-
-    /// Called before visiting a function call expression.
-    fn pre_function(&mut self, name: &str, args: usize) -> Result<()> {
-        Err(anyhow!("Visitor pre_function not implemented!"))
-    }
-
-    /// Called after visiting a function call expression.
-    fn post_function(&mut self, name: &str, args: usize) -> Result<()> {
-        Err(anyhow!("Visitor post_function not implemented!"))
-    }
-
-    /// Called before visiting a binary operation expression.
-    fn pre_binary_op(&mut self, op: &Operator) -> Result<()> {
-        Err(anyhow!("Visitor pre_binary_op not implemented!"))
-    }
-
-    /// Called after visiting a binary operation expression.
-    fn post_binary_op(&mut self, op: &Operator) -> Result<()> {
-        Err(anyhow!("Visitor post_binary_op not implemented!"))
-    }
-
-    /// Called before visiting a unary operation expression.
-    fn pre_unary_op(&mut self, op: &Operator) -> Result<()> {
-        Err(anyhow!("Visitor pre_unary_op not implemented!"))
-    }
-
-    /// Called after visiting a unary operation expression.
-    fn post_unary_op(&mut self, op: &Operator) -> Result<()> {
-        Err(anyhow!("Visitor post_unary_op not implemented!"))
-    }
-
-    /// Visit an identifier.
-    fn identifier(&mut self, value: &str) -> Result<()> {
-        Err(anyhow!("Visitor identifier not implemented!"))
-    }
-
-    /// Visit a string.
-    fn string(&mut self, value: &str) -> Result<()> {
-        Err(anyhow!("Visitor string not implemented!"))
-    }
-
-    /// Visit a number.
-    fn number(&mut self, value: f64) -> Result<()> {
-        Err(anyhow!("Visitor number not implemented!"))
+    match expr {
+        Expr::Pipeline(exprs) => {
+            windent!(f, "pre_pipeline")?;
+            for expr in exprs {
+                fmt_debug(expr, indent + 2, f)?;
+            }
+            windent!(f, "post_pipeline")
+        }
+        Expr::Function(name, args) => {
+            windent!(f, "pre_function: {name}({})", args.len())?;
+            for arg in args {
+                fmt_debug(arg, indent + 2, f)?;
+            }
+            windent!(f, "post_function: {name}({})", args.len())
+        }
+        Expr::BinaryOp(lhs, op, rhs) => {
+            windent!(f, "pre_binary_op: {op:?}")?;
+            fmt_debug(lhs, indent + 2, f)?;
+            fmt_debug(rhs, indent + 2, f)?;
+            windent!(f, "post_binary_op: {op:?}")
+        }
+        Expr::UnaryOp(op, expr) => {
+            windent!(f, "pre_unary_op: {op:?}")?;
+            fmt_debug(expr, indent + 2, f)?;
+            windent!(f, "post_unary_op: {op:?}")
+        }
+        Expr::Identifier(id) => windent!(f, "identifier: {id}"),
+        Expr::String(s) => windent!(f, "string: {s}"),
+        Expr::Number(n) => windent!(f, "number: {n}"),
     }
 }
 
@@ -407,89 +406,6 @@ pub fn parse(input: &str) -> Result<Vec<Expr>> {
     }
 }
 
-#[derive(Debug, Default)]
-struct DisplayVisitor {
-    depth: usize,
-    output: Vec<u8>,
-}
-
-impl DisplayVisitor {
-    fn write(&mut self, msg: String) {
-        writeln!(&mut self.output, "{:1$}{msg}", "", self.depth).unwrap();
-    }
-
-    fn output(self) -> String {
-        let mut s = String::from_utf8(self.output).unwrap();
-        s.truncate(s.trim_end().len());
-        s
-    }
-}
-
-impl Visitor for DisplayVisitor {
-    fn pre_pipeline(&mut self) -> Result<()> {
-        self.write("pre_pipeline".to_string());
-        self.depth += 2;
-        Ok(())
-    }
-
-    fn post_pipeline(&mut self) -> Result<()> {
-        self.depth -= 2;
-        self.write("post_pipeline".to_string());
-        Ok(())
-    }
-
-    fn pre_function(&mut self, name: &str, args: usize) -> Result<()> {
-        self.write(format!("pre_function: {name}({args})"));
-        self.depth += 2;
-        Ok(())
-    }
-
-    fn post_function(&mut self, name: &str, args: usize) -> Result<()> {
-        self.depth -= 2;
-        self.write(format!("post_function: {name}({args})"));
-        Ok(())
-    }
-
-    fn pre_binary_op(&mut self, op: &Operator) -> Result<()> {
-        self.write(format!("pre_binary_op: {:?}", op));
-        self.depth += 2;
-        Ok(())
-    }
-
-    fn post_binary_op(&mut self, op: &Operator) -> Result<()> {
-        self.depth -= 2;
-        self.write(format!("post_binary_op: {:?}", op));
-        Ok(())
-    }
-
-    fn pre_unary_op(&mut self, op: &Operator) -> Result<()> {
-        self.write(format!("pre_unary_op: {:?}", op));
-        self.depth += 2;
-        Ok(())
-    }
-
-    fn post_unary_op(&mut self, op: &Operator) -> Result<()> {
-        self.depth -= 2;
-        self.write(format!("post_unary_op: {:?}", op));
-        Ok(())
-    }
-
-    fn identifier(&mut self, name: &str) -> Result<()> {
-        self.write(format!("identifier: {name}"));
-        Ok(())
-    }
-
-    fn string(&mut self, value: &str) -> Result<()> {
-        self.write(format!("string: {value}"));
-        Ok(())
-    }
-
-    fn number(&mut self, value: f64) -> Result<()> {
-        self.write(format!("number: {value}"));
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -501,11 +417,11 @@ mod tests {
             match parse($text) {
                 Err(e) => panic!("Parser failed for:\n{}\n{e}", $text),
                 Ok(exprs) => {
-                    let mut visitor = DisplayVisitor::default();
-                    exprs
-                        .into_iter()
-                        .for_each(|e| e.visit(&mut visitor).unwrap());
-                    let output = visitor.output();
+                    let output = exprs
+                        .iter()
+                        .map(|e| format!("{e:?}"))
+                        .collect::<Vec<_>>()
+                        .join("\n");
                     if output.trim() != $expected.trim() {
                         panic!(
                             "Parser error:\nexpected:\n{}\nfound:\n{}",
