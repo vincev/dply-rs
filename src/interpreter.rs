@@ -16,19 +16,22 @@
 //! Interpreter for dply expressions.
 use anyhow::Result;
 
-use crate::{parser, typing};
+use crate::{eval, parser, typing};
 
 /// Evaluates a dply script.
 pub fn eval(input: &str) -> Result<()> {
-    let exprs = parser::parse(input)?;
+    let pipelines = parser::parse(input)?;
 
-    for expr in &exprs {
-        typing::pipeline(expr)?;
-    }
-
-    for expr in exprs {
-        println!("{expr}");
-    }
+    typing::validate_pipelines(&pipelines)?;
+    eval::eval(&pipelines)?;
 
     Ok(())
+}
+
+/// Evaluates a dply script with a string output.
+pub fn eval_to_string(input: &str) -> Result<String> {
+    let pipelines = parser::parse(input)?;
+
+    typing::validate_pipelines(&pipelines)?;
+    eval::eval_to_string(&pipelines)
 }

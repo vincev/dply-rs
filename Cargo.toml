@@ -9,8 +9,13 @@ version = "0.1.0"
 [dependencies]
 anyhow = "1.0.69"
 clap = { version = "4.1.4", features = ["derive"] }
+comfy-table = "6.1.4"
 nom = "7.1.3"
 thiserror = "1.0.40"
+
+[dependencies.polars]
+version = "0.28.0"
+features = ["dtype-full", "lazy", "parquet", "strings", "timezones"]
 
 [dev-dependencies]
 indoc = "2"

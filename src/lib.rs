@@ -17,5 +17,7 @@
 #![warn(clippy::all, rust_2018_idioms, missing_docs)]
 
 pub mod interpreter;
+
+mod eval;
 mod parser;
 mod typing;

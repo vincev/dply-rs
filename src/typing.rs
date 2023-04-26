@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Checks pipeline functions and arguments types.
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use crate::parser::Expr;
 use matcher::*;
@@ -22,16 +22,16 @@ use matcher::*;
 mod matcher;
 
 /// Checks pipeline functions and arguments types.
-pub fn pipeline(expr: &Expr) -> Result<()> {
-    if let Expr::Pipeline(exprs) = expr {
-        for expr in exprs {
-            match_identifier.or(match_pipeline_fn).matches(expr)?;
+pub fn validate_pipelines(exprs: &[Expr]) -> Result<()> {
+    for expr in exprs {
+        if let Expr::Pipeline(exprs) = expr {
+            for expr in exprs {
+                match_identifier.or(match_pipeline_fn).matches(expr)?;
+            }
         }
-
-        Ok(())
-    } else {
-        Err(anyhow!("Not a pipeline"))
     }
+
+    Ok(())
 }
 
 /// Checks arguments for pipeline functions.
