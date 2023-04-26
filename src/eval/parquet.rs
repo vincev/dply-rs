@@ -21,8 +21,10 @@ use crate::parser::Expr;
 use super::*;
 
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    let path = PathBuf::from(args::get_string_at(args, 0)?);
-    let overwrite = args::get_bool(args, "overwrite")?;
+    // parquet("nyctaxi.parquet")
+    let path = PathBuf::from(args::strings(args).first().unwrap());
+    // parquet("nyctaxi.parquet", overwrite = true)
+    let overwrite = args::named_bool(args, "overwrite")?;
 
     // If there is an input dataframe save it to disk.
     if let Some(df) = ctx.get_input() {

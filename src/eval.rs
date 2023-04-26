@@ -14,12 +14,14 @@
 // limitations under the License.
 
 //! Evaluate pipeline functions.
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use polars::prelude::*;
 use std::collections::HashMap;
 
 use crate::parser::Expr;
 
+mod args;
+mod arrange;
 mod csv;
 mod glimpse;
 mod parquet;
@@ -101,7 +103,7 @@ fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
 fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
-            "arrange" => {}
+            "arrange" => arrange::eval(args, ctx)?,
             "count" => {}
             "csv" => csv::eval(args, ctx)?,
             "distinct" => {}
@@ -131,32 +133,4 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     }
 
     Ok(())
-}
-
-mod args {
-    use super::*;
-    use crate::parser::Operator;
-    use std::str::FromStr;
-
-    pub fn get_string_at(args: &[Expr], idx: usize) -> Result<String> {
-        match args.get(idx) {
-            Some(Expr::String(s)) => Ok(s.clone()),
-            _ => Err(anyhow!("Not a string argument at index {idx}")),
-        }
-    }
-
-    pub fn get_bool(args: &[Expr], name: &str) -> Result<bool> {
-        for arg in args {
-            if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
-                match (lhs.as_ref(), rhs.as_ref()) {
-                    (Expr::Identifier(lhs), Expr::Identifier(rhs)) if lhs == name => {
-                        return Ok(bool::from_str(rhs)?);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        Ok(false)
-    }
 }

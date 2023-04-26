@@ -20,7 +20,6 @@ use dply::interpreter;
 #[test]
 fn glimpse() -> Result<()> {
     let input = r#"parquet("tests/data/nyctaxi.parquet") | glimpse()"#;
-
     let output = interpreter::eval_to_string(input)?;
 
     assert_eq!(
