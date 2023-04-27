@@ -325,6 +325,19 @@ where
     move |expr: &Expr| -> MatchResult { matcher(expr, &m) }
 }
 
+/// Matches a negated pattern like !contains("abc").
+pub fn match_negate<M>(m: M) -> impl Matcher
+where
+    M: Matcher,
+{
+    move |expr: &Expr| -> MatchResult {
+        match expr {
+            Expr::UnaryOp(Operator::Not, expr) => m.matches(expr),
+            _ => Err(match_error!("'{expr}' must be a negated expression")),
+        }
+    }
+}
+
 /// Matches an identifier by name.
 pub fn match_named(name: &str) -> impl Matcher {
     let name = name.to_string();

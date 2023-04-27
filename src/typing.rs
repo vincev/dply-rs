@@ -202,32 +202,39 @@ fn match_rename(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for select call.
 fn match_select(expr: &Expr) -> MatchResult {
-    // select(year, contains("time"))
-    let contains_fn = match_function("contains")
-        .and(match_min_args(1))
-        .and(match_max_args(1))
-        .and(match_args(match_string));
+    // select(contains("time"), !contains("time"))
+    let contains_fn = || {
+        match_function("contains")
+            .and(match_min_args(1))
+            .and(match_max_args(1))
+            .and(match_args(match_string))
+    };
 
-    // select(year, starts_with("time"))
-    let starts_with_fn = match_function("starts_with")
-        .and(match_min_args(1))
-        .and(match_max_args(1))
-        .and(match_args(match_string));
+    // select(starts_with("time"), !starts_with("time"))
+    let starts_with_fn = || {
+        match_function("starts_with")
+            .and(match_min_args(1))
+            .and(match_max_args(1))
+            .and(match_args(match_string))
+    };
 
-    // select(year, ends_with("time"))
-    let ends_with_fn = match_function("ends_with")
-        .and(match_min_args(1))
-        .and(match_max_args(1))
-        .and(match_args(match_string));
+    // select(ends_with("time"), !ends_with("time"))
+    let ends_with_fn = || {
+        match_function("ends_with")
+            .and(match_min_args(1))
+            .and(match_max_args(1))
+            .and(match_args(match_string))
+    };
 
     // select(tail_num = tailnum)
     let rename_opt = match_assign(match_identifier, match_identifier);
 
-    let args = match_identifier
+    let args = contains_fn()
+        .or(match_negate(contains_fn()))
+        .or(starts_with_fn().or(match_negate(starts_with_fn())))
+        .or(ends_with_fn().or(match_negate(ends_with_fn())))
         .or(rename_opt)
-        .or(contains_fn)
-        .or(starts_with_fn)
-        .or(ends_with_fn);
+        .or(match_identifier);
 
     match_function("select")
         .and_fail(match_min_args(1).and(match_args(args)))
