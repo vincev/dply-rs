@@ -20,9 +20,12 @@ use crate::parser::Expr;
 
 use super::*;
 
+/// Evaluates a parquet call.
+///
+/// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     // parquet("nyctaxi.parquet")
-    let path = PathBuf::from(args::strings(args).first().unwrap());
+    let path = PathBuf::from(args::string(&args[0]));
     // parquet("nyctaxi.parquet", overwrite = true)
     let overwrite = args::named_bool(args, "overwrite")?;
 

@@ -20,9 +20,12 @@ use crate::parser::Expr;
 
 use super::*;
 
+/// Evaluates a csv call.
+///
+/// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     // csv("nyctaxi.csv")
-    let path = PathBuf::from(args::strings(args).first().unwrap());
+    let path = PathBuf::from(args::string(&args[0]));
     // csv("nyctaxi.csv", overwrite = true)
     let overwrite = args::named_bool(args, "overwrite")?;
 

@@ -25,6 +25,7 @@ mod arrange;
 mod csv;
 mod glimpse;
 mod parquet;
+mod select;
 
 #[derive(Default)]
 pub struct Context {
@@ -114,7 +115,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => {}
             "rename" => {}
-            "select" => {}
+            "select" => select::eval(args, ctx)?,
             "summarize" => {}
             _ => panic!("Unknown function {name}"),
         },

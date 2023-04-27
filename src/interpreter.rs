@@ -22,7 +22,7 @@ use crate::{eval, parser, typing};
 pub fn eval(input: &str) -> Result<()> {
     let pipelines = parser::parse(input)?;
 
-    typing::validate_pipelines(&pipelines)?;
+    typing::validate(&pipelines)?;
     eval::eval(&pipelines)?;
 
     Ok(())
@@ -32,6 +32,6 @@ pub fn eval(input: &str) -> Result<()> {
 pub fn eval_to_string(input: &str) -> Result<String> {
     let pipelines = parser::parse(input)?;
 
-    typing::validate_pipelines(&pipelines)?;
+    typing::validate(&pipelines)?;
     eval::eval_to_string(&pipelines)
 }

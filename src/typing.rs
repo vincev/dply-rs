@@ -22,7 +22,7 @@ use matcher::*;
 mod matcher;
 
 /// Checks pipeline functions and arguments types.
-pub fn validate_pipelines(exprs: &[Expr]) -> Result<()> {
+pub fn validate(exprs: &[Expr]) -> Result<()> {
     for expr in exprs {
         if let Expr::Pipeline(exprs) = expr {
             for expr in exprs {

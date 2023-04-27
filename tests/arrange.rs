@@ -57,6 +57,11 @@ fn arrange() -> Result<()> {
         )
     );
 
+    Ok(())
+}
+
+#[test]
+fn arrange_desc() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             arrange(passenger_count, desc(total_amount)) |

@@ -17,22 +17,24 @@ use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
 
-pub fn strings(args: &[Expr]) -> Vec<String> {
-    args.iter()
-        .filter_map(|e| match e {
-            Expr::String(s) => Some(s.to_owned()),
-            _ => None,
-        })
-        .collect()
+/// Return the string from a string expression.
+///
+/// Panics if the expression is not a string.
+pub fn string(expr: &Expr) -> String {
+    match expr {
+        Expr::String(s) => s.to_owned(),
+        _ => panic!("{expr} is not a string expression"),
+    }
 }
 
-pub fn identifiers(args: &[Expr]) -> Vec<String> {
-    args.iter()
-        .filter_map(|e| match e {
-            Expr::Identifier(s) => Some(s.to_owned()),
-            _ => None,
-        })
-        .collect()
+/// Return the string from an identifier expression.
+///
+/// Panics if the expression is not an identifier.
+pub fn identifier(expr: &Expr) -> String {
+    match expr {
+        Expr::Identifier(s) => s.to_owned(),
+        _ => panic!("{expr} is not an identifier expression"),
+    }
 }
 
 pub fn named_bool(args: &[Expr], name: &str) -> Result<bool> {

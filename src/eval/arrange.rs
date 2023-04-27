@@ -19,6 +19,9 @@ use crate::parser::Expr;
 
 use super::*;
 
+/// Evaluates an arrange call.
+///
+/// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_input() {
         // arrange(year, desc(day))
@@ -29,8 +32,8 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             match arg {
                 Expr::Function(name, args) if name == "desc" => {
                     // arrange(desc(column))
-                    let args = args::identifiers(args);
-                    columns.push(col(&args[0]));
+                    let column = args::identifier(&args[0]);
+                    columns.push(col(&column));
                     descending.push(true);
                 }
                 Expr::Identifier(column) => {
