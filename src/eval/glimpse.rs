@@ -22,6 +22,9 @@ use crate::parser::Expr;
 
 use super::*;
 
+/// Evaluates a glimpse call.
+///
+/// Parameters are checked before evaluation by the typing module.
 pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_input() {
         let count_df = df.clone().select([count()]).collect()?;

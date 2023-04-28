@@ -37,12 +37,12 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         for arg in args {
             match arg {
                 Expr::Function(_, _) => {
-                    let mut filter_cols = eval_filter(arg, &schema_cols, false);
+                    let mut filter_cols = filter_columns(arg, &schema_cols, false);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
                 Expr::UnaryOp(Operator::Not, expr) => {
-                    let mut filter_cols = eval_filter(expr, &schema_cols, true);
+                    let mut filter_cols = filter_columns(expr, &schema_cols, true);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
@@ -69,13 +69,13 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_input(df.select(&select_columns));
     } else {
-        bail!("Missing input dataframe for arrange.");
+        bail!("Missing input dataframe for select.");
     }
 
     Ok(())
 }
 
-fn eval_filter(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<PolarsExpr> {
+fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<PolarsExpr> {
     match expr {
         Expr::Function(name, args) if name == "starts_with" => {
             // select(starts_with("pattern"))

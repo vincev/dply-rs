@@ -23,9 +23,11 @@ use crate::parser::Expr;
 mod args;
 mod arrange;
 mod csv;
+mod filter;
 mod glimpse;
 mod parquet;
 mod select;
+mod show;
 
 #[derive(Default)]
 pub struct Context {
@@ -68,6 +70,9 @@ impl Context {
 
 /// Evaluate pipelines expressions to standard output.
 pub fn eval(exprs: &[Expr]) -> Result<()> {
+    // Let the interpreters handle the number of rows in the output.
+    std::env::set_var("POLARS_FMT_MAX_ROWS", i64::MAX.to_string());
+
     let mut ctx = Context::default();
     eval_pipelines(exprs, &mut ctx)
 }
@@ -108,7 +113,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "count" => {}
             "csv" => csv::eval(args, ctx)?,
             "distinct" => {}
-            "filter" => {}
+            "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
             "group_by" => {}
             "mutate" => {}
@@ -116,6 +121,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "relocate" => {}
             "rename" => {}
             "select" => select::eval(args, ctx)?,
+            "show" => show::eval(args, ctx)?,
             "summarize" => {}
             _ => panic!("Unknown function {name}"),
         },

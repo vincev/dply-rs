@@ -48,6 +48,7 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_relocate)
         .or(match_rename)
         .or(match_select)
+        .or(match_show)
         .or(match_summarize)
         .matches(expr)
 }
@@ -238,6 +239,14 @@ fn match_select(expr: &Expr) -> MatchResult {
 
     match_function("select")
         .and_fail(match_min_args(1).and(match_args(args)))
+        .matches(expr)
+}
+
+/// Checks arguments for a show call.
+fn match_show(expr: &Expr) -> MatchResult {
+    // show()
+    match_function("show")
+        .and_fail(match_max_args(0))
         .matches(expr)
 }
 
