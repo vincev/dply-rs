@@ -357,3 +357,103 @@ fn filter_with_parenthesis() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn filter_dates() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+          select(ends_with("time")) |
+          filter(tpep_pickup_datetime < dt("2022-11-02")) |
+          arrange(tpep_pickup_datetime) |
+          show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (9, 2)
+            ┌──────────────────────┬───────────────────────┐
+            │ tpep_pickup_datetime ┆ tpep_dropoff_datetime │
+            │ ---                  ┆ ---                   │
+            │ datetime[ns]         ┆ datetime[ns]          │
+            ╞══════════════════════╪═══════════════════════╡
+            │ 2022-11-01 07:31:16  ┆ 2022-11-01 08:19:44   │
+            │ 2022-11-01 10:45:13  ┆ 2022-11-01 10:53:56   │
+            │ 2022-11-01 11:17:08  ┆ 2022-11-01 12:08:15   │
+            │ 2022-11-01 11:33:46  ┆ 2022-11-01 12:03:15   │
+            │ 2022-11-01 16:18:07  ┆ 2022-11-01 16:27:30   │
+            │ 2022-11-01 17:43:51  ┆ 2022-11-01 17:52:45   │
+            │ 2022-11-01 17:48:38  ┆ 2022-11-01 17:59:55   │
+            │ 2022-11-01 19:25:41  ┆ 2022-11-01 19:32:33   │
+            │ 2022-11-01 19:39:09  ┆ 2022-11-01 19:45:10   │
+            └──────────────────────┴───────────────────────┘
+       "#
+        )
+    );
+
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+          select(ends_with("time")) |
+          filter(
+            tpep_pickup_datetime > dt("2022-11-01 17:00:00") &
+            tpep_pickup_datetime < dt("2022-11-02 02:00:00")
+          ) |
+          arrange(tpep_pickup_datetime) |
+          show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (4, 2)
+            ┌──────────────────────┬───────────────────────┐
+            │ tpep_pickup_datetime ┆ tpep_dropoff_datetime │
+            │ ---                  ┆ ---                   │
+            │ datetime[ns]         ┆ datetime[ns]          │
+            ╞══════════════════════╪═══════════════════════╡
+            │ 2022-11-01 17:43:51  ┆ 2022-11-01 17:52:45   │
+            │ 2022-11-01 17:48:38  ┆ 2022-11-01 17:59:55   │
+            │ 2022-11-01 19:25:41  ┆ 2022-11-01 19:32:33   │
+            │ 2022-11-01 19:39:09  ┆ 2022-11-01 19:45:10   │
+            └──────────────────────┴───────────────────────┘
+       "#
+        )
+    );
+
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+          select(ends_with("time")) |
+          filter(
+            tpep_pickup_datetime > dt("2022-11-02") &
+            tpep_pickup_datetime < dt("2022-11-02 12:00:00")
+          ) |
+          arrange(tpep_pickup_datetime) |
+          show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (4, 2)
+            ┌──────────────────────┬───────────────────────┐
+            │ tpep_pickup_datetime ┆ tpep_dropoff_datetime │
+            │ ---                  ┆ ---                   │
+            │ datetime[ns]         ┆ datetime[ns]          │
+            ╞══════════════════════╪═══════════════════════╡
+            │ 2022-11-02 02:02:12  ┆ 2022-11-02 02:02:19   │
+            │ 2022-11-02 10:17:58  ┆ 2022-11-02 10:36:07   │
+            │ 2022-11-02 10:40:38  ┆ 2022-11-02 10:43:58   │
+            │ 2022-11-02 11:06:01  ┆ 2022-11-02 11:35:00   │
+            └──────────────────────┴───────────────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}

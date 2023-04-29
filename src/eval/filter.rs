@@ -26,7 +26,7 @@ use super::*;
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(mut df) = ctx.take_input() {
         for arg in args {
-            df = df.filter(eval_expr(arg));
+            df = df.filter(eval_expr(arg)?);
         }
 
         ctx.set_input(df);
@@ -37,19 +37,23 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn eval_expr(expr: &Expr) -> PolarsExpr {
+fn eval_expr(expr: &Expr) -> Result<PolarsExpr> {
     match expr {
-        Expr::BinaryOp(lhs, Operator::Eq, rhs) => eval_expr(lhs).eq(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::NotEq, rhs) => eval_expr(lhs).neq(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::Lt, rhs) => eval_expr(lhs).lt(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::LtEq, rhs) => eval_expr(lhs).lt_eq(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::Gt, rhs) => eval_expr(lhs).gt(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::GtEq, rhs) => eval_expr(lhs).gt_eq(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::And, rhs) => eval_expr(lhs).and(eval_expr(rhs)),
-        Expr::BinaryOp(lhs, Operator::Or, rhs) => eval_expr(lhs).or(eval_expr(rhs)),
-        Expr::Identifier(s) => col(s),
-        Expr::String(s) => lit(s.clone()),
-        Expr::Number(n) => lit(*n),
+        Expr::BinaryOp(lhs, Operator::Eq, rhs) => Ok(eval_expr(lhs)?.eq(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::NotEq, rhs) => Ok(eval_expr(lhs)?.neq(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::Lt, rhs) => Ok(eval_expr(lhs)?.lt(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::LtEq, rhs) => Ok(eval_expr(lhs)?.lt_eq(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::Gt, rhs) => Ok(eval_expr(lhs)?.gt(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::GtEq, rhs) => Ok(eval_expr(lhs)?.gt_eq(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::And, rhs) => Ok(eval_expr(lhs)?.and(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, Operator::Or, rhs) => Ok(eval_expr(lhs)?.or(eval_expr(rhs)?)),
+        Expr::Identifier(s) => Ok(col(s)),
+        Expr::String(s) => Ok(lit(s.clone())),
+        Expr::Number(n) => Ok(lit(*n)),
+        Expr::Function(name, args) if name == "dt" => {
+            let ts = args::timestamp(&args[0])?;
+            Ok(lit(ts))
+        }
         _ => panic!("Unexpected filter expression {expr}"),
     }
 }

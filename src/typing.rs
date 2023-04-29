@@ -108,11 +108,18 @@ fn match_filter(expr: &Expr) -> MatchResult {
     // filter(year == 2023 & month > 1 | day < 5)
     // filter(year == 2023, month > 1, day < 5)
     // filter((year == 2023 | month > 1) & day < 5)
+    // filter(pickup_time < dt("2023-04-29 10:00:00"))
     let compare_op = || {
+        let dt_fn = match_function("dt")
+            .and(match_min_args(1))
+            .and(match_max_args(1))
+            .and(match_args(match_string));
+
         let rhs_cmp = match_identifier
             .or(match_number)
             .or(match_string)
-            .or(match_bool);
+            .or(match_bool)
+            .or(dt_fn);
         match_compare(match_identifier, rhs_cmp)
     };
 
