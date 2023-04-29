@@ -68,7 +68,6 @@ fn arrange_desc() -> Result<()> {
             glimpse()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,

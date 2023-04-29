@@ -31,7 +31,6 @@ fn select_columns() -> Result<()> {
             glimpse()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -120,7 +119,6 @@ fn select_not_starts_with() -> Result<()> {
             glimpse()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -188,7 +186,6 @@ fn select_not_ends_with() -> Result<()> {
             glimpse()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -256,7 +253,6 @@ fn select_not_contains() -> Result<()> {
             glimpse()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
