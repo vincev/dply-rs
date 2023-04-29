@@ -23,6 +23,7 @@ use crate::parser::Expr;
 mod args;
 mod arrange;
 mod csv;
+mod distinct;
 mod filter;
 mod glimpse;
 mod parquet;
@@ -113,7 +114,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "arrange" => arrange::eval(args, ctx)?,
             "count" => {}
             "csv" => csv::eval(args, ctx)?,
-            "distinct" => {}
+            "distinct" => distinct::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
             "group_by" => {}
