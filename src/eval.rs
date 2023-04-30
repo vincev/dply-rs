@@ -22,6 +22,7 @@ use crate::parser::Expr;
 
 mod args;
 mod arrange;
+mod count;
 mod csv;
 mod distinct;
 mod filter;
@@ -112,7 +113,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
             "arrange" => arrange::eval(args, ctx)?,
-            "count" => {}
+            "count" => count::eval(args, ctx)?,
             "csv" => csv::eval(args, ctx)?,
             "distinct" => distinct::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,

@@ -39,14 +39,24 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
 fn eval_expr(expr: &Expr) -> Result<PolarsExpr> {
     match expr {
-        Expr::BinaryOp(lhs, Operator::Eq, rhs) => Ok(eval_expr(lhs)?.eq(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::NotEq, rhs) => Ok(eval_expr(lhs)?.neq(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::Lt, rhs) => Ok(eval_expr(lhs)?.lt(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::LtEq, rhs) => Ok(eval_expr(lhs)?.lt_eq(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::Gt, rhs) => Ok(eval_expr(lhs)?.gt(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::GtEq, rhs) => Ok(eval_expr(lhs)?.gt_eq(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::And, rhs) => Ok(eval_expr(lhs)?.and(eval_expr(rhs)?)),
-        Expr::BinaryOp(lhs, Operator::Or, rhs) => Ok(eval_expr(lhs)?.or(eval_expr(rhs)?)),
+        Expr::BinaryOp(lhs, op, rhs) => {
+            let lhs = eval_expr(lhs)?;
+            let rhs = eval_expr(rhs)?;
+
+            let result = match op {
+                Operator::Eq => lhs.eq(rhs),
+                Operator::NotEq => lhs.neq(rhs),
+                Operator::Lt => lhs.lt(rhs),
+                Operator::LtEq => lhs.lt_eq(rhs),
+                Operator::Gt => lhs.gt(rhs),
+                Operator::GtEq => lhs.gt_eq(rhs),
+                Operator::And => lhs.and(rhs),
+                Operator::Or => lhs.or(rhs),
+                _ => panic!("Unexpected filter operator {op}"),
+            };
+
+            Ok(result)
+        }
         Expr::Identifier(s) => Ok(col(s)),
         Expr::String(s) => Ok(lit(s.clone())),
         Expr::Number(n) => Ok(lit(*n)),

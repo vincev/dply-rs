@@ -12,11 +12,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{anyhow, bail, Result};
-use polars::lazy::dsl::Expr as PolarsExpr;
+use anyhow::{bail, Result};
 use polars::prelude::*;
 
-use crate::parser::{Expr, Operator};
+use crate::parser::Expr;
 
 use super::*;
 

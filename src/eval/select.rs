@@ -25,9 +25,10 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_input() {
-        let schema = df.schema().map_err(|e| anyhow!("Schema error: {e}"))?;
         // Store in a vec to preserve order.
-        let schema_cols = schema
+        let schema_cols = df
+            .schema()
+            .map_err(|e| anyhow!("Schema error: {e}"))?
             .iter_names()
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
