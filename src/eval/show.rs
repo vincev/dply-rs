@@ -26,7 +26,7 @@ pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
         let df = df.collect()?;
         ctx.print(|w| writeln!(w, "{df}"))?;
     } else {
-        bail!("Missing input dataframe for show.");
+        bail!("show error: missing input dataframe");
     }
 
     Ok(())

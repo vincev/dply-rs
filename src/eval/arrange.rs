@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use polars::prelude::*;
 
 use crate::parser::Expr;
@@ -24,6 +24,13 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_input() {
+        let schema_cols = df
+            .schema()
+            .map_err(|e| anyhow!("Schema error: {e}"))?
+            .iter_names()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
+
         // arrange(year, desc(day))
         let mut columns = Vec::with_capacity(args.len());
         let mut descending = Vec::with_capacity(args.len());
@@ -33,11 +40,19 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 Expr::Function(name, args) if name == "desc" => {
                     // arrange(desc(column))
                     let column = args::identifier(&args[0]);
+                    if !schema_cols.contains(&column) {
+                        bail!("arrange error: Unknown column {column}");
+                    }
+
                     columns.push(col(&column));
                     descending.push(true);
                 }
                 Expr::Identifier(column) => {
                     // arrange(column)
+                    if !schema_cols.contains(column) {
+                        bail!("arrange error: Unknown column {column}");
+                    }
+
                     columns.push(col(column));
                     descending.push(false);
                 }
@@ -47,7 +62,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_input(df.sort_by_exprs(columns, descending, true));
     } else {
-        bail!("Missing input dataframe for arrange.");
+        bail!("arrange error: missing input dataframe");
     }
 
     Ok(())

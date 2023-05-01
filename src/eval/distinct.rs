@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use polars::prelude::*;
 
 use crate::parser::Expr;
@@ -24,10 +24,21 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_input() {
+        let schema_cols = df
+            .schema()
+            .map_err(|e| anyhow!("Schema error: {e}"))?
+            .iter_names()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
+
         let mut select_columns = Vec::new();
 
         for arg in args {
             let column = args::identifier(arg);
+            if !schema_cols.contains(&column) {
+                bail!("distinct error: Unknown column {column}");
+            }
+
             if !select_columns.contains(&column) {
                 select_columns.push(column);
             }
@@ -43,7 +54,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_input(df);
     } else {
-        bail!("Missing input dataframe for distinct.");
+        bail!("distinct error: missing input dataframe");
     }
 
     Ok(())

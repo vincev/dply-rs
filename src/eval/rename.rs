@@ -37,14 +37,14 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 if let Some(idx) = schema_cols.iter().position(|c| c == &col(&column)) {
                     schema_cols[idx] = schema_cols[idx].clone().alias(&alias);
                 } else {
-                    bail!("unknown rename column {column}");
+                    bail!("rename error: Unknown column {column}");
                 }
             }
         }
 
         ctx.set_input(df.select(&schema_cols));
     } else {
-        bail!("Missing input dataframe for rename.");
+        bail!("rename error: missing input dataframe");
     }
 
     Ok(())

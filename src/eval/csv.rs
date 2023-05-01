@@ -32,11 +32,11 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     // If there is an input dataframe save it to disk.
     if let Some(df) = ctx.get_input() {
         if !overwrite && path.exists() {
-            bail!("Csv file '{}' already exists.", path.display());
+            bail!("csv error: file '{}' already exists", path.display());
         }
 
         let file = std::fs::File::create(&path)
-            .map_err(|e| anyhow!("Cannot create csv file '{}' {e}", path.display()))?;
+            .map_err(|e| anyhow!("csv error: cannot create file '{}' {e}", path.display()))?;
 
         let mut out_df = df.clone().collect()?;
         CsvWriter::new(file).finish(&mut out_df)?;
@@ -44,7 +44,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         let reader = LazyCsvReader::new(&path).with_infer_schema_length(Some(1000));
         let df = reader
             .finish()
-            .map_err(|e| anyhow!("Cannot read csv file '{}' {e}", path.display()))?;
+            .map_err(|e| anyhow!("csv error: cannot read file '{}' {e}", path.display()))?;
         ctx.set_input(df);
     }
 

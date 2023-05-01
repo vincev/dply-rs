@@ -35,6 +35,10 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         for arg in args {
             if let Expr::Identifier(column) = arg {
+                if !schema_cols.contains(column) {
+                    bail!("count error: Unknown column {column}");
+                }
+
                 let expr = col(column);
                 if !columns.contains(&expr) {
                     columns.push(expr);
@@ -62,7 +66,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_input(df);
     } else {
-        bail!("Missing input dataframe for distinct.");
+        bail!("count error: missing input dataframe");
     }
 
     Ok(())

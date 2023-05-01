@@ -31,7 +31,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_input(df);
     } else {
-        bail!("Missing input dataframe for filter.");
+        bail!("filter error: missing input dataframe");
     }
 
     Ok(())

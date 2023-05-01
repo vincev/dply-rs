@@ -59,6 +59,10 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 }
                 Expr::Identifier(column) => {
                     // select(column)
+                    if !schema_cols.contains(column) {
+                        bail!("select error: Unknown column {column}");
+                    }
+
                     let expr = col(column);
                     if !select_columns.contains(&expr) {
                         select_columns.push(expr);
@@ -70,7 +74,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_input(df.select(&select_columns));
     } else {
-        bail!("Missing input dataframe for select.");
+        bail!("select error: missing input dataframe");
     }
 
     Ok(())
