@@ -181,15 +181,11 @@ fn match_parquet(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for relocate call.
 fn match_relocate(expr: &Expr) -> MatchResult {
-    // relocate(gain, speed, before = 1)
     // relocate(gain, speed, before = day)
-    let before_opt = match_assign(match_named("before"), match_number)
-        .or(match_assign(match_named("before"), match_identifier));
+    let before_opt = match_assign(match_named("before"), match_identifier);
 
-    // relocate(gain, speed, after = 1)
     // relocate(gain, speed, after = day)
-    let after_opt = match_assign(match_named("after"), match_number)
-        .or(match_assign(match_named("after"), match_identifier));
+    let after_opt = match_assign(match_named("after"), match_identifier);
 
     let args = match_identifier.or(before_opt).or(after_opt);
 

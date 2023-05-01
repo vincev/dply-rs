@@ -28,6 +28,7 @@ mod distinct;
 mod filter;
 mod glimpse;
 mod parquet;
+mod relocate;
 mod rename;
 mod select;
 mod show;
@@ -121,7 +122,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "group_by" => {}
             "mutate" => {}
             "parquet" => parquet::eval(args, ctx)?,
-            "relocate" => {}
+            "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,
             "select" => select::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
