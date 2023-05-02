@@ -18,7 +18,7 @@ use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
 
-/// Return the string from a string expression.
+/// Returns the string from a string expression.
 ///
 /// Panics if the expression is not a string.
 pub fn string(expr: &Expr) -> String {
@@ -28,13 +28,23 @@ pub fn string(expr: &Expr) -> String {
     }
 }
 
-/// Return the string from an identifier expression.
+/// Returns the string from an identifier expression.
 ///
 /// Panics if the expression is not an identifier.
 pub fn identifier(expr: &Expr) -> String {
     match expr {
         Expr::Identifier(s) => s.to_owned(),
         _ => panic!("{expr} is not an identifier expression"),
+    }
+}
+
+/// Returns the value from a number expression.
+///
+/// Panics if the expression is not a number.
+pub fn number(expr: &Expr) -> f64 {
+    match expr {
+        Expr::Number(s) => *s,
+        _ => panic!("{expr} is not a number expression"),
     }
 }
 

@@ -43,6 +43,7 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_filter)
         .or(match_glimpse)
         .or(match_group_by)
+        .or(match_head)
         .or(match_mutate)
         .or(match_parquet)
         .or(match_relocate)
@@ -146,21 +147,40 @@ fn match_group_by(expr: &Expr) -> MatchResult {
         .matches(expr)
 }
 
+/// Checks arguments for a head call.
+fn match_head(expr: &Expr) -> MatchResult {
+    // head()
+    // head(10)
+    match_function("head")
+        .and_fail(
+            match_min_args(0)
+                .and(match_max_args(1))
+                .and(match_args(match_number)),
+        )
+        .matches(expr)
+}
+
 /// Checks arguments for mutate call.
 fn match_mutate(expr: &Expr) -> MatchResult {
     // mutate(gain = dep_delay - arr_delay * delay_adj)
     // mutate(gain = dep_delay + arr_delay * mean(delay_adj))
     // mutate(gain = dep_delay - median(arr_delay))
-    let operand = match_identifier
-        .or(match_number)
-        .or(match_column_fn("min"))
-        .or(match_column_fn("max"))
-        .or(match_column_fn("mean"))
-        .or(match_column_fn("median"));
-    let arith_op = match_arith(operand);
+    // mutate(pickup_time = dt(pickup_time_str))
+    let operand_fn = || {
+        match_identifier
+            .or(match_number)
+            .or(match_string)
+            .or(match_column_fn("dt"))
+            .or(match_column_fn("min"))
+            .or(match_column_fn("max"))
+            .or(match_column_fn("mean"))
+            .or(match_column_fn("median"))
+    };
+
+    let rhs = operand_fn().or(match_arith(operand_fn()));
 
     match_function("mutate")
-        .and_fail(match_min_args(1).and(match_args(match_assign(match_identifier, arith_op))))
+        .and_fail(match_min_args(1).and(match_args(match_assign(match_identifier, rhs))))
         .matches(expr)
 }
 
