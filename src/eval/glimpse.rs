@@ -31,7 +31,7 @@ pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
         let num_rows = count_df[0].max::<usize>().unwrap_or_default();
         ctx.print(|w| writeln!(w, "Rows: {num_rows}"))?;
 
-        let df = df.limit(100).collect()?;
+        let df = df.fetch(100)?;
         let num_cols = df.get_columns().len();
         ctx.print(|w| writeln!(w, "Columns: {num_cols}"))?;
 
