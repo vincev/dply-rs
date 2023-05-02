@@ -26,7 +26,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_input() {
+    if let Some(df) = ctx.take_df() {
         let count_df = df.clone().select([count()]).collect()?;
         let num_rows = count_df[0].max::<usize>().unwrap_or_default();
         ctx.print(|w| writeln!(w, "Rows: {num_rows}"))?;
@@ -66,6 +66,8 @@ pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
         ]);
 
         ctx.print(|w| writeln!(w, "{table}"))?;
+    } else if ctx.is_grouping() {
+        bail!("glimpse error: must call summarize after a group_by");
     } else {
         bail!("glimpse error: missing input dataframe");
     }

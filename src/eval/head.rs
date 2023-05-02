@@ -22,7 +22,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_input() {
+    if let Some(df) = ctx.take_df() {
         let limit = if !args.is_empty() {
             args::number(&args[0]) as u32
         } else {
@@ -31,6 +31,8 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         let df = df.limit(limit).collect()?;
         ctx.print(|w| writeln!(w, "{df}"))?;
+    } else if ctx.is_grouping() {
+        bail!("head error: must call summarize after a group_by");
     } else {
         bail!("head error: missing input dataframe");
     }

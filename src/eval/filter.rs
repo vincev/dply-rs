@@ -24,12 +24,14 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(mut df) = ctx.take_input() {
+    if let Some(mut df) = ctx.take_df() {
         for arg in args {
             df = df.filter(eval_expr(arg)?);
         }
 
-        ctx.set_input(df);
+        ctx.set_df(df);
+    } else if ctx.is_grouping() {
+        bail!("filter error: must call summarize after a group_by");
     } else {
         bail!("filter error: missing input dataframe");
     }

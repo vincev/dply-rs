@@ -23,7 +23,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_input() {
+    if let Some(df) = ctx.take_df() {
         let schema = df.schema().map_err(|e| anyhow!("Schema error: {e}"))?;
         // Store in a vec to preserve order.
         let mut schema_cols = schema.iter_names().map(|s| col(s)).collect::<Vec<_>>();
@@ -42,7 +42,9 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_input(df.select(&schema_cols));
+        ctx.set_df(df.select(&schema_cols));
+    } else if ctx.is_grouping() {
+        bail!("rename error: must call summarize after a group_by");
     } else {
         bail!("rename error: missing input dataframe");
     }

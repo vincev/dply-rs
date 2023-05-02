@@ -30,7 +30,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     let overwrite = args::named_bool(args, "overwrite")?;
 
     // If there is an input dataframe save it to disk.
-    if let Some(df) = ctx.get_input() {
+    if let Some(df) = ctx.take_df() {
         if !overwrite && path.exists() {
             bail!("parquet error: file '{}' already exists.", path.display());
         }
@@ -39,12 +39,14 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .map_err(|e| anyhow!("parquet error: cannot create file '{}' {e}", path.display()))?;
 
         let mut out_df = df.clone().collect()?;
+        ctx.set_df(df);
+
         ParquetWriter::new(file).finish(&mut out_df)?;
     } else {
         // Read the data frame and set it as input for the next task.
         let df = LazyFrame::scan_parquet(&path, ScanArgsParquet::default())
             .map_err(|e| anyhow!("parquet error: cannot read file '{}' {e}", path.display()))?;
-        ctx.set_input(df);
+        ctx.set_df(df);
     }
 
     Ok(())

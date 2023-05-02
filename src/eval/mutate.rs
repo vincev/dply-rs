@@ -24,7 +24,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(mut df) = ctx.take_input() {
+    if let Some(mut df) = ctx.take_df() {
         for arg in args {
             match arg {
                 Expr::BinaryOp(lhs, Operator::Assign, rhs) => {
@@ -36,7 +36,9 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_input(df);
+        ctx.set_df(df);
+    } else if ctx.is_grouping() {
+        bail!("mutate error: must call summarize after a group_by");
     } else {
         bail!("mutate error: missing input dataframe");
     }

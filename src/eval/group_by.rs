@@ -19,7 +19,7 @@ use crate::parser::Expr;
 
 use super::*;
 
-/// Evaluates an arrange call.
+/// Evaluates a group_by call.
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
@@ -31,40 +31,24 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
 
-        // arrange(year, desc(day))
-        let mut columns = Vec::with_capacity(args.len());
-        let mut descending = Vec::with_capacity(args.len());
+        let mut columns = Vec::new();
 
         for arg in args {
-            match arg {
-                Expr::Function(name, args) if name == "desc" => {
-                    // arrange(desc(column))
-                    let column = args::identifier(&args[0]);
-                    if !schema_cols.contains(&column) {
-                        bail!("arrange error: Unknown column {column}");
-                    }
-
-                    columns.push(col(&column));
-                    descending.push(true);
+            if let Expr::Identifier(column) = arg {
+                if !schema_cols.contains(column) {
+                    bail!("group_by error: Unknown column {column}");
                 }
-                Expr::Identifier(column) => {
-                    // arrange(column)
-                    if !schema_cols.contains(column) {
-                        bail!("arrange error: Unknown column {column}");
-                    }
 
-                    columns.push(col(column));
-                    descending.push(false);
+                let expr = col(column);
+                if !columns.contains(&expr) {
+                    columns.push(expr);
                 }
-                _ => {}
             }
         }
 
-        ctx.set_df(df.sort_by_exprs(columns, descending, true));
-    } else if ctx.is_grouping() {
-        bail!("arrange error: must call summarize after a group_by");
+        ctx.set_group(df.groupby(&columns));
     } else {
-        bail!("arrange error: missing input dataframe");
+        bail!("group_by error: missing input dataframe");
     }
 
     Ok(())

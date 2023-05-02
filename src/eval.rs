@@ -27,6 +27,7 @@ mod csv;
 mod distinct;
 mod filter;
 mod glimpse;
+mod group_by;
 mod head;
 mod mutate;
 mod parquet;
@@ -40,25 +41,39 @@ pub struct Context {
     /// Named data frames.
     vars: HashMap<String, LazyFrame>,
     /// Input dataframe passed from one pipeline step to the next.
-    input: Option<LazyFrame>,
+    df: Option<LazyFrame>,
+    /// Group passed to aggregate functions.
+    group: Option<LazyGroupBy>,
     /// Optional output used for testing.
     output: Option<Vec<u8>>,
 }
 
 impl Context {
     /// Returns and consume the input dataframe.
-    pub fn take_input(&mut self) -> Option<LazyFrame> {
-        self.input.take()
+    pub fn take_df(&mut self) -> Option<LazyFrame> {
+        self.df.take()
     }
 
-    /// Get the input dataframe.
-    pub fn get_input(&mut self) -> Option<&LazyFrame> {
-        self.input.as_ref()
+    /// Sets the dataframe to be used in pipeline steps.
+    pub fn set_df(&mut self, df: LazyFrame) {
+        assert!(self.group.is_none());
+        self.df = Some(df);
     }
 
-    /// Set the dataframe to be used in pipeline steps.
-    pub fn set_input(&mut self, df: LazyFrame) {
-        self.input = Some(df);
+    /// Returns and consume the active group.
+    pub fn take_group(&mut self) -> Option<LazyGroupBy> {
+        self.group.take()
+    }
+
+    /// Gets the active group.
+    pub fn is_grouping(&mut self) -> bool {
+        self.group.is_some()
+    }
+
+    /// Sets the active group.
+    pub fn set_group(&mut self, group: LazyGroupBy) {
+        assert!(self.df.is_none());
+        self.group = Some(group);
     }
 
     /// Print results to the context output.
@@ -121,7 +136,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "distinct" => distinct::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
-            "group_by" => {}
+            "group_by" => group_by::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
             "mutate" => mutate::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
@@ -134,11 +149,11 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
         },
         Expr::Identifier(name) => {
             // If there is an input assign it to the variable.
-            if let Some(df) = ctx.get_input() {
-                let df = df.clone();
-                ctx.vars.insert(name.to_owned(), df);
+            if let Some(df) = ctx.take_df() {
+                ctx.vars.insert(name.to_owned(), df.clone());
+                ctx.set_df(df)
             } else if let Some(df) = ctx.vars.get(name) {
-                ctx.set_input(df.clone());
+                ctx.set_df(df.clone());
             } else {
                 bail!("Undefined variable {name}");
             }

@@ -23,7 +23,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_input() {
+    if let Some(df) = ctx.take_df() {
         let schema_cols = df
             .schema()
             .map_err(|e| anyhow!("Schema error: {e}"))?
@@ -64,7 +64,9 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             df.select(&[col(&schema_cols[0]).count().alias(&agg_col)])
         };
 
-        ctx.set_input(df);
+        ctx.set_df(df);
+    } else if ctx.is_grouping() {
+        bail!("count error: must call summarize after a group_by");
     } else {
         bail!("count error: missing input dataframe");
     }

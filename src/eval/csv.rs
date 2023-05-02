@@ -30,7 +30,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     let overwrite = args::named_bool(args, "overwrite")?;
 
     // If there is an input dataframe save it to disk.
-    if let Some(df) = ctx.get_input() {
+    if let Some(df) = ctx.take_df() {
         if !overwrite && path.exists() {
             bail!("csv error: file '{}' already exists", path.display());
         }
@@ -39,13 +39,15 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .map_err(|e| anyhow!("csv error: cannot create file '{}' {e}", path.display()))?;
 
         let mut out_df = df.clone().collect()?;
+        ctx.set_df(df);
+
         CsvWriter::new(file).finish(&mut out_df)?;
     } else {
         let reader = LazyCsvReader::new(&path).with_infer_schema_length(Some(1000));
         let df = reader
             .finish()
             .map_err(|e| anyhow!("csv error: cannot read file '{}' {e}", path.display()))?;
-        ctx.set_input(df);
+        ctx.set_df(df);
     }
 
     Ok(())

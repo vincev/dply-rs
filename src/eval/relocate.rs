@@ -33,7 +33,7 @@ enum RelocateTo {
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_input() {
+    if let Some(df) = ctx.take_df() {
         // Store in a vec to preserve order.
         let mut schema_cols = df
             .schema()
@@ -96,7 +96,9 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         };
 
         let columns = schema_cols.into_iter().map(|c| col(&c)).collect::<Vec<_>>();
-        ctx.set_input(df.select(&columns));
+        ctx.set_df(df.select(&columns));
+    } else if ctx.is_grouping() {
+        bail!("relocate error: must call summarize after a group_by");
     } else {
         bail!("relocate error: missing input dataframe");
     }

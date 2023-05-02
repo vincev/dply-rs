@@ -24,7 +24,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_input() {
+    if let Some(df) = ctx.take_df() {
         // Store in a vec to preserve order.
         let schema_cols = df
             .schema()
@@ -72,7 +72,9 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_input(df.select(&select_columns));
+        ctx.set_df(df.select(&select_columns));
+    } else if ctx.is_grouping() {
+        bail!("select error: must call summarize after a group_by");
     } else {
         bail!("select error: missing input dataframe");
     }
