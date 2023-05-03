@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use polars::prelude::*;
 
 use crate::parser::{Expr, Operator};
@@ -24,9 +24,7 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
-        let schema = df.schema().map_err(|e| anyhow!("Schema error: {e}"))?;
-        // Store in a vec to preserve order.
-        let mut schema_cols = schema.iter_names().map(|s| col(s)).collect::<Vec<_>>();
+        let mut schema_cols = ctx.columns().iter().map(|c| col(c)).collect::<Vec<_>>();
 
         for arg in args {
             if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
@@ -42,7 +40,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_df(df.select(&schema_cols));
+        ctx.set_df(df.select(&schema_cols))?;
     } else if ctx.is_grouping() {
         bail!("rename error: must call summarize after a group_by");
     } else {

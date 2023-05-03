@@ -14,7 +14,7 @@
 // limitations under the License.
 
 //! Evaluate pipeline functions.
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use polars::prelude::*;
 use std::collections::HashMap;
 
@@ -35,6 +35,7 @@ mod relocate;
 mod rename;
 mod select;
 mod show;
+mod summarize;
 
 #[derive(Default)]
 pub struct Context {
@@ -46,6 +47,8 @@ pub struct Context {
     group: Option<LazyGroupBy>,
     /// Optional output used for testing.
     output: Option<Vec<u8>>,
+    /// Dataframe columns.
+    columns: Vec<String>,
 }
 
 impl Context {
@@ -55,9 +58,23 @@ impl Context {
     }
 
     /// Sets the dataframe to be used in pipeline steps.
-    pub fn set_df(&mut self, df: LazyFrame) {
+    pub fn set_df(&mut self, df: LazyFrame) -> Result<()> {
         assert!(self.group.is_none());
+
+        self.columns = df
+            .schema()
+            .map_err(|e| anyhow!("Schema error: {e}"))?
+            .iter_names()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
+
         self.df = Some(df);
+        Ok(())
+    }
+
+    /// Returns the last dataframe columns.
+    pub fn columns(&self) -> &[String] {
+        &self.columns
     }
 
     /// Returns and consume the active group.
@@ -144,16 +161,16 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "rename" => rename::eval(args, ctx)?,
             "select" => select::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
-            "summarize" => {}
+            "summarize" => summarize::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
         },
         Expr::Identifier(name) => {
             // If there is an input assign it to the variable.
             if let Some(df) = ctx.take_df() {
                 ctx.vars.insert(name.to_owned(), df.clone());
-                ctx.set_df(df)
+                ctx.set_df(df)?;
             } else if let Some(df) = ctx.vars.get(name) {
-                ctx.set_df(df.clone());
+                ctx.set_df(df.clone())?;
             } else {
                 bail!("Undefined variable {name}");
             }

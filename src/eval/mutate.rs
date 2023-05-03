@@ -36,7 +36,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_df(df);
+        ctx.set_df(df)?;
     } else if ctx.is_grouping() {
         bail!("mutate error: must call summarize after a group_by");
     } else {

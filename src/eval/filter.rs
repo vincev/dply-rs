@@ -29,7 +29,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             df = df.filter(eval_expr(arg)?);
         }
 
-        ctx.set_df(df);
+        ctx.set_df(df)?;
     } else if ctx.is_grouping() {
         bail!("filter error: must call summarize after a group_by");
     } else {

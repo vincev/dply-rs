@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use polars::lazy::dsl::Expr as PolarsExpr;
 use polars::prelude::*;
 
@@ -25,25 +25,18 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
-        // Store in a vec to preserve order.
-        let schema_cols = df
-            .schema()
-            .map_err(|e| anyhow!("Schema error: {e}"))?
-            .iter_names()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>();
-
+        let schema_cols = ctx.columns();
         let mut select_columns = Vec::new();
 
         for arg in args {
             match arg {
                 Expr::Function(_, _) => {
-                    let mut filter_cols = filter_columns(arg, &schema_cols, false);
+                    let mut filter_cols = filter_columns(arg, schema_cols, false);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
                 Expr::UnaryOp(Operator::Not, expr) => {
-                    let mut filter_cols = filter_columns(expr, &schema_cols, true);
+                    let mut filter_cols = filter_columns(expr, schema_cols, true);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
@@ -72,7 +65,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_df(df.select(&select_columns));
+        ctx.set_df(df.select(&select_columns))?;
     } else if ctx.is_grouping() {
         bail!("select error: must call summarize after a group_by");
     } else {

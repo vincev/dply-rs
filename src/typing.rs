@@ -275,16 +275,29 @@ fn match_show(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for summarize call.
 fn match_summarize(expr: &Expr) -> MatchResult {
-    // mutate(n = n(), days = sum(days))
+    // summarize()
+    // summarize(n = n(), days = sum(days))
     let n_fn = match_function("n").and(match_max_args(0));
 
+    // quantile(n = quantile(passenger_count, 0.75))
+    let quantile_fn = match_function("quantile")
+        .and(match_min_args(2))
+        .and(match_max_args(2))
+        .and(match_arg(0, match_identifier))
+        .and(match_arg(1, match_number));
+
     let summarize_op = n_fn
-        .or(match_column_fn("sum"))
+        .or(quantile_fn)
+        .or(match_column_fn("max"))
         .or(match_column_fn("mean"))
-        .or(match_column_fn("median"));
+        .or(match_column_fn("median"))
+        .or(match_column_fn("min"))
+        .or(match_column_fn("sd"))
+        .or(match_column_fn("sum"))
+        .or(match_column_fn("var"));
 
     match_function("summarize")
-        .and_fail(match_min_args(1).and(match_args(match_assign(match_identifier, summarize_op))))
+        .and_fail(match_min_args(0).and(match_args(match_assign(match_identifier, summarize_op))))
         .matches(expr)
 }
 

@@ -39,7 +39,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .map_err(|e| anyhow!("csv error: cannot create file '{}' {e}", path.display()))?;
 
         let mut out_df = df.clone().collect()?;
-        ctx.set_df(df);
+        ctx.set_df(df)?;
 
         CsvWriter::new(file).finish(&mut out_df)?;
     } else {
@@ -47,7 +47,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         let df = reader
             .finish()
             .map_err(|e| anyhow!("csv error: cannot read file '{}' {e}", path.display()))?;
-        ctx.set_df(df);
+        ctx.set_df(df)?;
     }
 
     Ok(())

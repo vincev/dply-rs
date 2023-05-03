@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use polars::prelude::*;
 
 use crate::parser::{Expr, Operator};
@@ -34,14 +34,6 @@ enum RelocateTo {
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
-        // Store in a vec to preserve order.
-        let mut schema_cols = df
-            .schema()
-            .map_err(|e| anyhow!("Schema error: {e}"))?
-            .iter_names()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>();
-
         let mut relocate_cols = Vec::new();
         let mut relocate_to = RelocateTo::Default;
 
@@ -52,7 +44,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     let dest = args::identifier(lhs);
                     let pos = args::identifier(rhs);
 
-                    if !schema_cols.contains(&pos) {
+                    if !ctx.columns().contains(&pos) {
                         bail!("relocate error: Unknown {dest} column {pos}");
                     }
 
@@ -63,7 +55,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     };
                 }
                 Expr::Identifier(column) => {
-                    if !schema_cols.contains(column) {
+                    if !ctx.columns().contains(column) {
                         bail!("relocate error: Unknown column {column}");
                     }
 
@@ -75,6 +67,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
+        let mut schema_cols = ctx.columns().to_vec();
         match relocate_to {
             RelocateTo::Default => {
                 // Relocate columns to the left.
@@ -96,7 +89,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         };
 
         let columns = schema_cols.into_iter().map(|c| col(&c)).collect::<Vec<_>>();
-        ctx.set_df(df.select(&columns));
+        ctx.set_df(df.select(&columns))?;
     } else if ctx.is_grouping() {
         bail!("relocate error: must call summarize after a group_by");
     } else {
