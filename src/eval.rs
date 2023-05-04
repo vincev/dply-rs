@@ -171,8 +171,10 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
                 ctx.set_df(df)?;
             } else if let Some(df) = ctx.vars.get(name) {
                 ctx.set_df(df.clone())?;
+            } else if ctx.is_grouping() {
+                bail!("Cannot assign a group to variable '{name}'");
             } else {
-                bail!("Undefined variable {name}");
+                bail!("Undefined variable '{name}'");
             }
         }
         _ => panic!("Unexpected expression {expr}"),
