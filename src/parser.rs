@@ -371,13 +371,11 @@ fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
 
     context(
         "pipeline",
-        terminated(
-            preceded(
-                many0(terminated(comment, newline)),
-                map(
-                    separated_list1(separator, cut(alt((function, identifier)))),
-                    Expr::Pipeline,
-                ),
+        delimited(
+            many0(newline),
+            map(
+                separated_list0(separator, cut(alt((function, identifier)))),
+                Expr::Pipeline,
             ),
             terminator,
         ),
@@ -391,9 +389,15 @@ fn root(input: &str) -> IResult<&str, Vec<Expr>, VerboseError<&str>> {
 
 /// Parses one or more dply pipelines.
 pub fn parse(input: &str) -> Result<Vec<Expr>> {
+    let input = input
+        .lines()
+        .filter(|line| comment(line).is_err())
+        .map(|line| format!("{line}\n"))
+        .collect::<String>();
+
     match root(input.trim()) {
         Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => {
-            bail!("Parse error: {}", convert_error(input, e))
+            bail!("Parse error: {}", convert_error(input.as_str(), e))
         }
         Err(e) => bail!("Parse error: {e}"),
         Ok(("", exprs)) => Ok(exprs),
@@ -537,9 +541,15 @@ mod tests {
     #[test]
     fn comment() {
         let text = indoc! {r#"
+            # This text is for testing comments
+
             # This is a pipeline that reads a parquet file
             parquet("test.parquet") |
+            # select(year, month) |
+            # select(year, month, day) |
               glimpse()
+
+            # todo: Add other pipeline with days.
         "#};
 
         assert_parser!(
