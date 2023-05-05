@@ -28,7 +28,7 @@ fn select_columns() -> Result<()> {
                 airport_fee,
                 tpep_dropoff_datetime
             ) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -36,15 +36,16 @@ fn select_columns() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 5
-            +-----------------------+--------------+-----------------------------------------+
-            | rate_code             | str          | "Standard", "Standard", "Standard",...  |
-            | tip_amount            | f64          | 3.76, 0.0, 2.96, 4.36, 3.25, 0.0, 0.... |
-            | tpep_pickup_datetime  | datetime[ns] | 2022-11-22 19:27:01, 2022-11-27...      |
-            | airport_fee           | f64          | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0... |
-            | tpep_dropoff_datetime | datetime[ns] | 2022-11-22 19:45:53, 2022-11-27...      |
-            +-----------------------+--------------+-----------------------------------------+
+            shape: (3, 5)
+            ┌───────────┬────────────┬──────────────────────┬─────────────┬───────────────────────┐
+            │ rate_code ┆ tip_amount ┆ tpep_pickup_datetime ┆ airport_fee ┆ tpep_dropoff_datetime │
+            │ ---       ┆ ---        ┆ ---                  ┆ ---         ┆ ---                   │
+            │ str       ┆ f64        ┆ datetime[ns]         ┆ f64         ┆ datetime[ns]          │
+            ╞═══════════╪════════════╪══════════════════════╪═════════════╪═══════════════════════╡
+            │ Standard  ┆ 3.76       ┆ 2022-11-22 19:27:01  ┆ 0.0         ┆ 2022-11-22 19:45:53   │
+            │ Standard  ┆ 0.0        ┆ 2022-11-27 16:43:26  ┆ 0.0         ┆ 2022-11-27 16:50:06   │
+            │ Standard  ┆ 2.96       ┆ 2022-11-12 16:58:37  ┆ 0.0         ┆ 2022-11-12 17:12:31   │
+            └───────────┴────────────┴──────────────────────┴─────────────┴───────────────────────┘
         "#
         )
     );
@@ -62,7 +63,7 @@ fn select_rename() -> Result<()> {
                 vendor_id = VendorID,
                 pu_location_id = PULocationID
             ) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -70,14 +71,16 @@ fn select_rename() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 4
-            +------------------+--------------+----------------------------------------------+
-            | pickup_datetime  | datetime[ns] | 2022-11-22 19:27:01, 2022-11-27 16:43:26,... |
-            | dropoff_datetime | datetime[ns] | 2022-11-22 19:45:53, 2022-11-27 16:50:06,... |
-            | vendor_id        | i64          | 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2,... |
-            | pu_location_id   | i64          | 234, 48, 142, 79, 237, 137, 107, 229, 162... |
-            +------------------+--------------+----------------------------------------------+
+            shape: (3, 4)
+            ┌─────────────────────┬─────────────────────┬───────────┬────────────────┐
+            │ pickup_datetime     ┆ dropoff_datetime    ┆ vendor_id ┆ pu_location_id │
+            │ ---                 ┆ ---                 ┆ ---       ┆ ---            │
+            │ datetime[ns]        ┆ datetime[ns]        ┆ i64       ┆ i64            │
+            ╞═════════════════════╪═════════════════════╪═══════════╪════════════════╡
+            │ 2022-11-22 19:27:01 ┆ 2022-11-22 19:45:53 ┆ 2         ┆ 234            │
+            │ 2022-11-27 16:43:26 ┆ 2022-11-27 16:50:06 ┆ 2         ┆ 48             │
+            │ 2022-11-12 16:58:37 ┆ 2022-11-12 17:12:31 ┆ 2         ┆ 142            │
+            └─────────────────────┴─────────────────────┴───────────┴────────────────┘
         "#
         )
     );
@@ -90,7 +93,7 @@ fn select_starts_with() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             select(starts_with("tpep")) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -98,12 +101,16 @@ fn select_starts_with() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 2
-            +--------------------------+-----------------+-----------------------------------+
-            | tpep_pickup_datetime     | datetime[ns]    | 2022-11-22 19:27:01, 2022-11-2... |
-            | tpep_dropoff_datetime    | datetime[ns]    | 2022-11-22 19:45:53, 2022-11-2... |
-            +--------------------------+-----------------+-----------------------------------+
+            shape: (3, 2)
+            ┌──────────────────────┬───────────────────────┐
+            │ tpep_pickup_datetime ┆ tpep_dropoff_datetime │
+            │ ---                  ┆ ---                   │
+            │ datetime[ns]         ┆ datetime[ns]          │
+            ╞══════════════════════╪═══════════════════════╡
+            │ 2022-11-22 19:27:01  ┆ 2022-11-22 19:45:53   │
+            │ 2022-11-27 16:43:26  ┆ 2022-11-27 16:50:06   │
+            │ 2022-11-12 16:58:37  ┆ 2022-11-12 17:12:31   │
+            └──────────────────────┴───────────────────────┘
         "#
         )
     );
@@ -115,8 +122,14 @@ fn select_starts_with() -> Result<()> {
 fn select_not_starts_with() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
+            select(
+                tpep_pickup_datetime,
+                tpep_dropoff_datetime,
+                passenger_count,
+                trip_distance
+            ) |
             select(!starts_with("tpep")) |
-            glimpse()
+            head(5)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -124,27 +137,18 @@ fn select_not_starts_with() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 17
-            +-----------------------+--------+-----------------------------------------------+
-            | VendorID              | i64    | 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2, ... |
-            | passenger_count       | i64    | 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, 1, 1, ... |
-            | trip_distance         | f64    | 3.14, 1.06, 2.36, 5.2, 0.0, 2.39, 1.52, 0.... |
-            | rate_code             | str    | "Standard", "Standard", "Standard",...        |
-            | store_and_fwd_flag    | str    | "N", "N", "N", "N", "N", "N", "N", "N", "N... |
-            | PULocationID          | i64    | 234, 48, 142, 79, 237, 137, 107, 229, 162,... |
-            | DOLocationID          | i64    | 141, 142, 236, 75, 230, 140, 162, 161, 186... |
-            | payment_type          | str    | "Credit card", "Cash", "Credit card", "Cre... |
-            | fare_amount           | f64    | 14.5, 6.5, 11.5, 18.0, 12.5, 19.0, 8.5, 6.... |
-            | extra                 | f64    | 1.0, 0.0, 0.0, 0.5, 3.0, 0.0, 0.0, 0.0, 1.... |
-            | mta_tax               | f64    | 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.... |
-            | tip_amount            | f64    | 3.76, 0.0, 2.96, 4.36, 3.25, 0.0, 0.0, 2.0... |
-            | tolls_amount          | f64    | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.... |
-            | improvement_surcharge | f64    | 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.... |
-            | total_amount          | f64    | 22.56, 9.8, 17.76, 26.16, 19.55, 22.3, 11.... |
-            | congestion_surcharge  | f64    | 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.... |
-            | airport_fee           | f64    | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.... |
-            +-----------------------+--------+-----------------------------------------------+
+            shape: (5, 2)
+            ┌─────────────────┬───────────────┐
+            │ passenger_count ┆ trip_distance │
+            │ ---             ┆ ---           │
+            │ i64             ┆ f64           │
+            ╞═════════════════╪═══════════════╡
+            │ 1               ┆ 3.14          │
+            │ 2               ┆ 1.06          │
+            │ 1               ┆ 2.36          │
+            │ 1               ┆ 5.2           │
+            │ 3               ┆ 0.0           │
+            └─────────────────┴───────────────┘
         "#
         )
     );
@@ -157,7 +161,7 @@ fn select_ends_with() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             select(ends_with("time")) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -165,12 +169,16 @@ fn select_ends_with() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 2
-            +--------------------------+-----------------+-----------------------------------+
-            | tpep_pickup_datetime     | datetime[ns]    | 2022-11-22 19:27:01, 2022-11-2... |
-            | tpep_dropoff_datetime    | datetime[ns]    | 2022-11-22 19:45:53, 2022-11-2... |
-            +--------------------------+-----------------+-----------------------------------+
+            shape: (3, 2)
+            ┌──────────────────────┬───────────────────────┐
+            │ tpep_pickup_datetime ┆ tpep_dropoff_datetime │
+            │ ---                  ┆ ---                   │
+            │ datetime[ns]         ┆ datetime[ns]          │
+            ╞══════════════════════╪═══════════════════════╡
+            │ 2022-11-22 19:27:01  ┆ 2022-11-22 19:45:53   │
+            │ 2022-11-27 16:43:26  ┆ 2022-11-27 16:50:06   │
+            │ 2022-11-12 16:58:37  ┆ 2022-11-12 17:12:31   │
+            └──────────────────────┴───────────────────────┘
         "#
         )
     );
@@ -182,8 +190,14 @@ fn select_ends_with() -> Result<()> {
 fn select_not_ends_with() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
+            select(
+                tpep_pickup_datetime,
+                tpep_dropoff_datetime,
+                passenger_count,
+                trip_distance
+            ) |
             select(!ends_with("time")) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -191,27 +205,16 @@ fn select_not_ends_with() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 17
-            +-----------------------+--------+-----------------------------------------------+
-            | VendorID              | i64    | 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2, ... |
-            | passenger_count       | i64    | 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, 1, 1, ... |
-            | trip_distance         | f64    | 3.14, 1.06, 2.36, 5.2, 0.0, 2.39, 1.52, 0.... |
-            | rate_code             | str    | "Standard", "Standard", "Standard",...        |
-            | store_and_fwd_flag    | str    | "N", "N", "N", "N", "N", "N", "N", "N", "N... |
-            | PULocationID          | i64    | 234, 48, 142, 79, 237, 137, 107, 229, 162,... |
-            | DOLocationID          | i64    | 141, 142, 236, 75, 230, 140, 162, 161, 186... |
-            | payment_type          | str    | "Credit card", "Cash", "Credit card", "Cre... |
-            | fare_amount           | f64    | 14.5, 6.5, 11.5, 18.0, 12.5, 19.0, 8.5, 6.... |
-            | extra                 | f64    | 1.0, 0.0, 0.0, 0.5, 3.0, 0.0, 0.0, 0.0, 1.... |
-            | mta_tax               | f64    | 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.... |
-            | tip_amount            | f64    | 3.76, 0.0, 2.96, 4.36, 3.25, 0.0, 0.0, 2.0... |
-            | tolls_amount          | f64    | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.... |
-            | improvement_surcharge | f64    | 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.... |
-            | total_amount          | f64    | 22.56, 9.8, 17.76, 26.16, 19.55, 22.3, 11.... |
-            | congestion_surcharge  | f64    | 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.... |
-            | airport_fee           | f64    | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.... |
-            +-----------------------+--------+-----------------------------------------------+
+            shape: (3, 2)
+            ┌─────────────────┬───────────────┐
+            │ passenger_count ┆ trip_distance │
+            │ ---             ┆ ---           │
+            │ i64             ┆ f64           │
+            ╞═════════════════╪═══════════════╡
+            │ 1               ┆ 3.14          │
+            │ 2               ┆ 1.06          │
+            │ 1               ┆ 2.36          │
+            └─────────────────┴───────────────┘
         "#
         )
     );
@@ -224,7 +227,7 @@ fn select_contains() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             select(contains("time")) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
 
@@ -232,12 +235,16 @@ fn select_contains() -> Result<()> {
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 2
-            +--------------------------+-----------------+-----------------------------------+
-            | tpep_pickup_datetime     | datetime[ns]    | 2022-11-22 19:27:01, 2022-11-2... |
-            | tpep_dropoff_datetime    | datetime[ns]    | 2022-11-22 19:45:53, 2022-11-2... |
-            +--------------------------+-----------------+-----------------------------------+
+            shape: (3, 2)
+            ┌──────────────────────┬───────────────────────┐
+            │ tpep_pickup_datetime ┆ tpep_dropoff_datetime │
+            │ ---                  ┆ ---                   │
+            │ datetime[ns]         ┆ datetime[ns]          │
+            ╞══════════════════════╪═══════════════════════╡
+            │ 2022-11-22 19:27:01  ┆ 2022-11-22 19:45:53   │
+            │ 2022-11-27 16:43:26  ┆ 2022-11-27 16:50:06   │
+            │ 2022-11-12 16:58:37  ┆ 2022-11-12 17:12:31   │
+            └──────────────────────┴───────────────────────┘
         "#
         )
     );
@@ -249,36 +256,32 @@ fn select_contains() -> Result<()> {
 fn select_not_contains() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
+            select(
+                tpep_pickup_datetime,
+                tpep_dropoff_datetime,
+                passenger_count,
+                trip_distance
+            ) |
             select(!contains("time")) |
-            glimpse()
+            head(3)
     "#};
     let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
 
     assert_eq!(
         output,
         indoc!(
             r#"
-            Rows: 250
-            Columns: 17
-            +-----------------------+--------+-----------------------------------------------+
-            | VendorID              | i64    | 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2, ... |
-            | passenger_count       | i64    | 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, 1, 1, ... |
-            | trip_distance         | f64    | 3.14, 1.06, 2.36, 5.2, 0.0, 2.39, 1.52, 0.... |
-            | rate_code             | str    | "Standard", "Standard", "Standard",...        |
-            | store_and_fwd_flag    | str    | "N", "N", "N", "N", "N", "N", "N", "N", "N... |
-            | PULocationID          | i64    | 234, 48, 142, 79, 237, 137, 107, 229, 162,... |
-            | DOLocationID          | i64    | 141, 142, 236, 75, 230, 140, 162, 161, 186... |
-            | payment_type          | str    | "Credit card", "Cash", "Credit card", "Cre... |
-            | fare_amount           | f64    | 14.5, 6.5, 11.5, 18.0, 12.5, 19.0, 8.5, 6.... |
-            | extra                 | f64    | 1.0, 0.0, 0.0, 0.5, 3.0, 0.0, 0.0, 0.0, 1.... |
-            | mta_tax               | f64    | 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.... |
-            | tip_amount            | f64    | 3.76, 0.0, 2.96, 4.36, 3.25, 0.0, 0.0, 2.0... |
-            | tolls_amount          | f64    | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.... |
-            | improvement_surcharge | f64    | 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.... |
-            | total_amount          | f64    | 22.56, 9.8, 17.76, 26.16, 19.55, 22.3, 11.... |
-            | congestion_surcharge  | f64    | 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.... |
-            | airport_fee           | f64    | 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.... |
-            +-----------------------+--------+-----------------------------------------------+
+            shape: (3, 2)
+            ┌─────────────────┬───────────────┐
+            │ passenger_count ┆ trip_distance │
+            │ ---             ┆ ---           │
+            │ i64             ┆ f64           │
+            ╞═════════════════╪═══════════════╡
+            │ 1               ┆ 3.14          │
+            │ 2               ┆ 1.06          │
+            │ 1               ┆ 2.36          │
+            └─────────────────┴───────────────┘
         "#
         )
     );

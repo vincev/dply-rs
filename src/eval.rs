@@ -125,7 +125,8 @@ pub fn eval_to_string(exprs: &[Expr]) -> Result<String> {
     // Let the interpreters handle the number of rows in the output.
     std::env::set_var("POLARS_FMT_MAX_ROWS", i64::MAX.to_string());
     // Sets the number of columns for testing output.
-    std::env::set_var("POLARS_FMT_STR_LEN", "82");
+    std::env::set_var("POLARS_FMT_STR_LEN", "120");
+    std::env::set_var("POLARS_TABLE_WIDTH", "120");
 
     eval_pipelines(exprs, &mut ctx)?;
 
