@@ -26,12 +26,15 @@ jobs:
         - build: linux
           os: ubuntu-latest
           rust: stable
+          binary: dply
         - build: macos
           os: macos-latest
           rust: stable
+          binary: dply
         - build: windows
           os: windows-latest
           rust: stable
+          binary: dply.exe
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -46,4 +49,4 @@ jobs:
       with:
         name: dply-${{ inputs.version }}-${{ matrix.os }}
         path: |
-          target/release/dply
+          target/release/${{ matrix.binary }}
