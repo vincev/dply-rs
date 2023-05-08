@@ -72,11 +72,11 @@ shape: (5, 5)
 └──────────────┴────────────┴───────────┴───────────┴─────┘
 ```
 
-[^1]: The file `nyctaxi.parquet` in the [tests/data](main/tests/data) folder is a
+[^1]: The file `nyctaxi.parquet` in the [tests/data][tests-data] folder is a
 250 rows parquet file sampled from the [NYC trip record data][nyc-trips].
 
 [nyc-trips]: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
-
+[tests-data]: https://github.com/vincev/dply-rs/tree/main/tests/data
 
 ## Supported functions
 
