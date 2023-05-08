@@ -1,0 +1,49 @@
+name: release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build release artifact
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [linux, macos, windows]
+        include:
+        - build: linux
+          os: ubuntu-latest
+          rust: stable
+        - build: macos
+          os: macos-latest
+          rust: stable
+        - build: windows
+          os: windows-latest
+          rust: stable
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+    - name: Run build
+      run: cargo build --release --verbose
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: dply-${{ inputs.version }}-${{ matrix.os }}
+        path: |
+          target/release/dply
