@@ -25,14 +25,17 @@ jobs:
         include:
         - build: linux
           os: ubuntu-latest
+          cpu: x86_64
           rust: stable
           binary: dply
         - build: macos
           os: macos-latest
+          cpu: x86_64
           rust: stable
           binary: dply
         - build: windows
           os: windows-latest
+          cpu: x86_64
           rust: stable
           binary: dply.exe
     steps:
@@ -47,6 +50,6 @@ jobs:
     - name: Upload build artifact
       uses: actions/upload-artifact@v3
       with:
-        name: dply-${{ inputs.version }}-${{ matrix.os }}
+        name: dply-${{ inputs.version }}-${{ matrix.cpu }}-${{ matrix.os }}
         path: |
           target/release/${{ matrix.binary }}
