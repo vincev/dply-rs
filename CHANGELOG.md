@@ -1,5 +1,5 @@
 # dply changelog
-All notable changes to the `dply` crate are documented in this file.
+Changes to the `dply` crate are documented in this file.
 
 ## 0.1.2 - 2023-05-09
 ### Changed 🔧

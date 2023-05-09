@@ -1,3 +1,9 @@
+# Table of Contents
+
+1. [Supported functions](#supported-functions)
+2. [Pipeline variables](#pipeline-variables)
+3. [Quoting column names](#quoting-column-names)
+
 ## Supported functions
 
 `dply` supports the following functions:
@@ -19,32 +25,7 @@
 
 more examples can be found in the [tests folder][tests-dir].
 
-### Quoting column names
-
-To reference columns whose name contains characters that are not alphanumeric or
-underscores you can quote the column using back ticks, the following example uses
-the `travel time ns` column that contains words separated by spaces:
-
-```
-dply -c 'parquet("nyctaxi.parquet") |
-    select(ends_with("time")) |
-    mutate(`travel time ns` = tpep_dropoff_datetime - tpep_pickup_datetime) |
-    select(`travel time ns`) |
-    arrange(desc(`travel time ns`)) |
-    head(2)'
-shape: (2, 1)
-┌────────────────┐
-│ travel time ns │
-│ ---            │
-│ duration[ns]   │
-╞════════════════╡
-│ 1h 6m          │
-│ 1h 2m 39s      │
-└────────────────┘
-```
-
 [tests-dir]: https://github.com/vincev/dply-rs/tree/main/tests/data
-
 
 ### arrange
 
@@ -576,11 +557,11 @@ shape: (5, 1)
 `show` displays all the rows in the input dataframe in table format. `show` must
 be the last step in a pipeline as it consumes the input dataframe.
 
-## Dataframe variables
+## Pipeline variables
 
-Dataframe variables store a pipeline progress that can be used in another
-pipeline, in the following example the `fare_amounts` variable stores the result
-of the parent `select` that is then used by another `group_by`:
+Pipeline variables store a pipeline progress that can be used in another pipeline,
+in the following example the `fare_amounts` variable stores the result of the
+parent `select` that is then used by another `group_by`:
 
 ```
 $ dply -c 'parquet("nyctaxi.parquet") |
@@ -622,3 +603,26 @@ shape: (5, 2)
 
 [tests-folder]: https://github.com/vincev/dply-rs/tree/main/tests
 
+## Quoting column names
+
+To reference columns whose name contains characters that are not alphanumeric or
+underscores you can quote the column using back ticks, the following example uses
+the `travel time ns` column that contains words separated by spaces:
+
+```
+dply -c 'parquet("nyctaxi.parquet") |
+    select(ends_with("time")) |
+    mutate(`travel time ns` = tpep_dropoff_datetime - tpep_pickup_datetime) |
+    select(`travel time ns`) |
+    arrange(desc(`travel time ns`)) |
+    head(2)'
+shape: (2, 1)
+┌────────────────┐
+│ travel time ns │
+│ ---            │
+│ duration[ns]   │
+╞════════════════╡
+│ 1h 6m          │
+│ 1h 2m 39s      │
+└────────────────┘
+```
