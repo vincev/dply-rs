@@ -202,6 +202,14 @@ fn identifier(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     map(preceded(ws, name), |s| Expr::Identifier(s.to_string()))(input)
 }
 
+fn quoted(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
+    let literal = verify(is_not("`"), |s: &str| !s.is_empty());
+    map(
+        preceded(char('`'), cut(terminated(literal, char('`')))),
+        |s: &str| Expr::Identifier(s.to_string()),
+    )(input)
+}
+
 fn string(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     let literal = verify(is_not("\""), |s: &str| !s.is_empty());
     map(
@@ -233,6 +241,7 @@ fn expression(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
             alt((
                 function,
                 unary_op,
+                quoted,
                 identifier,
                 string,
                 map(double, Expr::Number),
@@ -325,7 +334,7 @@ fn assign_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         "logical_op",
         map(
             tuple((
-                preceded(multispace0, identifier),
+                preceded(multispace0, alt((quoted, identifier))),
                 preceded(multispace0, map(tag("="), |_| Operator::Assign)),
                 preceded(multispace0, alt((arith_op, expression))),
             )),
@@ -533,6 +542,47 @@ mod tests {
                       number: 25
                     post_binary_op: Assign
                   post_function: show(1)
+                post_pipeline"
+            )
+        );
+    }
+
+    #[test]
+    fn quoted_identifier() {
+        let text = indoc! {r#"
+            parquet("test.parquet") |
+                select(`first name`, last_name) |
+                mutate(`next year` = `this year` + 1) |
+                filter(`next year` < 2020)
+        "#};
+
+        assert_parser!(
+            text,
+            indoc!(
+                "
+                pre_pipeline
+                  pre_function: parquet(1)
+                    string: test.parquet
+                  post_function: parquet(1)
+                  pre_function: select(2)
+                    identifier: first name
+                    identifier: last_name
+                  post_function: select(2)
+                  pre_function: mutate(1)
+                    pre_binary_op: Assign
+                      identifier: next year
+                      pre_binary_op: Plus
+                        identifier: this year
+                        number: 1
+                      post_binary_op: Plus
+                    post_binary_op: Assign
+                  post_function: mutate(1)
+                  pre_function: filter(1)
+                    pre_binary_op: Lt
+                      identifier: next year
+                      number: 2020
+                    post_binary_op: Lt
+                  post_function: filter(1)
                 post_pipeline"
             )
         );

@@ -1,3 +1,51 @@
+## Supported functions
+
+`dply` supports the following functions:
+
+- [arrange](#arrange) Sorts rows by column values
+- [count](#count) Counts columns unique values
+- [csv](#csv) Reads or writes a dataframe in CSV format
+- [distinct](#distinct) Retains unique rows
+- [filter](#filter) Filters rows that satisfy given predicates
+- [glimpse](#glimpse) Shows a dataframe overview
+- [group by and summarize](#group_by-and-summarize) Performs grouped aggregations
+- [head](#head) Shows the first few dataframe rows in table format
+- [mutate](#mutate) Creates or mutate columns
+- [parquet](#parquet) Reads or writes a dataframe in Parquet format
+- [relocate](#relocate) Moves columns positions
+- [rename](#rename) Renames columns
+- [select](#select) Selects columns
+- [show](#show) Shows all dataframe rows
+
+more examples can be found in the [tests folder][tests-dir].
+
+### Quoting column names
+
+To reference columns whose name contains characters that are not alphanumeric or
+underscores you can quote the column using back ticks, the following example uses
+the `travel time ns` column that contains words separated by spaces:
+
+```
+dply -c 'parquet("nyctaxi.parquet") |
+    select(ends_with("time")) |
+    mutate(`travel time ns` = tpep_dropoff_datetime - tpep_pickup_datetime) |
+    select(`travel time ns`) |
+    arrange(desc(`travel time ns`)) |
+    head(2)'
+shape: (2, 1)
+┌────────────────┐
+│ travel time ns │
+│ ---            │
+│ duration[ns]   │
+╞════════════════╡
+│ 1h 6m          │
+│ 1h 2m 39s      │
+└────────────────┘
+```
+
+[tests-dir]: https://github.com/vincev/dply-rs/tree/main/tests/data
+
+
 ### arrange
 
 `arrange` sorts the rows of its input dataframe according to the values of the
