@@ -4,7 +4,7 @@ description = "A command line data manipulation tool inspired by the dplyr gramm
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.1.1"
+version = "0.1.2"
 
 [dependencies]
 anyhow = "1.0.69"
