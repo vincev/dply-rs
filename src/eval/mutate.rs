@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::lazy::dsl::{Expr as PolarsExpr, StrpTimeOptions};
+use polars::lazy::dsl::{Expr as PolarsExpr, StrptimeOptions};
 use polars::prelude::*;
 
 use crate::parser::{Expr, Operator};
@@ -67,10 +67,10 @@ fn eval_expr(expr: &Expr) -> Result<PolarsExpr> {
         Expr::Number(n) => Ok(lit(*n)),
         Expr::Function(name, args) if name == "dt" => {
             let column = args::identifier(&args[0]);
-            Ok(col(&column).str().strptime(StrpTimeOptions {
-                date_dtype: DataType::Datetime(TimeUnit::Nanoseconds, None),
-                ..Default::default()
-            }))
+            Ok(col(&column).str().strptime(
+                DataType::Datetime(TimeUnit::Nanoseconds, None),
+                StrptimeOptions::default(),
+            ))
         }
         Expr::Function(name, args) if name == "mean" => {
             let column = args::identifier(&args[0]);
