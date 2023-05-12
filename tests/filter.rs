@@ -457,3 +457,101 @@ fn filter_dates() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn filter_list_columns() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+          filter(list_contains(floats, 3.5)) |
+          select(floats) |
+          head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 1)
+            ┌────────────────────┐
+            │ floats             │
+            │ ---                │
+            │ list[f64]          │
+            ╞════════════════════╡
+            │ [2.5, 3.5, … 23.0] │
+            │ [3.5, 15.0, 23.0]  │
+            │ [2.5, 2.5, … 19.0] │
+            │ [3.5]              │
+            │ [2.5, 3.5, … 5.0]  │
+            │ [2.5, 3.5, 6.0]    │
+            │ [3.5, 6.0]         │
+            │ [3.5, 3.5, … 19.0] │
+            │ [3.5, 19.0, 19.0]  │
+            │ [3.5, 15.0]        │
+            └────────────────────┘
+       "#
+        )
+    );
+
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+          filter(list_contains(ints, 3)) |
+          select(ints) |
+          head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (4, 1)
+            ┌─────────────┐
+            │ ints        │
+            │ ---         │
+            │ list[u32]   │
+            ╞═════════════╡
+            │ [3, 88, 94] │
+            │ [3]         │
+            │ [3, 15, 63] │
+            │ [3, 64, 93] │
+            └─────────────┘
+       "#
+        )
+    );
+
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+          filter(list_contains(tags, "g7")) |
+          select(tags) |
+          head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 1)
+            ┌────────────────────────────┐
+            │ tags                       │
+            │ ---                        │
+            │ list[str]                  │
+            ╞════════════════════════════╡
+            │ ["tag7"]                   │
+            │ ["tag2", "tag4", "tag7"]   │
+            │ ["tag5", "tag6", … "tag7"] │
+            │ ["tag2", "tag3", … "tag8"] │
+            │ ["tag4", "tag7", "tag8"]   │
+            │ ["tag2", "tag2", … "tag7"] │
+            │ ["tag7"]                   │
+            │ ["tag5", "tag7"]           │
+            │ ["tag6", "tag7"]           │
+            │ ["tag5", "tag6", … "tag9"] │
+            └────────────────────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
