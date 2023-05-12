@@ -128,6 +128,6 @@ fn list_contains(column: &str, pattern: &Expr, ctype: &DataType) -> Result<Polar
 
             Ok(col(column).map(function, GetOutput::from_type(DataType::Boolean)))
         }
-        _ => bail!("filter error: list_contains type mismatch for column {column} {ctype}"),
+        _ => bail!("filter error: list_contains type mismatch for column '{column}': {ctype}"),
     }
 }
