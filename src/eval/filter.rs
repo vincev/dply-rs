@@ -79,7 +79,7 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
                 list_contains(&column, &args[1], etype)
             } else {
                 Err(anyhow!(
-                    "filter error: list_contains {column} is not a list type"
+                    "filter error: list_contains '{column}' is not a list type"
                 ))
             }
         }

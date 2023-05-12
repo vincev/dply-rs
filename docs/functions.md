@@ -292,7 +292,7 @@ shape: (5, 4)
 └──────────┴─────────────┴────────────────────┴────────────────────────────┘
 ```
 
-using `list_contains` we can get all rows with a `ag9`:
+using `list_contains` we can get all rows that have a tag that matches `ag9`:
 
 ```
 $ dply -c 'parquet("lists.parquet") |
