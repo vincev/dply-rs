@@ -126,8 +126,16 @@ fn match_filter(expr: &Expr) -> MatchResult {
 
     let logic_op = match_logical(compare_op());
 
+    let list_contains_fn = match_function("list_contains")
+        .and(match_min_args(2))
+        .and(match_max_args(2))
+        .and(match_arg(0, match_identifier))
+        .and(match_arg(1, match_string.or(match_number)));
+
+    let filter_args = compare_op().or(logic_op).or(list_contains_fn);
+
     match_function("filter")
-        .and_fail(match_min_args(1).and(match_args(compare_op().or(logic_op))))
+        .and_fail(match_min_args(1).and(match_args(filter_args)))
         .matches(expr)
 }
 
