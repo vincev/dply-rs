@@ -1,7 +1,7 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
-## Unreleased
+## 0.1.3 - Unreleased
 ### Changed 🔧
 * Update to Polars 0.29
 * Add `list_contains` to `filter` on list column values.
