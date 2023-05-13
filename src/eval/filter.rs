@@ -62,35 +62,46 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
 
             Ok(result)
         }
-        Expr::Identifier(s) => Ok(col(s)),
+        Expr::Identifier(column) => {
+            if schema.get(column).is_some() {
+                Ok(col(column))
+            } else {
+                Err(anyhow!("filter error: Unknown column '{column}'"))
+            }
+        }
         Expr::String(s) => Ok(lit(s.clone())),
         Expr::Number(n) => Ok(lit(*n)),
         Expr::Function(name, args) if name == "dt" => {
             let ts = args::timestamp(&args[0])?;
             Ok(lit(ts))
         }
-        Expr::Function(name, args) if name == "list_contains" => {
+        Expr::Function(name, args) if name == "contains" => {
             let column = args::identifier(&args[0]);
-            let list_type = schema
+            let column_type = schema
                 .get(&column)
-                .ok_or_else(|| anyhow!("filter error: Unknown column {column}"))?;
+                .ok_or_else(|| anyhow!("contains error: unknown column {column}"))?;
 
-            if let DataType::List(etype) = list_type {
-                list_contains(&column, &args[1], etype)
-            } else {
-                Err(anyhow!(
-                    "filter error: list_contains '{column}' is not a list type"
-                ))
+            match column_type {
+                DataType::List(elem_type) => list_contains(&column, &args[1], elem_type),
+                DataType::Utf8 => {
+                    let re = args::string(&args[1]);
+                    regex::Regex::new(&re)
+                        .map_err(|e| anyhow!("contains error: invalid regex {re}: {e}"))?;
+                    Ok(col(&column).str().contains(lit(re), false))
+                }
+                _ => Err(anyhow!(
+                    "contains error: column '{column}' must be a str or a list"
+                )),
             }
         }
         _ => panic!("Unexpected filter expression {expr}"),
     }
 }
 
-fn list_contains(column: &str, pattern: &Expr, ctype: &DataType) -> Result<PolarsExpr> {
+fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<PolarsExpr> {
     use DataType::*;
 
-    match (ctype, pattern) {
+    match (elem_type, pattern) {
         (Int8, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i8))),
         (Int16, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i16))),
         (Int32, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i32))),
@@ -102,7 +113,8 @@ fn list_contains(column: &str, pattern: &Expr, ctype: &DataType) -> Result<Polar
         (Float32, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as f32))),
         (Float64, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n))),
         (Utf8, Expr::String(s)) => {
-            let re = regex::Regex::new(&format!("(?i:{s})"))?;
+            let re = regex::Regex::new(s)
+                .map_err(|e| anyhow!("contains error: invalid regex {s}: {e}"))?;
 
             let function = move |s: Series| {
                 let ca = s.list()?;
@@ -128,6 +140,6 @@ fn list_contains(column: &str, pattern: &Expr, ctype: &DataType) -> Result<Polar
 
             Ok(col(column).map(function, GetOutput::from_type(DataType::Boolean)))
         }
-        _ => bail!("filter error: list_contains type mismatch for column '{column}': {ctype}"),
+        _ => bail!("contains error: invalid type {elem_type} for column '{column}'"),
     }
 }

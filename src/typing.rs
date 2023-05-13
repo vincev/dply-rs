@@ -110,6 +110,9 @@ fn match_filter(expr: &Expr) -> MatchResult {
     // filter(year == 2023, month > 1, day < 5)
     // filter((year == 2023 | month > 1) & day < 5)
     // filter(pickup_time < dt("2023-04-29 10:00:00"))
+    // filter(contains(list_strs, "abc|def"))
+    // filter(contains(list_nums, 45))
+    // filter(contains(names, "john"))
     let compare_op = || {
         let dt_fn = match_function("dt")
             .and(match_min_args(1))
@@ -121,18 +124,18 @@ fn match_filter(expr: &Expr) -> MatchResult {
             .or(match_string)
             .or(match_bool)
             .or(dt_fn);
-        match_compare(match_identifier, rhs_cmp)
+
+        let contains_fn = match_function("contains")
+            .and(match_min_args(2))
+            .and(match_max_args(2))
+            .and(match_arg(0, match_identifier))
+            .and(match_arg(1, match_string.or(match_number)));
+
+        match_compare(match_identifier, rhs_cmp).or(contains_fn)
     };
 
     let logic_op = match_logical(compare_op());
-
-    let list_contains_fn = match_function("list_contains")
-        .and(match_min_args(2))
-        .and(match_max_args(2))
-        .and(match_arg(0, match_identifier))
-        .and(match_arg(1, match_string.or(match_number)));
-
-    let filter_args = compare_op().or(logic_op).or(list_contains_fn);
+    let filter_args = compare_op().or(logic_op);
 
     match_function("filter")
         .and_fail(match_min_args(1).and(match_args(filter_args)))

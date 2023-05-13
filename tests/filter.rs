@@ -459,10 +459,10 @@ fn filter_dates() -> Result<()> {
 }
 
 #[test]
-fn filter_list_columns() -> Result<()> {
+fn filter_list_contains() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/lists.parquet") |
-          filter(list_contains(floats, 3.5)) |
+          filter(contains(floats, 3.5)) |
           select(floats) |
           head()
     "#};
@@ -495,7 +495,7 @@ fn filter_list_columns() -> Result<()> {
 
     let input = indoc! {r#"
         parquet("tests/data/lists.parquet") |
-          filter(list_contains(ints, 3)) |
+          filter(contains(ints, 3)) |
           select(ints) |
           head()
     "#};
@@ -522,7 +522,7 @@ fn filter_list_columns() -> Result<()> {
 
     let input = indoc! {r#"
         parquet("tests/data/lists.parquet") |
-          filter(list_contains(tags, "g7")) |
+          filter(contains(tags, "g7")) |
           select(tags) |
           head()
     "#};
@@ -549,6 +549,37 @@ fn filter_list_columns() -> Result<()> {
             │ ["tag6", "tag7"]           │
             │ ["tag5", "tag6", … "tag9"] │
             └────────────────────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn filter_str_contains() -> Result<()> {
+    // Detect payment types that contain 'no' ignoring case
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            filter(contains(payment_type, "(?i:no)")) |
+            distinct(payment_type) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (2, 1)
+            ┌──────────────┐
+            │ payment_type │
+            │ ---          │
+            │ str          │
+            ╞══════════════╡
+            │ Unknown      │
+            │ No charge    │
+            └──────────────┘
        "#
         )
     );
