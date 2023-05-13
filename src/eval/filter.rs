@@ -83,12 +83,7 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
 
             match column_type {
                 DataType::List(elem_type) => list_contains(&column, &args[1], elem_type),
-                DataType::Utf8 => {
-                    let re = args::string(&args[1]);
-                    regex::Regex::new(&re)
-                        .map_err(|e| anyhow!("contains error: invalid regex {re}: {e}"))?;
-                    Ok(col(&column).str().contains(lit(re), false))
-                }
+                DataType::Utf8 => string_contains(&column, &args[1]),
                 _ => Err(anyhow!(
                     "contains error: column '{column}' must be a str or a list"
                 )),
@@ -141,5 +136,19 @@ fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<P
             Ok(col(column).map(function, GetOutput::from_type(DataType::Boolean)))
         }
         _ => bail!("contains error: invalid type {elem_type} for column '{column}'"),
+    }
+}
+
+fn string_contains(column: &str, pattern: &Expr) -> Result<PolarsExpr> {
+    if let Expr::String(re) = pattern {
+        regex::Regex::new(re).map_err(|_| {
+            anyhow!("contains error: invalid regex {re} for string column '{column}'")
+        })?;
+
+        Ok(col(column).str().contains(lit(re.to_owned()), false))
+    } else {
+        Err(anyhow!(
+            "contains error: invalid regex '{pattern}' for string column '{column}'"
+        ))
     }
 }
