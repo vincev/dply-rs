@@ -557,6 +557,72 @@ fn filter_list_contains() -> Result<()> {
 }
 
 #[test]
+fn filter_list_not_contains() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+          filter(!contains(ints, 3)) |
+          select(ints) |
+          head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 1)
+            ┌────────────────┐
+            │ ints           │
+            │ ---            │
+            │ list[u32]      │
+            ╞════════════════╡
+            │ [73]           │
+            │ null           │
+            │ [43, 97]       │
+            │ null           │
+            │ [65]           │
+            │ [1, 22, … 87]  │
+            │ null           │
+            │ [36, 37, … 48] │
+            │ [6]            │
+            │ null           │
+            └────────────────┘
+       "#
+        )
+    );
+
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+          filter(!contains(tags, "tag1")) |
+          select(tags) |
+          head(5)
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (5, 1)
+            ┌────────────────────────────┐
+            │ tags                       │
+            │ ---                        │
+            │ list[str]                  │
+            ╞════════════════════════════╡
+            │ ["tag2", "tag5", … "tag8"] │
+            │ ["tag9"]                   │
+            │ ["tag5"]                   │
+            │ ["tag7"]                   │
+            │ ["tag2", "tag3", "tag4"]   │
+            └────────────────────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
 fn filter_str_contains() -> Result<()> {
     // Detect payment types that contain 'no' ignoring case
     let input = indoc! {r#"
@@ -580,6 +646,118 @@ fn filter_str_contains() -> Result<()> {
             │ Unknown      │
             │ No charge    │
             └──────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn filter_str_not_contains() -> Result<()> {
+    // Detect payment types that contain 'no' ignoring case
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            filter(!contains(payment_type, "(?i:no)")) |
+            distinct(payment_type) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (3, 1)
+            ┌──────────────┐
+            │ payment_type │
+            │ ---          │
+            │ str          │
+            ╞══════════════╡
+            │ Credit card  │
+            │ Cash         │
+            │ Dispute      │
+            └──────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn filter_is_null() -> Result<()> {
+    // Detect payment types that contain 'no' ignoring case
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+            select(ints, tags) |
+            filter(is_null(ints) & contains(tags, "tag1")) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 2)
+            ┌───────────┬────────────────────────────┐
+            │ ints      ┆ tags                       │
+            │ ---       ┆ ---                        │
+            │ list[u32] ┆ list[str]                  │
+            ╞═══════════╪════════════════════════════╡
+            │ null      ┆ ["tag1", "tag3", "tag5"]   │
+            │ null      ┆ ["tag1", "tag4", … "tag5"] │
+            │ null      ┆ ["tag1", "tag3", … "tag8"] │
+            │ null      ┆ ["tag1", "tag2", "tag8"]   │
+            │ null      ┆ ["tag1", "tag9"]           │
+            │ null      ┆ ["tag1", "tag2", "tag7"]   │
+            │ null      ┆ ["tag1", "tag2", "tag6"]   │
+            │ null      ┆ ["tag1", "tag3"]           │
+            │ null      ┆ ["tag1", "tag7", … "tag9"] │
+            │ null      ┆ ["tag1", "tag8"]           │
+            └───────────┴────────────────────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn filter_is_not_null() -> Result<()> {
+    // Detect payment types that contain 'no' ignoring case
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+            select(ints, tags) |
+            filter(!is_null(ints) & contains(tags, "tag1")) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 2)
+            ┌───────────────┬────────────────────────────┐
+            │ ints          ┆ tags                       │
+            │ ---           ┆ ---                        │
+            │ list[u32]     ┆ list[str]                  │
+            ╞═══════════════╪════════════════════════════╡
+            │ [6]           ┆ ["tag1", "tag3", … "tag9"] │
+            │ [9, 23, … 92] ┆ ["tag1", "tag5", … "tag9"] │
+            │ [4]           ┆ ["tag1", "tag5", "tag9"]   │
+            │ [8, 46, … 88] ┆ ["tag1"]                   │
+            │ [11, 49]      ┆ ["tag1", "tag4", … "tag8"] │
+            │ [47]          ┆ ["tag1", "tag6", "tag9"]   │
+            │ [34, 77]      ┆ ["tag1", "tag7"]           │
+            │ [21, 28, 94]  ┆ ["tag1", "tag3", "tag9"]   │
+            │ [17, 43]      ┆ ["tag1", "tag2", … "tag9"] │
+            │ [26, 62]      ┆ ["tag1", "tag4", "tag6"]   │
+            └───────────────┴────────────────────────────┘
        "#
         )
     );
