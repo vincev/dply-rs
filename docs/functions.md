@@ -351,6 +351,26 @@ shape: (5, 4)
 └──────────┴─────────────┴────────────────────┴────────────────────────────┘
 ```
 
+Use `is_null` or `!is_null` to check for null values:
+
+```
+dply -c 'parquet("lists.parquet") |
+    filter(is_null(ints) & contains(tags, "ag9")) |
+    head(5)'
+shape: (5, 4)
+┌──────────┬───────────┬────────────────────┬────────────────────────────┐
+│ shape_id ┆ ints      ┆ floats             ┆ tags                       │
+│ ---      ┆ ---       ┆ ---                ┆ ---                        │
+│ u32      ┆ list[u32] ┆ list[f64]          ┆ list[str]                  │
+╞══════════╪═══════════╪════════════════════╪════════════════════════════╡
+│ 78       ┆ null      ┆ [1.0, 15.0, 15.0]  ┆ ["tag7", "tag9"]           │
+│ 88       ┆ null      ┆ [3.5]              ┆ ["tag3", "tag5", … "tag9"] │
+│ 91       ┆ null      ┆ [1.0, 2.5, … 23.0] ┆ ["tag1", "tag9"]           │
+│ 141      ┆ null      ┆ [15.0]             ┆ ["tag9"]                   │
+│ 193      ┆ null      ┆ [6.0]              ┆ ["tag1", "tag7", … "tag9"] │
+└──────────┴───────────┴────────────────────┴────────────────────────────┘
+```
+
 ### glimpse
 
 `glimpse` displays an overview of the input dataframe by showing each column in a

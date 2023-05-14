@@ -56,8 +56,6 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for arrange call.
 fn match_arrange(expr: &Expr) -> MatchResult {
-    // arrange(year, month, day)
-    // arrange(year, desc(month), desc(day))
     let desc_fn = match_function("desc")
         .and(match_min_args(1))
         .and(match_max_args(1))
@@ -70,9 +68,6 @@ fn match_arrange(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for count call.
 fn match_count(expr: &Expr) -> MatchResult {
-    // count()
-    // count(year, month, day)
-    // count(year, sort = true)
     let sort_opt = match_assign(match_named("sort"), match_bool);
 
     match_function("count")
@@ -82,8 +77,6 @@ fn match_count(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for csv call.
 fn match_csv(expr: &Expr) -> MatchResult {
-    // csv("flights.csv")
-    // csv("flights.csv", overwrite = true)
     let overwrite_opt = match_assign(match_named("overwrite"), match_bool);
 
     match_function("csv")
@@ -97,8 +90,6 @@ fn match_csv(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for distinct call.
 fn match_distinct(expr: &Expr) -> MatchResult {
-    // distinct()
-    // distinct(year, month)
     match_function("distinct")
         .and_fail(match_args(match_identifier))
         .matches(expr)
@@ -106,13 +97,6 @@ fn match_distinct(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for filter call.
 fn match_filter(expr: &Expr) -> MatchResult {
-    // filter(year == 2023 & month > 1 | day < 5)
-    // filter(year == 2023, month > 1, day < 5)
-    // filter((year == 2023 | month > 1) & day < 5)
-    // filter(pickup_time < dt("2023-04-29 10:00:00"))
-    // filter(contains(list_strs, "abc|def"))
-    // filter(contains(list_nums, 45))
-    // filter(contains(names, "john"))
     let compare_op = || {
         let dt_fn = match_function("dt")
             .and(match_min_args(1))
@@ -125,13 +109,22 @@ fn match_filter(expr: &Expr) -> MatchResult {
             .or(match_bool)
             .or(dt_fn);
 
-        let contains_fn = match_function("contains")
-            .and(match_min_args(2))
-            .and(match_max_args(2))
-            .and(match_arg(0, match_identifier))
-            .and(match_arg(1, match_string.or(match_number)));
+        let contains_fn = || {
+            match_function("contains")
+                .and(match_min_args(2))
+                .and(match_max_args(2))
+                .and(match_arg(0, match_identifier))
+                .and(match_arg(1, match_string.or(match_number)))
+        };
 
-        match_compare(match_identifier, rhs_cmp).or(contains_fn)
+        let is_null_fn = || match_column_fn("is_null");
+
+        let predicates = contains_fn()
+            .or(match_negate(contains_fn()))
+            .or(is_null_fn())
+            .or(match_negate(is_null_fn()));
+
+        match_compare(match_identifier, rhs_cmp).or(predicates)
     };
 
     let logic_op = match_logical(compare_op());
@@ -144,7 +137,6 @@ fn match_filter(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for glimpse call.
 fn match_glimpse(expr: &Expr) -> MatchResult {
-    // glimpse()
     match_function("glimpse")
         .and_fail(match_max_args(0))
         .matches(expr)
@@ -152,7 +144,6 @@ fn match_glimpse(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for group_by call.
 fn match_group_by(expr: &Expr) -> MatchResult {
-    // group_by(year, month)
     match_function("group_by")
         .and_fail(match_min_args(1).and(match_args(match_identifier)))
         .matches(expr)
@@ -173,10 +164,6 @@ fn match_head(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for mutate call.
 fn match_mutate(expr: &Expr) -> MatchResult {
-    // mutate(gain = dep_delay - arr_delay * delay_adj)
-    // mutate(gain = dep_delay + arr_delay * mean(delay_adj))
-    // mutate(gain = dep_delay - median(arr_delay))
-    // mutate(pickup_time = dt(pickup_time_str))
     let operand_fn = || {
         match_identifier
             .or(match_number)
@@ -197,8 +184,6 @@ fn match_mutate(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for parquet call.
 fn match_parquet(expr: &Expr) -> MatchResult {
-    // parquet("flights.parquet")
-    // parquet("flights.parquet", overwrite = true)
     let overwrite_opt = match_assign(match_named("overwrite"), match_bool);
 
     match_function("parquet")
@@ -212,7 +197,6 @@ fn match_parquet(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for relocate call.
 fn match_relocate(expr: &Expr) -> MatchResult {
-    // relocate(gain, speed, before = day)
     let before_opt = match_assign(match_named("before"), match_identifier);
 
     // relocate(gain, speed, after = day)
@@ -227,7 +211,6 @@ fn match_relocate(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for rename call.
 fn match_rename(expr: &Expr) -> MatchResult {
-    // rename(tail_num = tailnum, last_time = l_time)
     let rename_opt = match_assign(match_identifier, match_identifier);
 
     match_function("rename")
@@ -237,7 +220,6 @@ fn match_rename(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for select call.
 fn match_select(expr: &Expr) -> MatchResult {
-    // select(contains("time"), !contains("time"))
     let contains_fn = || {
         match_function("contains")
             .and(match_min_args(1))
@@ -266,8 +248,10 @@ fn match_select(expr: &Expr) -> MatchResult {
 
     let args = contains_fn()
         .or(match_negate(contains_fn()))
-        .or(starts_with_fn().or(match_negate(starts_with_fn())))
-        .or(ends_with_fn().or(match_negate(ends_with_fn())))
+        .or(starts_with_fn())
+        .or(match_negate(starts_with_fn()))
+        .or(ends_with_fn())
+        .or(match_negate(ends_with_fn()))
         .or(rename_opt)
         .or(match_identifier);
 
@@ -278,7 +262,6 @@ fn match_select(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for a show call.
 fn match_show(expr: &Expr) -> MatchResult {
-    // show()
     match_function("show")
         .and_fail(match_max_args(0))
         .matches(expr)
@@ -286,8 +269,6 @@ fn match_show(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for summarize call.
 fn match_summarize(expr: &Expr) -> MatchResult {
-    // summarize()
-    // summarize(n = n(), days = sum(days))
     let n_fn = match_function("n").and(match_max_args(0));
 
     // quantile(n = quantile(passenger_count, 0.75))

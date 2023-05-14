@@ -4,7 +4,8 @@ Changes to the `dply` crate are documented in this file.
 ## 0.1.3 - Unreleased
 ### Changed 🔧
 * Update to Polars 0.29
-* Add `contains` to `filter` that works with string and list columns.
+* `filter`: Add `contains` predicate for string and list columns.
+* `filter`: Add `is_null` predicate.
 
 ## 0.1.2 - 2023-05-09
 ### Changed 🔧

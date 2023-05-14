@@ -75,6 +75,14 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
             let ts = args::timestamp(&args[0])?;
             Ok(lit(ts))
         }
+        Expr::UnaryOp(Operator::Not, expr) => eval_predicate(expr, schema).map(|expr| expr.not()),
+        Expr::Function(_, _) => eval_predicate(expr, schema),
+        _ => panic!("Unexpected filter expression {expr}"),
+    }
+}
+
+fn eval_predicate(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
+    match expr {
         Expr::Function(name, args) if name == "contains" => {
             let column = args::identifier(&args[0]);
             let column_type = schema
@@ -88,6 +96,13 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
                     "contains error: column '{column}' must be a str or a list"
                 )),
             }
+        }
+        Expr::Function(name, args) if name == "is_null" => {
+            let column = args::identifier(&args[0]);
+            schema
+                .get(&column)
+                .ok_or_else(|| anyhow!("is_null error: unknown column {column}"))?;
+            Ok(col(&column).is_null())
         }
         _ => panic!("Unexpected filter expression {expr}"),
     }
