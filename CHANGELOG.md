@@ -6,6 +6,7 @@ Changes to the `dply` crate are documented in this file.
 * Update to Polars 0.29
 * `filter`: Add `contains` predicate for string and list columns.
 * `filter`: Add `is_null` predicate.
+* `summarize`: Now works on ungrouped data.
 
 ## 0.1.2 - 2023-05-09
 ### Changed 🔧

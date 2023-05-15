@@ -447,6 +447,28 @@ shape: (5, 6)
 └──────────────┴────────────┴───────────┴───────────┴───────────┴─────┘
 ```
 
+To compute aggregations on all values in a dataframe call `summarize` without
+grouping:
+
+```
+dply -c 'parquet("nyctaxi.parquet") |
+    summarize(
+        mean_price = mean(total_amount),
+        std_price = sd(total_amount),
+        var_price = var(total_amount),
+        n = n()
+    ) |
+    show()'
+shape: (1, 4)
+┌────────────┬───────────┬────────────┬─────┐
+│ mean_price ┆ std_price ┆ var_price  ┆ n   │
+│ ---        ┆ ---       ┆ ---        ┆ --- │
+│ f64        ┆ f64       ┆ f64        ┆ u32 │
+╞════════════╪═══════════╪════════════╪═════╡
+│ 21.4712    ┆ 15.474215 ┆ 239.451342 ┆ 250 │
+└────────────┴───────────┴────────────┴─────┘
+```
+
 See [tests][tests-folder] for more examples.
 
 ### head

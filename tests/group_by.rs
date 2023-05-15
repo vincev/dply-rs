@@ -32,7 +32,6 @@ fn group_by_mean_sd_var() -> Result<()> {
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -71,7 +70,6 @@ fn group_by_min_max() -> Result<()> {
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -130,6 +128,39 @@ fn group_by_median_quantile() -> Result<()> {
             │ Dispute      ┆ -0.5         ┆ -4.4      ┆ -0.5      ┆ 3.4       ┆ 6.52      ┆ 2   │
             │ No charge    ┆ 8.8          ┆ 8.8       ┆ 8.8       ┆ 8.8       ┆ 8.8       ┆ 1   │
             └──────────────┴──────────────┴───────────┴───────────┴───────────┴───────────┴─────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn summarize_median_quantile() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            summarize(
+                mean_price = mean(total_amount),
+                std_price = sd(total_amount),
+                var_price = var(total_amount),
+                n = n()
+            ) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (1, 4)
+            ┌────────────┬───────────┬────────────┬─────┐
+            │ mean_price ┆ std_price ┆ var_price  ┆ n   │
+            │ ---        ┆ ---       ┆ ---        ┆ --- │
+            │ f64        ┆ f64       ┆ f64        ┆ u32 │
+            ╞════════════╪═══════════╪════════════╪═════╡
+            │ 21.4712    ┆ 15.474215 ┆ 239.451342 ┆ 250 │
+            └────────────┴───────────┴────────────┴─────┘
        "#
         )
     );
