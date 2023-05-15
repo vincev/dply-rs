@@ -15,6 +15,7 @@
 use anyhow::{bail, Result};
 use polars::lazy::dsl::{Expr as PolarsExpr, StrptimeOptions};
 use polars::prelude::*;
+use std::collections::HashSet;
 
 use crate::parser::{Expr, Operator};
 
@@ -25,11 +26,23 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(mut df) = ctx.take_df() {
+        let mut used_aliases = HashSet::new();
+
         for arg in args {
             match arg {
                 Expr::BinaryOp(lhs, Operator::Assign, rhs) => {
                     let alias = args::identifier(lhs);
-                    let expr = eval_expr(rhs)?;
+                    if used_aliases.contains(&alias) {
+                        bail!("mutate error: duplicate alias '{alias}'");
+                    } else {
+                        used_aliases.insert(alias.clone());
+                    }
+
+                    let expr = df
+                        .schema()
+                        .map_err(anyhow::Error::from)
+                        .and_then(|schema| eval_expr(rhs, &schema))
+                        .map_err(|e| anyhow!("mutate error: {e}"))?;
                     df = df.with_column(expr.alias(&alias));
                 }
                 _ => panic!("Unexpected mutate expression: {arg}"),
@@ -46,11 +59,11 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn eval_expr(expr: &Expr) -> Result<PolarsExpr> {
+fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
     match expr {
         Expr::BinaryOp(lhs, op, rhs) => {
-            let lhs = eval_expr(lhs)?;
-            let rhs = eval_expr(rhs)?;
+            let lhs = eval_expr(lhs, schema)?;
+            let rhs = eval_expr(rhs, schema)?;
 
             let result = match op {
                 Operator::Plus => lhs + rhs,
@@ -62,31 +75,34 @@ fn eval_expr(expr: &Expr) -> Result<PolarsExpr> {
 
             Ok(result)
         }
-        Expr::Identifier(s) => Ok(col(s)),
+        Expr::Identifier(_) => args::column(expr, schema),
         Expr::String(s) => Ok(lit(s.clone())),
         Expr::Number(n) => Ok(lit(*n)),
-        Expr::Function(name, args) if name == "dt" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).str().strptime(
+        Expr::Function(name, args) if name == "dt" => args::column(&args[0], schema).map(|c| {
+            c.str().strptime(
                 DataType::Datetime(TimeUnit::Nanoseconds, None),
                 StrptimeOptions::default(),
-            ))
-        }
+            )
+        }),
         Expr::Function(name, args) if name == "mean" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).mean())
+            args::column(&args[0], schema).map(|c| c.mean())
         }
         Expr::Function(name, args) if name == "median" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).median())
+            args::column(&args[0], schema).map(|c| c.median())
         }
         Expr::Function(name, args) if name == "min" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).min())
+            args::column(&args[0], schema).map(|c| c.min())
         }
         Expr::Function(name, args) if name == "max" => {
+            args::column(&args[0], schema).map(|c| c.max())
+        }
+        Expr::Function(name, args) if name == "len" => {
             let column = args::identifier(&args[0]);
-            Ok(col(&column).max())
+            match schema.get(&column) {
+                Some(DataType::List(_)) => Ok(col(&column).arr().lengths()),
+                Some(_) => Err(anyhow!("`len` column '{column}' must be list")),
+                None => Err(anyhow!("Unknown column '{column}'")),
+            }
         }
         _ => panic!("Unexpected mutate expression {expr}"),
     }

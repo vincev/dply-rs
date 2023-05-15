@@ -169,6 +169,7 @@ fn match_mutate(expr: &Expr) -> MatchResult {
             .or(match_number)
             .or(match_string)
             .or(match_column_fn("dt"))
+            .or(match_column_fn("len"))
             .or(match_column_fn("min"))
             .or(match_column_fn("max"))
             .or(match_column_fn("mean"))
