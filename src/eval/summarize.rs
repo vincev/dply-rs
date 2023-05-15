@@ -26,33 +26,41 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(group) = ctx.take_group() {
-        let schema_cols = ctx.columns();
-        let mut aliases = HashSet::new();
-        let mut columns = Vec::new();
-
-        for arg in args {
-            match arg {
-                Expr::BinaryOp(lhs, Operator::Assign, rhs) => {
-                    let alias = args::identifier(lhs);
-                    if aliases.contains(&alias) {
-                        bail!("summarize error: duplicate alias {alias}");
-                    }
-
-                    aliases.insert(alias.clone());
-
-                    let expr = eval_expr(rhs, schema_cols)?;
-                    columns.push(expr.alias(&alias));
-                }
-                _ => panic!("Unexpected summarize expression: {arg}"),
-            }
-        }
-
+        let columns = eval_args(args, ctx)?;
         ctx.set_df(group.agg(&columns))?;
+    } else if let Some(df) = ctx.take_df() {
+        let columns = eval_args(args, ctx)?;
+        ctx.set_df(df.select(&columns))?;
     } else {
-        bail!("summarize error: missing group, call summarize after group_by");
+        bail!("summarize error: missing input group or dataframe");
     }
 
     Ok(())
+}
+
+fn eval_args(args: &[Expr], ctx: &mut Context) -> Result<Vec<PolarsExpr>> {
+    let schema_cols = ctx.columns();
+    let mut aliases = HashSet::new();
+    let mut columns = Vec::new();
+
+    for arg in args {
+        match arg {
+            Expr::BinaryOp(lhs, Operator::Assign, rhs) => {
+                let alias = args::identifier(lhs);
+                if aliases.contains(&alias) {
+                    bail!("summarize error: duplicate alias {alias}");
+                }
+
+                aliases.insert(alias.clone());
+
+                let expr = eval_expr(rhs, schema_cols)?;
+                columns.push(expr.alias(&alias));
+            }
+            _ => panic!("Unexpected summarize expression: {arg}"),
+        }
+    }
+
+    Ok(columns)
 }
 
 fn eval_expr(expr: &Expr, cols: &[String]) -> Result<PolarsExpr> {
