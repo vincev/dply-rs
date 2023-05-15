@@ -26,10 +26,20 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(group) = ctx.take_group() {
-        let columns = eval_args(args, ctx)?;
+        let columns = group
+            .logical_plan
+            .schema()
+            .map(|s| s.into_owned())
+            .map_err(anyhow::Error::from)
+            .and_then(|schema| eval_args(args, ctx, &schema))
+            .map_err(|e| anyhow!("summarize error: {e}"))?;
         ctx.set_df(group.agg(&columns))?;
     } else if let Some(df) = ctx.take_df() {
-        let columns = eval_args(args, ctx)?;
+        let columns = df
+            .schema()
+            .map_err(anyhow::Error::from)
+            .and_then(|schema| eval_args(args, ctx, &schema))
+            .map_err(|e| anyhow!("summarize error: {e}"))?;
         ctx.set_df(df.select(&columns))?;
     } else {
         bail!("summarize error: missing input group or dataframe");
@@ -38,7 +48,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn eval_args(args: &[Expr], ctx: &mut Context) -> Result<Vec<PolarsExpr>> {
+fn eval_args(args: &[Expr], ctx: &mut Context, schema: &Schema) -> Result<Vec<PolarsExpr>> {
     let schema_cols = ctx.columns();
     let mut aliases = HashSet::new();
     let mut columns = Vec::new();
@@ -53,7 +63,7 @@ fn eval_args(args: &[Expr], ctx: &mut Context) -> Result<Vec<PolarsExpr>> {
 
                 aliases.insert(alias.clone());
 
-                let expr = eval_expr(rhs, schema_cols)?;
+                let expr = eval_expr(rhs, schema_cols, schema)?;
                 columns.push(expr.alias(&alias));
             }
             _ => panic!("Unexpected summarize expression: {arg}"),
@@ -63,41 +73,34 @@ fn eval_args(args: &[Expr], ctx: &mut Context) -> Result<Vec<PolarsExpr>> {
     Ok(columns)
 }
 
-fn eval_expr(expr: &Expr, cols: &[String]) -> Result<PolarsExpr> {
+fn eval_expr(expr: &Expr, cols: &[String], schema: &Schema) -> Result<PolarsExpr> {
     match expr {
         Expr::Function(name, _) if name == "n" => Ok(col(&cols[0]).count()),
         Expr::Function(name, args) if name == "max" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).max())
+            args::column(&args[0], schema).map(|c| c.max())
         }
         Expr::Function(name, args) if name == "mean" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).mean())
+            args::column(&args[0], schema).map(|c| c.mean())
         }
         Expr::Function(name, args) if name == "median" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).median())
+            args::column(&args[0], schema).map(|c| c.median())
         }
         Expr::Function(name, args) if name == "min" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).min())
+            args::column(&args[0], schema).map(|c| c.min())
         }
         Expr::Function(name, args) if name == "quantile" => {
-            let column = args::identifier(&args[0]);
             let quantile = args::number(&args[1]);
-            Ok(col(&column).quantile(lit(quantile), QuantileInterpolOptions::Linear))
+            args::column(&args[0], schema)
+                .map(|c| c.quantile(lit(quantile), QuantileInterpolOptions::Linear))
         }
         Expr::Function(name, args) if name == "sd" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).std(1))
+            args::column(&args[0], schema).map(|c| c.std(1))
         }
         Expr::Function(name, args) if name == "sum" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).sum())
+            args::column(&args[0], schema).map(|c| c.sum())
         }
         Expr::Function(name, args) if name == "var" => {
-            let column = args::identifier(&args[0]);
-            Ok(col(&column).var(1))
+            args::column(&args[0], schema).map(|c| c.var(1))
         }
         _ => panic!("Unexpected summarize expression {expr}"),
     }

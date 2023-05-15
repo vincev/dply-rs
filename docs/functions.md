@@ -508,8 +508,8 @@ shape: (5, 3)
 └────────────────┴──────────────────┴────────────────┘
 ```
 
-`mutate` supports also `mean`, `max`, `min`, `median`, and `dt` functions see
-[tests][tests-folder] for more examples.
+`mutate` supports also `len` for list columns, and `mean`, `max`, `min`, `median`,
+and `dt` for scalar columns, see[tests][tests-folder] for more examples.
 
 ### parquet
 

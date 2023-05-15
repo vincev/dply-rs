@@ -26,10 +26,13 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(mut df) = ctx.take_df() {
-        let schema = df.schema().map_err(|e| anyhow!("filter error: {e}"))?;
-
         for arg in args {
-            df = df.filter(eval_expr(arg, &schema)?);
+            let expr = df
+                .schema()
+                .map_err(anyhow::Error::from)
+                .and_then(|schema| eval_expr(arg, &schema))
+                .map_err(|e| anyhow!("filter error: {e}"))?;
+            df = df.filter(expr);
         }
 
         ctx.set_df(df)?;
@@ -62,13 +65,7 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
 
             Ok(result)
         }
-        Expr::Identifier(column) => {
-            if schema.get(column).is_some() {
-                Ok(col(column))
-            } else {
-                Err(anyhow!("filter error: Unknown column '{column}'"))
-            }
-        }
+        Expr::Identifier(_) => args::column(expr, schema),
         Expr::String(s) => Ok(lit(s.clone())),
         Expr::Number(n) => Ok(lit(*n)),
         Expr::Function(name, args) if name == "dt" => {
@@ -87,22 +84,16 @@ fn eval_predicate(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
             let column = args::identifier(&args[0]);
             let column_type = schema
                 .get(&column)
-                .ok_or_else(|| anyhow!("contains error: unknown column {column}"))?;
+                .ok_or_else(|| anyhow!("Unknown contains column '{column}'"))?;
 
             match column_type {
                 DataType::List(elem_type) => list_contains(&column, &args[1], elem_type),
                 DataType::Utf8 => string_contains(&column, &args[1]),
-                _ => Err(anyhow!(
-                    "contains error: column '{column}' must be a str or a list"
-                )),
+                _ => Err(anyhow!("Column '{column}' must be a str or a list")),
             }
         }
         Expr::Function(name, args) if name == "is_null" => {
-            let column = args::identifier(&args[0]);
-            schema
-                .get(&column)
-                .ok_or_else(|| anyhow!("is_null error: unknown column {column}"))?;
-            Ok(col(&column).is_null())
+            args::column(&args[0], schema).map(|c| c.is_null())
         }
         _ => panic!("Unexpected filter expression {expr}"),
     }
@@ -124,7 +115,7 @@ fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<P
         (Float64, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n))),
         (Utf8, Expr::String(s)) => {
             let re = regex::Regex::new(s)
-                .map_err(|e| anyhow!("contains error: invalid regex {s}: {e}"))?;
+                .map_err(|_| anyhow!("invalid contains regex '{s}' for column '{column}'"))?;
 
             let function = move |s: Series| {
                 let ca = s.list()?;
@@ -156,14 +147,13 @@ fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<P
 
 fn string_contains(column: &str, pattern: &Expr) -> Result<PolarsExpr> {
     if let Expr::String(re) = pattern {
-        regex::Regex::new(re).map_err(|_| {
-            anyhow!("contains error: invalid regex {re} for string column '{column}'")
-        })?;
+        regex::Regex::new(re)
+            .map_err(|_| anyhow!("invalid contains regex '{re}' for column '{column}'"))?;
 
         Ok(col(column).str().contains(lit(re.to_owned()), false))
     } else {
         Err(anyhow!(
-            "contains error: invalid regex '{pattern}' for string column '{column}'"
+            "contains predicate for column '{column}' must be a regex"
         ))
     }
 }

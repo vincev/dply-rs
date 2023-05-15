@@ -14,6 +14,8 @@
 // limitations under the License.
 use anyhow::{anyhow, Result};
 use polars::export::chrono::prelude::*;
+use polars::lazy::dsl::Expr as PolarsExpr;
+use polars::prelude::*;
 use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
@@ -36,6 +38,15 @@ pub fn identifier(expr: &Expr) -> String {
         Expr::Identifier(s) => s.to_owned(),
         _ => panic!("{expr} is not an identifier expression"),
     }
+}
+
+/// Returns a Polars column if it is in the schema.
+pub fn column(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
+    let column = identifier(expr);
+    schema
+        .get(&column)
+        .map(|_| col(&column))
+        .ok_or_else(|| anyhow!("Unknown column '{expr}'"))
 }
 
 /// Returns the value from a number expression.

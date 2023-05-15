@@ -244,3 +244,45 @@ fn mutate_dt() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn mutate_len() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+            mutate(
+                ints_len = len(ints),
+                floats_len = len(floats),
+                tags_len = len(tags)
+            ) |
+            select(ints_len, floats_len, tags_len) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 3)
+            ┌──────────┬────────────┬──────────┐
+            │ ints_len ┆ floats_len ┆ tags_len │
+            │ ---      ┆ ---        ┆ ---      │
+            │ u32      ┆ u32        ┆ u32      │
+            ╞══════════╪════════════╪══════════╡
+            │ 3        ┆ 4          ┆ 4        │
+            │ 1        ┆ 3          ┆ 1        │
+            │ 0        ┆ 4          ┆ 1        │
+            │ 2        ┆ 4          ┆ 1        │
+            │ 0        ┆ 4          ┆ 3        │
+            │ 1        ┆ 1          ┆ 3        │
+            │ 4        ┆ 1          ┆ 4        │
+            │ 0        ┆ 2          ┆ 0        │
+            │ 4        ┆ 0          ┆ 0        │
+            │ 1        ┆ 4          ┆ 4        │
+            └──────────┴────────────┴──────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}

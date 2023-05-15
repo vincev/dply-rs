@@ -7,6 +7,7 @@ Changes to the `dply` crate are documented in this file.
 * `filter`: Add `contains` predicate for string and list columns.
 * `filter`: Add `is_null` predicate.
 * `summarize`: Now works on ungrouped data.
+* `mutate`: Add `len` function for list columns.
 
 ## 0.1.2 - 2023-05-09
 ### Changed 🔧
