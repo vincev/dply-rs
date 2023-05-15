@@ -7,69 +7,33 @@ files, inspired by [dplyr](https://dplyr.tidyverse.org/index.html) and powered b
 A dply pipeline consists of a number of functions to read, transform, or write
 data to disk.
 
-The following is an example of a three steps pipeline that reads a parquet file
-selects all columns that contain amount and shows some of the data[^1]:
+For example the following pipeline reads a parquet file[^1], computes the minimum,
+mean, and maximum fare for each payment type, saves the result to `fares.csv` CSV
+file, and shows the result:
 
 ```
-$ dply -c 'parquet("nyctaxi.parquet") | select(contains("amount")) | head()'
-shape: (10, 4)
-┌─────────────┬────────────┬──────────────┬──────────────┐
-│ fare_amount ┆ tip_amount ┆ tolls_amount ┆ total_amount │
-│ ---         ┆ ---        ┆ ---          ┆ ---          │
-│ f64         ┆ f64        ┆ f64          ┆ f64          │
-╞═════════════╪════════════╪══════════════╪══════════════╡
-│ 14.5        ┆ 3.76       ┆ 0.0          ┆ 22.56        │
-│ 6.5         ┆ 0.0        ┆ 0.0          ┆ 9.8          │
-│ 11.5        ┆ 2.96       ┆ 0.0          ┆ 17.76        │
-│ 18.0        ┆ 4.36       ┆ 0.0          ┆ 26.16        │
-│ 12.5        ┆ 3.25       ┆ 0.0          ┆ 19.55        │
-│ 19.0        ┆ 0.0        ┆ 0.0          ┆ 22.3         │
-│ 8.5         ┆ 0.0        ┆ 0.0          ┆ 11.8         │
-│ 6.0         ┆ 2.0        ┆ 0.0          ┆ 11.3         │
-│ 12.0        ┆ 3.26       ┆ 0.0          ┆ 19.56        │
-│ 9.0         ┆ 2.56       ┆ 0.0          ┆ 15.36        │
-└─────────────┴────────────┴──────────────┴──────────────┘
-```
-
-A simple pipeline can be passed as a command line argument with the `-c` flag or
-as standard input, for more complex pipelines is convenient to store the pipeline
-in a file and run dply with the file name as a command line argument.
-
-For example the NYC taxi test file [^1] has a `payment_type` and `total_amount`
-columns, let's say we want to find out for all payment types the minimum,
-maximum, and mean amount paid and the number of payments for each type sorted in
-descending order, we can write the following pipeline in a dply file:
-
-```
-# Compute some statistics on the payment types
-parquet("nyctaxi.parquet") |
+$ dply -c 'parquet("nyctaxi.parquet") |
     group_by(payment_type) |
     summarize(
-        mean_price = mean(total_amount),
         min_price = min(total_amount),
-        max_price = max(total_amount),
-        n = n()
+        mean_price = mean(total_amount),
+        max_price = max(total_amount)
     ) |
-    arrange(desc(n)) |
-    show()
-```
-
-and then run the script:
-
-```
-$ dply payments.dply
-shape: (5, 5)
-┌──────────────┬────────────┬───────────┬───────────┬─────┐
-│ payment_type ┆ mean_price ┆ min_price ┆ max_price ┆ n   │
-│ ---          ┆ ---        ┆ ---       ┆ ---       ┆ --- │
-│ str          ┆ f64        ┆ f64       ┆ f64       ┆ u32 │
-╞══════════════╪════════════╪═══════════╪═══════════╪═════╡
-│ Credit card  ┆ 22.378757  ┆ 8.5       ┆ 84.36     ┆ 185 │
-│ Cash         ┆ 18.458491  ┆ 3.3       ┆ 63.1      ┆ 53  │
-│ Unknown      ┆ 26.847778  ┆ 9.96      ┆ 54.47     ┆ 9   │
-│ Dispute      ┆ -0.5       ┆ -8.3      ┆ 7.3       ┆ 2   │
-│ No charge    ┆ 8.8        ┆ 8.8       ┆ 8.8       ┆ 1   │
-└──────────────┴────────────┴───────────┴───────────┴─────┘
+    arrange(payment_type) |
+    csv("fares.csv") |
+    show()'
+shape: (5, 4)
+┌──────────────┬───────────┬────────────┬───────────┐
+│ payment_type ┆ min_price ┆ mean_price ┆ max_price │
+│ ---          ┆ ---       ┆ ---        ┆ ---       │
+│ str          ┆ f64       ┆ f64        ┆ f64       │
+╞══════════════╪═══════════╪════════════╪═══════════╡
+│ Cash         ┆ -61.85    ┆ 18.07      ┆ 86.55     │
+│ Credit card  ┆ 4.56      ┆ 22.969491  ┆ 324.72    │
+│ Dispute      ┆ -55.6     ┆ -0.145161  ┆ 54.05     │
+│ No charge    ┆ -16.3     ┆ 0.086667   ┆ 19.8      │
+│ Unknown      ┆ 9.96      ┆ 28.893333  ┆ 85.02     │
+└──────────────┴───────────┴────────────┴───────────┘
 ```
 
 [^1]: The file `nyctaxi.parquet` in the [tests/data][tests-data] folder is a

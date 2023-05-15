@@ -1,7 +1,7 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
-## 0.1.3 - Unreleased
+## 0.1.3 - 2023-05-15
 ### Changed 🔧
 * Update to Polars 0.29
 * `filter`: Add `contains` predicate for string and list columns.
