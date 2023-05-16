@@ -1,17 +1,18 @@
 [package]
 authors = ["Vince Vasta <vince.vasta@gmail.com>"]
 description = "A command line data manipulation tool inspired by the dplyr grammar."
+repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.1.3"
+version = "0.1.4"
 
 [dependencies]
-anyhow = "1.0.69"
-clap = { version = "4.1.4", features = ["derive"] }
-comfy-table = "6.1.4"
-nom = "7.1.3"
-thiserror = "1.0.40"
+anyhow = "1.0"
+clap = { version = "4.2", features = ["derive"] }
+comfy-table = "6.1"
+nom = "7.1"
+thiserror = "1.0"
 
 [dependencies.polars]
 version = "0.29.0"

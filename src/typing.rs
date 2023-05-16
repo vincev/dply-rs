@@ -51,6 +51,7 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_select)
         .or(match_show)
         .or(match_summarize)
+        .or(match_unnest)
         .matches(expr)
 }
 
@@ -291,6 +292,17 @@ fn match_summarize(expr: &Expr) -> MatchResult {
 
     match_function("summarize")
         .and_fail(match_min_args(0).and(match_args(match_assign(match_identifier, summarize_op))))
+        .matches(expr)
+}
+
+/// Checks arguments for an unnest call.
+fn match_unnest(expr: &Expr) -> MatchResult {
+    match_function("unnest")
+        .and_fail(
+            match_min_args(1)
+                .and(match_max_args(1))
+                .and(match_args(match_identifier)),
+        )
         .matches(expr)
 }
 
