@@ -22,6 +22,7 @@
 - [rename](#rename) Renames columns
 - [select](#select) Selects columns
 - [show](#show) Shows all dataframe rows
+- [unnest](#unnest) Unnest list columns
 
 more examples can be found in the [tests folder][tests-dir].
 
@@ -675,6 +676,35 @@ shape: (5, 1)
 
 `show` displays all the rows in the input dataframe in table format. `show` must
 be the last step in a pipeline as it consumes the input dataframe.
+
+### unnest
+
+`unnest` expands a list column creating a row for each element in the list:
+
+```
+$ dply -c 'parquet("lists.parquet") |
+    mutate(ints_list = ints) |
+    select(ints, ints_list) |
+    unnest(ints) |
+    head()'
+shape: (10, 2)
+┌──────┬───────────────┐
+│ ints ┆ ints_list     │
+│ ---  ┆ ---           │
+│ u32  ┆ list[u32]     │
+╞══════╪═══════════════╡
+│ 3    ┆ [3, 88, 94]   │
+│ 88   ┆ [3, 88, 94]   │
+│ 94   ┆ [3, 88, 94]   │
+│ 73   ┆ [73]          │
+│ null ┆ null          │
+│ 43   ┆ [43, 97]      │
+│ 97   ┆ [43, 97]      │
+│ null ┆ null          │
+│ 65   ┆ [65]          │
+│ 1    ┆ [1, 22, … 87] │
+└──────┴───────────────┘
+```
 
 ## Pipeline variables
 

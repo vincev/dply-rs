@@ -7,9 +7,9 @@ files, inspired by [dplyr](https://dplyr.tidyverse.org/index.html) and powered b
 A dply pipeline consists of a number of functions to read, transform, or write
 data to disk.
 
-For example the following pipeline reads a parquet file[^1], computes the minimum,
-mean, and maximum fare for each payment type, saves the result to `fares.csv` CSV
-file, and shows the result:
+The following pipeline reads a parquet file[^1], computes the minimum, mean, and
+maximum fare for each payment type, saves the result to `fares.csv` CSV file, and
+shows the result:
 
 ```
 $ dply -c 'parquet("nyctaxi.parquet") |
@@ -60,6 +60,7 @@ shape: (5, 4)
 - [rename](docs/functions.md#rename) Renames columns
 - [select](docs/functions.md#select) Selects columns
 - [show](docs/functions.md#show) Shows all dataframe rows
+- [unnest](docs/functions.md#unnest) Expands list columns into rows
 
 more examples can be found in the [tests folder](tests).
 
