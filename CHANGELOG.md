@@ -1,6 +1,10 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
+## 0.1.5 - Unreleased
+### Changed 🔧
+* Enable `unnest` to work on struct columns.
+
 ## 0.1.4 - 2023-05-16
 ### Changed 🔧
 * Add `unnest` function for list columns.
