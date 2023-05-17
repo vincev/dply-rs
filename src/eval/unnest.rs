@@ -23,13 +23,24 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
-        let column = args::identifier(&args[0]);
-        if !ctx.columns().contains(&column) {
-            bail!("unnest error: Unknown column {column}");
+    if let Some(mut df) = ctx.take_df() {
+        for arg in args {
+            let column = args::identifier(arg);
+            let schema = df.schema().map_err(|e| anyhow!("unnest error: {e}"))?;
+
+            match schema.get(&column) {
+                Some(DataType::List(_)) => {
+                    df = df.explode(vec![col(&column)]);
+                }
+                Some(DataType::Struct(_)) => {
+                    df = df.unnest([&column]);
+                }
+                Some(_) => bail!("unnest error: '{column}' is not a list or struct type"),
+                None => bail!("unnest error: unknown column '{column}'"),
+            }
         }
 
-        ctx.set_df(df.explode(vec![col(&column)]))?;
+        ctx.set_df(df)?;
     } else {
         bail!("unnest error: missing input dataframe");
     }
