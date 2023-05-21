@@ -29,6 +29,7 @@ mod filter;
 mod glimpse;
 mod group_by;
 mod head;
+mod joins;
 mod mutate;
 mod parquet;
 mod relocate;
@@ -71,6 +72,11 @@ impl Context {
 
         self.df = Some(df);
         Ok(())
+    }
+
+    /// Returns the dataframe associated to the given variable.
+    pub fn get_df(&self, name: &str) -> Option<&LazyFrame> {
+        self.vars.get(name)
     }
 
     /// Returns the last dataframe columns.
@@ -140,6 +146,10 @@ fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
             for expr in exprs {
                 eval_pipeline_step(expr, ctx)?;
             }
+
+            // Consume df after the end of a pipeline so that the next pipeline
+            // starts with a clean state.
+            ctx.take_df();
         }
     }
 
@@ -151,13 +161,17 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
         Expr::Function(name, args) => match name.as_str() {
             "arrange" => arrange::eval(args, ctx)?,
             "count" => count::eval(args, ctx)?,
+            "cross_join" => joins::eval(args, ctx, JoinType::Cross)?,
             "csv" => csv::eval(args, ctx)?,
             "distinct" => distinct::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
             "group_by" => group_by::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
+            "inner_join" => joins::eval(args, ctx, JoinType::Inner)?,
+            "left_join" => joins::eval(args, ctx, JoinType::Left)?,
             "mutate" => mutate::eval(args, ctx)?,
+            "outer_join" => joins::eval(args, ctx, JoinType::Outer)?,
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,

@@ -44,6 +44,7 @@ fn match_pipeline_fn(expr: &Expr) -> MatchResult {
         .or(match_glimpse)
         .or(match_group_by)
         .or(match_head)
+        .or(match_joins)
         .or(match_mutate)
         .or(match_parquet)
         .or(match_relocate)
@@ -152,13 +153,28 @@ fn match_group_by(expr: &Expr) -> MatchResult {
 
 /// Checks arguments for a head call.
 fn match_head(expr: &Expr) -> MatchResult {
-    // head()
-    // head(10)
     match_function("head")
         .and_fail(
             match_min_args(0)
                 .and(match_max_args(1))
                 .and(match_args(match_number)),
+        )
+        .matches(expr)
+}
+
+/// Checks arguments for a joins call.
+fn match_joins(expr: &Expr) -> MatchResult {
+    match_function("left_join")
+        .or(match_function("inner_join"))
+        .or(match_function("outer_join"))
+        .or(match_function("cross_join"))
+        .and_fail(
+            match_min_args(1)
+                .and(match_arg(0, match_identifier))
+                .and(match_args_after(
+                    0,
+                    match_equal(match_identifier, match_identifier),
+                )),
         )
         .matches(expr)
 }

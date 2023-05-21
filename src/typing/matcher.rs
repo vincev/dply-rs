@@ -171,6 +171,19 @@ where
     }
 }
 
+/// Matches all arguments for a function after a given position.
+pub fn match_args_after<M>(after: usize, m: M) -> impl Matcher
+where
+    M: Matcher,
+{
+    move |expr: &Expr| -> MatchResult {
+        match expr {
+            Expr::Function(_, args) => args.iter().skip(after + 1).try_for_each(|e| m.matches(e)),
+            _ => Err(match_error!("'{expr}' is not a function")),
+        }
+    }
+}
+
 /// Matches an argument at the given index.
 pub fn match_arg<M>(idx: usize, m: M) -> impl Matcher
 where
@@ -213,6 +226,22 @@ where
             r.matches(rhs)
         } else {
             Err(match_error!("'{expr}' must be an assignment"))
+        }
+    }
+}
+
+/// Matches an equality with lhs and rhs matchers.
+pub fn match_equal<L, R>(l: L, r: R) -> impl Matcher
+where
+    L: Matcher,
+    R: Matcher,
+{
+    move |expr: &Expr| -> MatchResult {
+        if let Expr::BinaryOp(lhs, Operator::Eq, rhs) = expr {
+            l.matches(lhs)?;
+            r.matches(rhs)
+        } else {
+            Err(match_error!("'{expr}' must be an equality"))
         }
     }
 }
