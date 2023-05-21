@@ -16,6 +16,7 @@
 - [glimpse](#glimpse) Shows a dataframe overview
 - [group by and summarize](#group_by-and-summarize) Performs grouped aggregations
 - [head](#head) Shows the first few dataframe rows in table format
+- [joins](#joins) Left, inner, outer and cross joins
 - [mutate](#mutate) Creates or mutate columns
 - [parquet](#parquet) Reads or writes a dataframe in Parquet format
 - [relocate](#relocate) Moves columns positions
@@ -478,6 +479,61 @@ See [tests][tests-folder] for more examples.
 used to change the number of rows that are shown.
 
 `head` must be the last step in a pipeline as it consumes the input dataframe.
+
+### joins
+
+By using dataframe variables we can join dataframes with `inner_join`,
+`left_join`, `outer_join`, or `cross_join`.
+
+If we join by specifying a dataframe without specifying the join columns then the
+join is done by using all common columns, here we rename `PULocationID` to make
+the join work:
+
+```
+$ dply -c 'csv("zones.csv") |
+    zones_df
+
+parquet("nyctaxi.parquet") |
+    select(LocationID = PULocationID) |
+    left_join(zones_df) |
+    head(5)'
+shape: (5, 4)
+┌────────────┬───────────┬───────────────────────┬──────────────┐
+│ LocationID ┆ Borough   ┆ Zone                  ┆ service_zone │
+│ ---        ┆ ---       ┆ ---                   ┆ ---          │
+│ i64        ┆ str       ┆ str                   ┆ str          │
+╞════════════╪═══════════╪═══════════════════════╪══════════════╡
+│ 234        ┆ Manhattan ┆ Union Sq              ┆ Yellow Zone  │
+│ 48         ┆ Manhattan ┆ Clinton East          ┆ Yellow Zone  │
+│ 142        ┆ Manhattan ┆ Lincoln Square East   ┆ Yellow Zone  │
+│ 79         ┆ Manhattan ┆ East Village          ┆ Yellow Zone  │
+│ 237        ┆ Manhattan ┆ Upper East Side South ┆ Yellow Zone  │
+└────────────┴───────────┴───────────────────────┴──────────────┘
+```
+
+To join on specific columns we can pass them to the join call:
+
+```
+dply -c 'csv("zones.csv") |
+    zones_df
+
+parquet("nyctaxi.parquet") |
+    left_join(zones_df, PULocationID == LocationID) |
+    select(PULocationID, Zone) |
+    head(5)'
+shape: (5, 2)
+┌──────────────┬───────────────────────┐
+│ PULocationID ┆ Zone                  │
+│ ---          ┆ ---                   │
+│ i64          ┆ str                   │
+╞══════════════╪═══════════════════════╡
+│ 234          ┆ Union Sq              │
+│ 48           ┆ Clinton East          │
+│ 142          ┆ Lincoln Square East   │
+│ 79           ┆ East Village          │
+│ 237          ┆ Upper East Side South │
+└──────────────┴───────────────────────┘
+```
 
 ### mutate
 

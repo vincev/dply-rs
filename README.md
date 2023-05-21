@@ -54,6 +54,7 @@ shape: (5, 4)
 - [glimpse](docs/functions.md#glimpse) Shows a dataframe overview
 - [group by and summarize](docs/functions.md#group_by-and-summarize) Performs grouped aggregations
 - [head](docs/functions.md#head) Shows the first few dataframe rows in table format
+- [joins](docs/functions.md#joins) Left, inner, outer and cross joins
 - [mutate](docs/functions.md#mutate) Creates or mutate columns
 - [parquet](docs/functions.md#parquet) Reads or writes a dataframe in Parquet format
 - [relocate](docs/functions.md#relocate) Moves columns positions
