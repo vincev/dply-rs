@@ -490,8 +490,7 @@ join is done by using all common columns, here we rename `PULocationID` to make
 the join work:
 
 ```
-$ dply -c 'csv("zones.csv") |
-    zones_df
+$ dply -c 'csv("zones.csv") | zones_df
 
 parquet("nyctaxi.parquet") |
     select(LocationID = PULocationID) |
@@ -514,8 +513,7 @@ shape: (5, 4)
 To join on specific columns we can pass them to the join call:
 
 ```
-dply -c 'csv("zones.csv") |
-    zones_df
+dply -c 'csv("zones.csv") | zones_df
 
 parquet("nyctaxi.parquet") |
     left_join(zones_df, PULocationID == LocationID) |
@@ -809,13 +807,45 @@ shape: (10, 5)
 
 ## Pipeline variables
 
-Pipeline variables store a pipeline progress that can be used in another pipeline,
-in the following example the `fare_amounts` variable stores the result of the
-parent `select` that is then used by another `group_by`:
+Pipeline variables store a pipeline progress that can be used by other pipelines,
+they are useful for joins or as partial computations to be used in other
+pipelines.
+
+Pipelines can be separated by a newline or by a semicolon, the following example
+has two pipelines, the first reads a CSV file with some zones mapping and saves
+the result to the `zones_df` variable, the second one uses `zones_df` for a join
+(note semicolon to separate pipelines):
+
+```
+$ dply -c 'csv("zones.csv") | zones_df; parquet("nyctaxi.parquet") |
+    left_join(zones_df, PULocationID == LocationID) |
+    select(contains("amount"), Zone) |
+    head()'
+shape: (10, 5)
+┌─────────────┬────────────┬──────────────┬──────────────┬───────────────────────────────┐
+│ fare_amount ┆ tip_amount ┆ tolls_amount ┆ total_amount ┆ Zone                          │
+│ ---         ┆ ---        ┆ ---          ┆ ---          ┆ ---                           │
+│ f64         ┆ f64        ┆ f64          ┆ f64          ┆ str                           │
+╞═════════════╪════════════╪══════════════╪══════════════╪═══════════════════════════════╡
+│ 14.5        ┆ 3.76       ┆ 0.0          ┆ 22.56        ┆ Union Sq                      │
+│ 6.5         ┆ 0.0        ┆ 0.0          ┆ 9.8          ┆ Clinton East                  │
+│ 11.5        ┆ 2.96       ┆ 0.0          ┆ 17.76        ┆ Lincoln Square East           │
+│ 18.0        ┆ 4.36       ┆ 0.0          ┆ 26.16        ┆ East Village                  │
+│ 12.5        ┆ 3.25       ┆ 0.0          ┆ 19.55        ┆ Upper East Side South         │
+│ 19.0        ┆ 0.0        ┆ 0.0          ┆ 22.3         ┆ Kips Bay                      │
+│ 8.5         ┆ 0.0        ┆ 0.0          ┆ 11.8         ┆ Gramercy                      │
+│ 6.0         ┆ 2.0        ┆ 0.0          ┆ 11.3         ┆ Sutton Place/Turtle Bay North │
+│ 12.0        ┆ 3.26       ┆ 0.0          ┆ 19.56        ┆ Midtown East                  │
+│ 9.0         ┆ 2.56       ┆ 0.0          ┆ 15.36        ┆ Clinton East                  │
+└─────────────┴────────────┴──────────────┴──────────────┴───────────────────────────────┘
+```
+
+alternatively we can use variables for producing different computation from a
+common start (use newlines as separator):
 
 ```
 $ dply -c 'parquet("nyctaxi.parquet") |
-    select(ends_with("time"), payment_type, contains("amount")) |
+    select(payment_type, contains("amount")) |
     fare_amounts |
     group_by(payment_type) |
     summarize(mean_amount = mean(total_amount)) |

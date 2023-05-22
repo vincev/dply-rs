@@ -5,6 +5,7 @@ Changes to the `dply` crate are documented in this file.
 ### Changed 🔧
 * Enable `unnest` to work on struct columns.
 * Add `inner_join`, `left_join`, `cross_join`, and `outer_join`.
+* Add semicolon pipeline separator.
 
 ## 0.1.4 - 2023-05-16
 ### Changed 🔧
