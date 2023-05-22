@@ -376,24 +376,20 @@ fn function(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
 /// A pipeline can be a list of function calls or identifiers separated by a pipe.
 fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     let separator = tuple((ws, tag("|"), ws, opt(newline)));
-    let terminator = tuple((ws, opt(newline)));
 
     context(
         "pipeline",
-        delimited(
-            many0(newline),
-            map(
-                separated_list0(separator, cut(alt((function, identifier)))),
-                Expr::Pipeline,
-            ),
-            terminator,
+        map(
+            separated_list0(separator, cut(alt((function, identifier)))),
+            Expr::Pipeline,
         ),
     )(input)
 }
 
 /// Parses one or more pipelines.
 fn root(input: &str) -> IResult<&str, Vec<Expr>, VerboseError<&str>> {
-    separated_list1(many1_count(newline), cut(pipeline))(input)
+    let separator = alt((newline, char(';')));
+    separated_list1(many1_count(separator), cut(pipeline))(input)
 }
 
 /// Parses one or more dply pipelines.
@@ -498,6 +494,32 @@ mod tests {
                 "
                 pre_pipeline
                   identifier: names_df
+                  pre_function: glimpse(0)
+                  post_function: glimpse(0)
+                post_pipeline"
+            )
+        );
+
+        // Semicolon separated
+        let text = r#"csv("a.csv") | a_df; csv("b.csv") | left_join(a_df) | glimpse()"#;
+        assert_parser!(
+            text,
+            indoc!(
+                "
+                pre_pipeline
+                  pre_function: csv(1)
+                    string: a.csv
+                  post_function: csv(1)
+                  identifier: a_df
+                post_pipeline
+
+                pre_pipeline
+                  pre_function: csv(1)
+                    string: b.csv
+                  post_function: csv(1)
+                  pre_function: left_join(1)
+                    identifier: a_df
+                  post_function: left_join(1)
                   pre_function: glimpse(0)
                   post_function: glimpse(0)
                 post_pipeline"
