@@ -6,6 +6,7 @@ Changes to the `dply` crate are documented in this file.
 * Enable `unnest` to work on struct columns.
 * Add `inner_join`, `left_join`, `cross_join`, and `outer_join`.
 * Add semicolon pipeline separator.
+* `summarize`: Add `list` function for creating list columns from grouped data.
 
 ## 0.1.4 - 2023-05-16
 ### Changed 🔧

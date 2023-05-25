@@ -415,8 +415,8 @@ pipeline.
 values. `group_by` specifies which columns to use for the groups and `summarize`
 specifies which aggregate operations to compute.
 
-`summarize` supports the following aggregate functions, `max`, `min`, `mean`,
-`median`, `sd`, `sum`, `var` and `quantile`.
+`summarize` supports the following aggregate functions, `list`, `max`, `min`,
+`mean`, `median`, `sd`, `sum`, `var` and `quantile`.
 
 A call to `group_by` must always be followed by a `summarize`.
 
@@ -737,31 +737,58 @@ be the last step in a pipeline as it consumes the input dataframe.
 
 ```
 $ dply -c 'parquet("lists.parquet") |
-    mutate(ints_list = ints) |
-    select(ints, ints_list) |
+    select(shape_id, ints) |
     unnest(ints) |
     head()'
 shape: (10, 2)
-┌──────┬───────────────┐
-│ ints ┆ ints_list     │
-│ ---  ┆ ---           │
-│ u32  ┆ list[u32]     │
-╞══════╪═══════════════╡
-│ 3    ┆ [3, 88, 94]   │
-│ 88   ┆ [3, 88, 94]   │
-│ 94   ┆ [3, 88, 94]   │
-│ 73   ┆ [73]          │
-│ null ┆ null          │
-│ 43   ┆ [43, 97]      │
-│ 97   ┆ [43, 97]      │
-│ null ┆ null          │
-│ 65   ┆ [65]          │
-│ 1    ┆ [1, 22, … 87] │
-└──────┴───────────────┘
+┌──────────┬──────┐
+│ shape_id ┆ ints │
+│ ---      ┆ ---  │
+│ u32      ┆ u32  │
+╞══════════╪══════╡
+│ 1        ┆ 3    │
+│ 1        ┆ 88   │
+│ 1        ┆ 94   │
+│ 2        ┆ 73   │
+│ 3        ┆ null │
+│ 4        ┆ 43   │
+│ 4        ┆ 97   │
+│ 5        ┆ null │
+│ 6        ┆ 65   │
+│ 7        ┆ 1    │
+└──────────┴──────┘
 ```
 
-It also works with struct fields, if we have a dataframe with columns that contain
-a list of structs:
+To create a list column from a group we can use the `list` function in
+`summarize`:
+
+```
+$ dply -c 'parquet("lists.parquet") |
+    select(shape_id, ints) |
+    unnest(ints) |
+    group_by(shape_id) |
+    summarize(ints = list(ints)) |
+    head()'
+shape: (10, 2)
+┌──────────┬────────────────┐
+│ shape_id ┆ ints           │
+│ ---      ┆ ---            │
+│ u32      ┆ list[u32]      │
+╞══════════╪════════════════╡
+│ 1        ┆ [3, 88, 94]    │
+│ 2        ┆ [73]           │
+│ 3        ┆ [null]         │
+│ 4        ┆ [43, 97]       │
+│ 5        ┆ [null]         │
+│ 6        ┆ [65]           │
+│ 7        ┆ [1, 22, … 87]  │
+│ 8        ┆ [null]         │
+│ 9        ┆ [36, 37, … 48] │
+│ 10       ┆ [6]            │
+└──────────┴────────────────┘
+```
+
+If we have a dataframe with columns that contain a list of structs:
 
 ```
 $ dply -c 'parquet("structs.parquet") | head(8)'

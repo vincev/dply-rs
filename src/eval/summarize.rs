@@ -31,14 +31,14 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .schema()
             .map(|s| s.into_owned())
             .map_err(anyhow::Error::from)
-            .and_then(|schema| eval_args(args, ctx, &schema))
+            .and_then(|schema| eval_args(args, ctx, &schema, true))
             .map_err(|e| anyhow!("summarize error: {e}"))?;
         ctx.set_df(group.agg(&columns))?;
     } else if let Some(df) = ctx.take_df() {
         let columns = df
             .schema()
             .map_err(anyhow::Error::from)
-            .and_then(|schema| eval_args(args, ctx, &schema))
+            .and_then(|schema| eval_args(args, ctx, &schema, false))
             .map_err(|e| anyhow!("summarize error: {e}"))?;
         ctx.set_df(df.select(&columns))?;
     } else {
@@ -48,7 +48,12 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn eval_args(args: &[Expr], ctx: &mut Context, schema: &Schema) -> Result<Vec<PolarsExpr>> {
+fn eval_args(
+    args: &[Expr],
+    ctx: &mut Context,
+    schema: &Schema,
+    grouping: bool,
+) -> Result<Vec<PolarsExpr>> {
     let schema_cols = ctx.columns();
     let mut aliases = HashSet::new();
     let mut columns = Vec::new();
@@ -63,8 +68,41 @@ fn eval_args(args: &[Expr], ctx: &mut Context, schema: &Schema) -> Result<Vec<Po
 
                 aliases.insert(alias.clone());
 
-                let expr = eval_expr(rhs, schema_cols, schema)?;
-                columns.push(expr.alias(&alias));
+                let column = match rhs.as_ref() {
+                    Expr::Function(name, _) if name == "n" => Ok(col(&schema_cols[0]).count()),
+                    Expr::Function(name, args) if name == "list" => {
+                        args::column(&args[0], schema).map(|c| list_column(c, grouping))
+                    }
+                    Expr::Function(name, args) if name == "max" => {
+                        args::column(&args[0], schema).map(|c| c.max())
+                    }
+                    Expr::Function(name, args) if name == "mean" => {
+                        args::column(&args[0], schema).map(|c| c.mean())
+                    }
+                    Expr::Function(name, args) if name == "median" => {
+                        args::column(&args[0], schema).map(|c| c.median())
+                    }
+                    Expr::Function(name, args) if name == "min" => {
+                        args::column(&args[0], schema).map(|c| c.min())
+                    }
+                    Expr::Function(name, args) if name == "quantile" => {
+                        let quantile = args::number(&args[1]);
+                        args::column(&args[0], schema)
+                            .map(|c| c.quantile(lit(quantile), QuantileInterpolOptions::Linear))
+                    }
+                    Expr::Function(name, args) if name == "sd" => {
+                        args::column(&args[0], schema).map(|c| c.std(1))
+                    }
+                    Expr::Function(name, args) if name == "sum" => {
+                        args::column(&args[0], schema).map(|c| c.sum())
+                    }
+                    Expr::Function(name, args) if name == "var" => {
+                        args::column(&args[0], schema).map(|c| c.var(1))
+                    }
+                    _ => panic!("Unexpected summarize expression {rhs}"),
+                }?;
+
+                columns.push(column.alias(&alias));
             }
             _ => panic!("Unexpected summarize expression: {arg}"),
         }
@@ -73,35 +111,16 @@ fn eval_args(args: &[Expr], ctx: &mut Context, schema: &Schema) -> Result<Vec<Po
     Ok(columns)
 }
 
-fn eval_expr(expr: &Expr, cols: &[String], schema: &Schema) -> Result<PolarsExpr> {
-    match expr {
-        Expr::Function(name, _) if name == "n" => Ok(col(&cols[0]).count()),
-        Expr::Function(name, args) if name == "max" => {
-            args::column(&args[0], schema).map(|c| c.max())
-        }
-        Expr::Function(name, args) if name == "mean" => {
-            args::column(&args[0], schema).map(|c| c.mean())
-        }
-        Expr::Function(name, args) if name == "median" => {
-            args::column(&args[0], schema).map(|c| c.median())
-        }
-        Expr::Function(name, args) if name == "min" => {
-            args::column(&args[0], schema).map(|c| c.min())
-        }
-        Expr::Function(name, args) if name == "quantile" => {
-            let quantile = args::number(&args[1]);
-            args::column(&args[0], schema)
-                .map(|c| c.quantile(lit(quantile), QuantileInterpolOptions::Linear))
-        }
-        Expr::Function(name, args) if name == "sd" => {
-            args::column(&args[0], schema).map(|c| c.std(1))
-        }
-        Expr::Function(name, args) if name == "sum" => {
-            args::column(&args[0], schema).map(|c| c.sum())
-        }
-        Expr::Function(name, args) if name == "var" => {
-            args::column(&args[0], schema).map(|c| c.var(1))
-        }
-        _ => panic!("Unexpected summarize expression {expr}"),
+fn list_column(col: PolarsExpr, grouping: bool) -> PolarsExpr {
+    if grouping {
+        col.apply(
+            |s| Ok(Some(s)),
+            GetOutput::map_dtype(|d| DataType::List(Box::new(d.clone()))),
+        )
+    } else {
+        col.map(
+            |s| Ok(Some(Series::new("items", &[s]))),
+            GetOutput::map_dtype(|d| DataType::List(Box::new(d.clone()))),
+        )
     }
 }

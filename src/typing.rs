@@ -298,6 +298,7 @@ fn match_summarize(expr: &Expr) -> MatchResult {
 
     let summarize_op = n_fn
         .or(quantile_fn)
+        .or(match_column_fn("list"))
         .or(match_column_fn("max"))
         .or(match_column_fn("mean"))
         .or(match_column_fn("median"))

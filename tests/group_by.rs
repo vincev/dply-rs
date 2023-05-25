@@ -167,3 +167,72 @@ fn summarize_median_quantile() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn group_by_list() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            select(payment_type, contains("amount")) |
+            filter(total_amount < 8.5) |
+            group_by(payment_type) |
+            summarize(
+                amounts = list(total_amount),
+                fares = list(fare_amount)
+            ) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (2, 3)
+            ┌──────────────┬─────────────────┬─────────────────┐
+            │ payment_type ┆ amounts         ┆ fares           │
+            │ ---          ┆ ---             ┆ ---             │
+            │ str          ┆ list[f64]       ┆ list[f64]       │
+            ╞══════════════╪═════════════════╪═════════════════╡
+            │ Cash         ┆ [3.3, 7.8, 8.3] ┆ [2.5, 7.0, 5.0] │
+            │ Dispute      ┆ [7.3, -8.3]     ┆ [4.0, -4.5]     │
+            └──────────────┴─────────────────┴─────────────────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn summarize_list() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            select(payment_type, contains("amount")) |
+            filter(total_amount < 9) |
+            summarize(
+                amounts = list(total_amount),
+                fares = list(fare_amount),
+                n = n()
+            ) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (1, 3)
+            ┌────────────────────┬────────────────────┬─────┐
+            │ amounts            ┆ fares              ┆ n   │
+            │ ---                ┆ ---                ┆ --- │
+            │ list[f64]          ┆ list[f64]          ┆ u32 │
+            ╞════════════════════╪════════════════════╪═════╡
+            │ [3.3, 7.3, … -8.3] ┆ [2.5, 4.0, … -4.5] ┆ 11  │
+            └────────────────────┴────────────────────┴─────┘
+       "#
+        )
+    );
+
+    Ok(())
+}
