@@ -103,16 +103,16 @@ fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<P
     use DataType::*;
 
     match (elem_type, pattern) {
-        (Int8, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i8))),
-        (Int16, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i16))),
-        (Int32, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i32))),
-        (Int64, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as i64))),
-        (UInt8, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as u8))),
-        (UInt16, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as u16))),
-        (UInt32, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as u32))),
-        (UInt64, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as u64))),
-        (Float32, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n as f32))),
-        (Float64, Expr::Number(n)) => Ok(col(column).arr().contains(lit(*n))),
+        (Int8, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as i8))),
+        (Int16, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as i16))),
+        (Int32, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as i32))),
+        (Int64, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as i64))),
+        (UInt8, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as u8))),
+        (UInt16, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as u16))),
+        (UInt32, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as u32))),
+        (UInt64, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as u64))),
+        (Float32, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n as f32))),
+        (Float64, Expr::Number(n)) => Ok(col(column).list().contains(lit(*n))),
         (Utf8, Expr::String(s)) => {
             let re = regex::Regex::new(s)
                 .map_err(|_| anyhow!("invalid contains regex '{s}' for column '{column}'"))?;

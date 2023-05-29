@@ -99,7 +99,7 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
         Expr::Function(name, args) if name == "len" => {
             let column = args::identifier(&args[0]);
             match schema.get(&column) {
-                Some(DataType::List(_)) => Ok(col(&column).arr().lengths()),
+                Some(DataType::List(_)) => Ok(col(&column).list().lengths()),
                 Some(_) => Err(anyhow!("`len` column '{column}' must be list")),
                 None => Err(anyhow!("Unknown column '{column}'")),
             }

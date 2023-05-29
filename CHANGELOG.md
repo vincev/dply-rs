@@ -1,12 +1,13 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
-## 0.1.5 - Unreleased
+## 0.1.5 - 2023-05-29
 ### Changed 🔧
 * Enable `unnest` to work on struct columns.
 * Add `inner_join`, `left_join`, `cross_join`, and `outer_join`.
 * Add semicolon pipeline separator.
 * `summarize`: Add `list` function for creating list columns from grouped data.
+* Update to Polars 0.30
 
 ## 0.1.4 - 2023-05-16
 ### Changed 🔧
