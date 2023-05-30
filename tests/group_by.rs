@@ -200,6 +200,49 @@ fn group_by_list() -> Result<()> {
         )
     );
 
+    // Test inverse
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            select(payment_type, contains("amount")) |
+            filter(total_amount < 8.5) |
+            group_by(payment_type) |
+            summarize(
+                amounts = list(total_amount),
+                fares = list(fare_amount)
+            ) |
+            unnest(amounts, fares) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (13, 3)
+            ┌──────────────┬─────────┬───────┐
+            │ payment_type ┆ amounts ┆ fares │
+            │ ---          ┆ ---     ┆ ---   │
+            │ str          ┆ f64     ┆ f64   │
+            ╞══════════════╪═════════╪═══════╡
+            │ Cash         ┆ 3.3     ┆ 2.5   │
+            │ Cash         ┆ 3.3     ┆ 7.0   │
+            │ Cash         ┆ 3.3     ┆ 5.0   │
+            │ Cash         ┆ 7.8     ┆ 2.5   │
+            │ Cash         ┆ 7.8     ┆ 7.0   │
+            │ Cash         ┆ 7.8     ┆ 5.0   │
+            │ Cash         ┆ 8.3     ┆ 2.5   │
+            │ Cash         ┆ 8.3     ┆ 7.0   │
+            │ Cash         ┆ 8.3     ┆ 5.0   │
+            │ Dispute      ┆ 7.3     ┆ 4.0   │
+            │ Dispute      ┆ 7.3     ┆ -4.5  │
+            │ Dispute      ┆ -8.3    ┆ 4.0   │
+            │ Dispute      ┆ -8.3    ┆ -4.5  │
+            └──────────────┴─────────┴───────┘
+       "#
+        )
+    );
+
     Ok(())
 }
 
@@ -208,7 +251,7 @@ fn summarize_list() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             select(payment_type, contains("amount")) |
-            filter(total_amount < 9) |
+            filter(total_amount < 8.5, fare_amount > 0 & fare_amount < 6.0) |
             summarize(
                 amounts = list(total_amount),
                 fares = list(fare_amount),
@@ -223,13 +266,51 @@ fn summarize_list() -> Result<()> {
         indoc!(
             r#"
             shape: (1, 3)
-            ┌────────────────────┬────────────────────┬─────┐
-            │ amounts            ┆ fares              ┆ n   │
-            │ ---                ┆ ---                ┆ --- │
-            │ list[f64]          ┆ list[f64]          ┆ u32 │
-            ╞════════════════════╪════════════════════╪═════╡
-            │ [3.3, 7.3, … -8.3] ┆ [2.5, 4.0, … -4.5] ┆ 11  │
-            └────────────────────┴────────────────────┴─────┘
+            ┌─────────────────┬─────────────────┬─────┐
+            │ amounts         ┆ fares           ┆ n   │
+            │ ---             ┆ ---             ┆ --- │
+            │ list[f64]       ┆ list[f64]       ┆ u32 │
+            ╞═════════════════╪═════════════════╪═════╡
+            │ [3.3, 7.3, 8.3] ┆ [2.5, 4.0, 5.0] ┆ 3   │
+            └─────────────────┴─────────────────┴─────┘
+       "#
+        )
+    );
+
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            select(payment_type, contains("amount")) |
+            filter(total_amount < 8.5, fare_amount > 0 & fare_amount < 6.0) |
+            summarize(
+                amounts = list(total_amount),
+                fares = list(fare_amount),
+                n = n()
+            ) |
+            unnest(amounts, fares) |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (9, 3)
+            ┌─────────┬───────┬─────┐
+            │ amounts ┆ fares ┆ n   │
+            │ ---     ┆ ---   ┆ --- │
+            │ f64     ┆ f64   ┆ u32 │
+            ╞═════════╪═══════╪═════╡
+            │ 3.3     ┆ 2.5   ┆ 3   │
+            │ 3.3     ┆ 4.0   ┆ 3   │
+            │ 3.3     ┆ 5.0   ┆ 3   │
+            │ 7.3     ┆ 2.5   ┆ 3   │
+            │ 7.3     ┆ 4.0   ┆ 3   │
+            │ 7.3     ┆ 5.0   ┆ 3   │
+            │ 8.3     ┆ 2.5   ┆ 3   │
+            │ 8.3     ┆ 4.0   ┆ 3   │
+            │ 8.3     ┆ 5.0   ┆ 3   │
+            └─────────┴───────┴─────┘
        "#
         )
     );

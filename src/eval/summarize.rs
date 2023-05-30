@@ -70,9 +70,8 @@ fn eval_args(
 
                 let column = match rhs.as_ref() {
                     Expr::Function(name, _) if name == "n" => Ok(col(&schema_cols[0]).count()),
-                    Expr::Function(name, args) if name == "list" => {
-                        args::column(&args[0], schema).map(|c| list_column(c, grouping))
-                    }
+                    Expr::Function(name, args) if name == "list" => args::column(&args[0], schema)
+                        .map(|c| if grouping { c } else { c.implode() }),
                     Expr::Function(name, args) if name == "max" => {
                         args::column(&args[0], schema).map(|c| c.max())
                     }
@@ -109,18 +108,4 @@ fn eval_args(
     }
 
     Ok(columns)
-}
-
-fn list_column(col: PolarsExpr, grouping: bool) -> PolarsExpr {
-    if grouping {
-        col.apply(
-            |s| Ok(Some(s)),
-            GetOutput::map_dtype(|d| DataType::List(Box::new(d.clone()))),
-        )
-    } else {
-        col.map(
-            |s| Ok(Some(Series::new("items", &[s]))),
-            GetOutput::map_dtype(|d| DataType::List(Box::new(d.clone()))),
-        )
-    }
 }
