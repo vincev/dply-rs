@@ -375,7 +375,7 @@ fn function(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
 ///
 /// A pipeline can be a list of function calls or identifiers separated by a pipe.
 fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
-    let separator = tuple((ws, tag("|"), ws, opt(newline)));
+    let separator = tuple((multispace0, tag("|"), multispace0));
 
     context(
         "pipeline",
@@ -400,7 +400,7 @@ pub fn parse(input: &str) -> Result<Vec<Expr>> {
         .map(|line| format!("{line}\n"))
         .collect::<String>();
 
-    match root(input.trim()) {
+    match root(input.trim().trim_end_matches(';')) {
         Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => {
             bail!("Parse error: {}", convert_error(input.as_str(), e))
         }
@@ -535,8 +535,8 @@ mod tests {
     fn multiline_pipeline() {
         let text = indoc! {r#"
             parquet("test.parquet") |
-                select(first_name, last_name) |
-                filter(year < 2020) |
+                select(first_name, last_name)
+             |  filter(year < 2020) |
                 show(limit = 25)
         "#};
 
