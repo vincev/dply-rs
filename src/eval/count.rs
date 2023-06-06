@@ -24,11 +24,12 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
+        let schema_cols = ctx.columns();
         let mut columns = Vec::new();
 
         for arg in args {
             if let Expr::Identifier(column) = arg {
-                if !ctx.columns().contains(column) {
+                if !schema_cols.contains(column) {
                     bail!("count error: Unknown column {column}");
                 }
 
@@ -39,7 +40,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        let agg_col = find_agg_column(ctx.columns());
+        let agg_col = find_agg_column(schema_cols.as_slice());
 
         let df = if !columns.is_empty() {
             let ncol = columns.last().unwrap().clone();
@@ -54,7 +55,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
             df.sort_by_exprs(columns, sort_mask, false)
         } else {
-            df.select(&[col(&ctx.columns()[0]).count().alias(&agg_col)])
+            df.select(&[col(&schema_cols[0]).count().alias(&agg_col)])
         };
 
         ctx.set_df(df)?;

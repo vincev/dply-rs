@@ -79,9 +79,14 @@ impl Context {
         self.vars.get(name)
     }
 
-    /// Returns the last dataframe columns.
-    pub fn columns(&self) -> &[String] {
-        &self.columns
+    /// Returns the active dataframe or group columns.
+    pub fn columns(&self) -> Vec<String> {
+        self.columns.clone()
+    }
+
+    /// Returns the active dataframe variables.
+    pub fn vars(&self) -> Vec<String> {
+        self.vars.keys().cloned().collect()
     }
 
     /// Returns and consume the active group.
@@ -95,9 +100,19 @@ impl Context {
     }
 
     /// Sets the active group.
-    pub fn set_group(&mut self, group: LazyGroupBy) {
+    pub fn set_group(&mut self, group: LazyGroupBy) -> Result<()> {
         assert!(self.df.is_none());
+
+        self.columns = group
+            .logical_plan
+            .schema()
+            .map_err(|e| anyhow!("Schema error: {e}"))?
+            .iter_names()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
+
         self.group = Some(group);
+        Ok(())
     }
 
     /// Print results to the context output.
@@ -114,12 +129,10 @@ impl Context {
 }
 
 /// Evaluate pipelines expressions to standard output.
-pub fn eval(exprs: &[Expr]) -> Result<()> {
+pub fn eval(ctx: &mut Context, exprs: &[Expr]) -> Result<()> {
     // Let the interpreters handle the number of rows in the output.
     std::env::set_var("POLARS_FMT_MAX_ROWS", i64::MAX.to_string());
-
-    let mut ctx = Context::default();
-    eval_pipelines(exprs, &mut ctx)
+    eval_pipelines(exprs, ctx)
 }
 
 /// Evaluate pipelines expressions to a string output, used for testing.

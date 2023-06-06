@@ -24,11 +24,12 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
+        let schema_cols = ctx.columns();
         let mut columns = Vec::new();
 
         for arg in args {
             if let Expr::Identifier(column) = arg {
-                if !ctx.columns().contains(column) {
+                if !schema_cols.contains(column) {
                     bail!("group_by error: Unknown column {column}");
                 }
 
@@ -39,7 +40,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_group(df.groupby_stable(&columns));
+        ctx.set_group(df.groupby_stable(&columns))?;
     } else {
         bail!("group_by error: missing input dataframe");
     }
