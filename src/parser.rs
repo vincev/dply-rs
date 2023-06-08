@@ -18,12 +18,12 @@ use anyhow::{bail, Result};
 use nom::branch::alt;
 use nom::bytes::complete::{is_a, is_not, tag};
 use nom::character::complete::{alpha1, alphanumeric1, char, multispace0, newline};
-use nom::combinator::{cut, map, opt, recognize, value, verify};
+use nom::combinator::{cut, map, recognize, value, verify};
 use nom::error::{context, convert_error, VerboseError};
 use nom::multi::{many0, many0_count, many1_count, separated_list0, separated_list1};
 use nom::number::complete::double;
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
-use nom::{IResult, Offset};
+use nom::IResult;
 use std::fmt;
 
 /// A parsed dply expression.
@@ -375,7 +375,7 @@ fn function(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
 ///
 /// A pipeline can be a list of function calls or identifiers separated by a pipe.
 fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
-    let separator = tuple((ws, tag("|"), ws, opt(newline)));
+    let separator = tuple((multispace0, tag("|"), multispace0));
 
     context(
         "pipeline",
@@ -388,7 +388,7 @@ fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
 
 /// Parses one or more pipelines.
 fn root(input: &str) -> IResult<&str, Vec<Expr>, VerboseError<&str>> {
-    let separator = alt((newline, char(';')));
+    let separator = alt((char(';'), newline));
     separated_list1(many1_count(separator), cut(pipeline))(input)
 }
 
@@ -400,18 +400,12 @@ pub fn parse(input: &str) -> Result<Vec<Expr>> {
         .map(|line| format!("{line}\n"))
         .collect::<String>();
 
-    match root(input.trim()) {
+    match root(input.trim().trim_end_matches(';')) {
         Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => {
             bail!("Parse error: {}", convert_error(input.as_str(), e))
         }
         Err(e) => bail!("Parse error: {e}"),
-        Ok(("", exprs)) => Ok(exprs),
-        Ok((remain, _)) => {
-            let offset = input.offset(remain);
-            let line_no = &input[..offset].chars().filter(|c| *c == '\n').count() + 1;
-            let (remain_line, _) = remain.split_once('\n').unwrap_or((remain, ""));
-            bail!("Parse error at line {}: {}", line_no, remain_line);
-        }
+        Ok((_, exprs)) => Ok(exprs),
     }
 }
 
@@ -535,8 +529,8 @@ mod tests {
     fn multiline_pipeline() {
         let text = indoc! {r#"
             parquet("test.parquet") |
-                select(first_name, last_name) |
-                filter(year < 2020) |
+                select(first_name, last_name)
+             |  filter(year < 2020) |
                 show(limit = 25)
         "#};
 

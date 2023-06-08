@@ -24,7 +24,7 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
-        // arrange(year, desc(day))
+        let schema_cols = ctx.columns();
         let mut columns = Vec::with_capacity(args.len());
         let mut descending = Vec::with_capacity(args.len());
 
@@ -33,7 +33,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 Expr::Function(name, args) if name == "desc" => {
                     // arrange(desc(column))
                     let column = args::identifier(&args[0]);
-                    if !ctx.columns().contains(&column) {
+                    if !schema_cols.contains(&column) {
                         bail!("arrange error: Unknown column {column}");
                     }
 
@@ -42,7 +42,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 }
                 Expr::Identifier(column) => {
                     // arrange(column)
-                    if !ctx.columns().contains(column) {
+                    if !schema_cols.contains(column) {
                         bail!("arrange error: Unknown column {column}");
                     }
 

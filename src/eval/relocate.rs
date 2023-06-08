@@ -34,6 +34,7 @@ enum RelocateTo {
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
+        let schema_cols = ctx.columns();
         let mut relocate_cols = Vec::new();
         let mut relocate_to = RelocateTo::Default;
 
@@ -44,7 +45,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     let dest = args::identifier(lhs);
                     let pos = args::identifier(rhs);
 
-                    if !ctx.columns().contains(&pos) {
+                    if !schema_cols.contains(&pos) {
                         bail!("relocate error: Unknown {dest} column {pos}");
                     }
 
@@ -55,7 +56,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     };
                 }
                 Expr::Identifier(column) => {
-                    if !ctx.columns().contains(column) {
+                    if !schema_cols.contains(column) {
                         bail!("relocate error: Unknown column {column}");
                     }
 
@@ -67,7 +68,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        let mut schema_cols = ctx.columns().to_vec();
+        let mut schema_cols = schema_cols;
         match relocate_to {
             RelocateTo::Default => {
                 // Relocate columns to the left.

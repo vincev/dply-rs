@@ -24,11 +24,14 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
-        let mut schema_cols = ctx.columns().iter().map(|c| col(c)).collect::<Vec<_>>();
+        let mut schema_cols = ctx
+            .columns()
+            .into_iter()
+            .map(|c| col(&c))
+            .collect::<Vec<_>>();
 
         for arg in args {
             if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
-                // rename(alias = column)
                 let alias = args::identifier(lhs);
                 let column = args::identifier(rhs);
 

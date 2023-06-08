@@ -5,13 +5,16 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.1.5"
+version = "0.1.6"
+rust-version = "1.70.0"
 
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.2", features = ["derive"] }
-comfy-table = "6.1"
-nom = "7.1"
+comfy-table = "6"
+home = "0.5"
+nom = "7"
+reedline = "0.20"
 thiserror = "1.0"
 
 [dependencies.polars]

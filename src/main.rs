@@ -17,10 +17,10 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use std::fs;
-use std::io::{self, Read};
+use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;
 
-use dply::interpreter;
+use dply::{interpreter, repl};
 
 /// Cli interface.
 #[derive(Parser)]
@@ -37,18 +37,19 @@ pub struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let input = if let Some(command) = cli.command {
-        command
+    if let Some(input) = cli.command {
+        interpreter::eval(&input)?;
     } else if let Some(path) = cli.path {
-        fs::read_to_string(&path)
-            .map_err(|e| anyhow!("Error reading script {}: {e}", path.display()))?
+        let input = fs::read_to_string(&path)
+            .map_err(|e| anyhow!("Error reading script {}: {e}", path.display()))?;
+        interpreter::eval(&input)?;
+    } else if io::stdin().is_terminal() {
+        repl::run()?;
     } else {
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
-        input
+        interpreter::eval(&input)?;
     };
-
-    interpreter::eval(&input)?;
 
     Ok(())
 }

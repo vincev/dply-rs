@@ -31,12 +31,12 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         for arg in args {
             match arg {
                 Expr::Function(_, _) => {
-                    let mut filter_cols = filter_columns(arg, schema_cols, false);
+                    let mut filter_cols = filter_columns(arg, &schema_cols, false);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
                 Expr::UnaryOp(Operator::Not, expr) => {
-                    let mut filter_cols = filter_columns(expr, schema_cols, true);
+                    let mut filter_cols = filter_columns(expr, &schema_cols, true);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }

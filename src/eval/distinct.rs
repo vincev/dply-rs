@@ -24,11 +24,12 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(df) = ctx.take_df() {
+        let schema_cols = ctx.columns();
         let mut select_columns = Vec::new();
 
         for arg in args {
             let column = args::identifier(arg);
-            if !ctx.columns().contains(&column) {
+            if !schema_cols.contains(&column) {
                 bail!("distinct error: Unknown column {column}");
             }
 
