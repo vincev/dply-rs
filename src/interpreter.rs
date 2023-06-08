@@ -21,9 +21,10 @@ use crate::{eval, parser, typing};
 /// Evaluates a dply script.
 pub fn eval(input: &str) -> Result<()> {
     let pipelines = parser::parse(input)?;
-
     typing::validate(&pipelines)?;
-    eval::eval(&pipelines)?;
+
+    let mut ctx = eval::Context::default();
+    eval::eval(&mut ctx, &pipelines)?;
 
     Ok(())
 }
@@ -31,7 +32,6 @@ pub fn eval(input: &str) -> Result<()> {
 /// Evaluates a dply script with a string output.
 pub fn eval_to_string(input: &str) -> Result<String> {
     let pipelines = parser::parse(input)?;
-
     typing::validate(&pipelines)?;
     eval::eval_to_string(&pipelines)
 }

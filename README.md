@@ -1,15 +1,15 @@
 dply is a command line tool for viewing, querying, and writing csv and parquet
 files, inspired by [dplyr](https://dplyr.tidyverse.org/index.html) and powered by
-[polars](https://github.com/pola-rs/polars).
+[Polars](https://github.com/pola-rs/polars).
 
 ## Usage overview
 
 A dply pipeline consists of a number of functions to read, transform, or write
-data to disk.
+Parquet or CSV files.
 
-The following pipeline reads a parquet file[^1], computes the minimum, mean, and
-maximum fare for each payment type, saves the result to `fares.csv` CSV file, and
-shows the result:
+The following dply command runs a pipeline that reads a Parquet file[^1], computes
+the minimum, mean, and maximum fare for each payment type, saves the result to
+`fares.csv` CSV file, and shows the result:
 
 ```
 $ dply -c 'parquet("nyctaxi.parquet") |
@@ -35,6 +35,10 @@ shape: (5, 4)
 │ Unknown      ┆ 9.96      ┆ 28.893333  ┆ 85.02     │
 └──────────────┴───────────┴────────────┴───────────┘
 ```
+
+Running dply without any parameter starts the interactive client:
+
+<img src="./docs/demo.gif" alt="Dply demo">
 
 [^1]: The file `nyctaxi.parquet` in the [tests/data][tests-data] folder is a
 250 rows parquet file sampled from the [NYC trip record data][nyc-trips].

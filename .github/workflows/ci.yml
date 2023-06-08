@@ -8,6 +8,7 @@ on:
   push:
     paths-ignore:
       - "**.md"
+      - docs/**
 
 env:
   CARGO_TERM_COLOR: always

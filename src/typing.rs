@@ -14,19 +14,17 @@
 // limitations under the License.
 
 //! Checks pipeline functions and arguments types.
-use anyhow::Result;
+use anyhow::{anyhow, bail, Result};
 
-use crate::parser::Expr;
-use matcher::*;
-
-mod matcher;
+use crate::parser::{Expr, Operator};
+use crate::signatures::{self, ArgType, Args};
 
 /// Checks pipeline functions and arguments types.
 pub fn validate(exprs: &[Expr]) -> Result<()> {
     for expr in exprs {
         if let Expr::Pipeline(exprs) = expr {
             for expr in exprs {
-                match_identifier.or(match_pipeline_fn).matches(expr)?;
+                check_signature(expr)?;
             }
         }
     }
@@ -34,295 +32,247 @@ pub fn validate(exprs: &[Expr]) -> Result<()> {
     Ok(())
 }
 
-/// Checks arguments for pipeline functions.
-fn match_pipeline_fn(expr: &Expr) -> MatchResult {
-    match_arrange
-        .or(match_count)
-        .or(match_csv)
-        .or(match_distinct)
-        .or(match_filter)
-        .or(match_glimpse)
-        .or(match_group_by)
-        .or(match_head)
-        .or(match_joins)
-        .or(match_mutate)
-        .or(match_parquet)
-        .or(match_relocate)
-        .or(match_rename)
-        .or(match_select)
-        .or(match_show)
-        .or(match_summarize)
-        .or(match_unnest)
-        .matches(expr)
+fn check_signature(expr: &Expr) -> Result<()> {
+    match expr {
+        Expr::Function(name, expr_args) => {
+            let sigs = signatures::functions();
+            if let Some(sig_args) = sigs.get(name.as_str()) {
+                check_args(name, expr_args, sig_args)
+            } else {
+                Err(anyhow!("Unknown function: {name}"))
+            }
+        }
+        Expr::Identifier(_) => Ok(()),
+        _ => Err(anyhow!("Unexpected expression {expr}")),
+    }
 }
 
-/// Checks arguments for arrange call.
-fn match_arrange(expr: &Expr) -> MatchResult {
-    let desc_fn = match_function("desc")
-        .and(match_min_args(1))
-        .and(match_max_args(1))
-        .and(match_args(match_identifier));
+fn check_args(name: &str, exprs: &[Expr], sig_args: &Args) -> Result<()> {
+    match sig_args {
+        signatures::Args::None => {
+            if !exprs.is_empty() {
+                bail!("Unexpected argument for function '{name}'");
+            }
+        }
+        signatures::Args::NoneOrOne(arg) => match exprs.len() {
+            0 => return Ok(()),
+            1 => check_arg(name, &exprs[0], arg)?,
+            _ => bail!("Too many arguments for function '{name}'"),
+        },
+        signatures::Args::ZeroOrMore(arg) => {
+            for expr in exprs {
+                check_arg(name, expr, arg)?;
+            }
+        }
+        signatures::Args::OneOrMore(arg) => {
+            if exprs.is_empty() {
+                bail!("Missing arguments for function '{name}'");
+            }
 
-    match_function("arrange")
-        .and_fail(match_min_args(1).and(match_args(match_identifier.or(desc_fn))))
-        .matches(expr)
+            for expr in exprs {
+                check_arg(name, expr, arg)?;
+            }
+        }
+        signatures::Args::OneThenMore(first, rest) => {
+            if exprs.is_empty() {
+                bail!("Missing argument for function '{name}'");
+            }
+
+            check_arg(name, &exprs[0], first)?;
+
+            for expr in &exprs[1..] {
+                check_arg(name, expr, rest)?;
+            }
+        }
+        signatures::Args::Ordered(args) => {
+            if exprs.len() < args.len() {
+                bail!("Missing arguments for function '{name}'");
+            }
+
+            if exprs.len() > args.len() {
+                bail!("Too many arguments for function '{name}'");
+            }
+
+            for (expr, arg) in exprs.iter().zip(args.iter()) {
+                check_arg(name, expr, arg)?;
+            }
+        }
+    };
+
+    Ok(())
 }
 
-/// Checks arguments for count call.
-fn match_count(expr: &Expr) -> MatchResult {
-    let sort_opt = match_assign(match_named("sort"), match_bool);
-
-    match_function("count")
-        .and_fail(match_args(match_identifier.or(sort_opt)))
-        .matches(expr)
+fn check_arg(fname: &str, expr: &Expr, arg: &ArgType) -> Result<()> {
+    match arg {
+        ArgType::Arith(arg) => check_arith(fname, expr, arg),
+        ArgType::Assign(lhs, rhs) => check_assign(fname, expr, lhs, rhs),
+        ArgType::Bool => check_bool(fname, expr),
+        ArgType::Compare(lhs, rhs) => check_compare(fname, expr, lhs, rhs),
+        ArgType::Eq(lhs, rhs) => check_equal(fname, expr, lhs, rhs),
+        ArgType::Function(name, args) => check_function(name, expr, args),
+        ArgType::Identifier => check_identifier(fname, expr),
+        ArgType::Logical(arg) => check_logical(fname, expr, arg),
+        ArgType::Named(name) => check_named(fname, name, expr),
+        ArgType::Negate(arg) => check_negate(fname, expr, arg),
+        ArgType::Number => check_number(fname, expr),
+        ArgType::OneOf(args) => check_one_of(fname, expr, args),
+        ArgType::String => check_string(fname, expr),
+    }
 }
 
-/// Checks arguments for csv call.
-fn match_csv(expr: &Expr) -> MatchResult {
-    let overwrite_opt = match_assign(match_named("overwrite"), match_bool);
-
-    match_function("csv")
-        .and_fail(
-            match_max_args(2)
-                .and(match_arg(0, match_string))
-                .and(match_opt_arg(1, overwrite_opt)),
+fn check_arith(fname: &str, expr: &Expr, arg: &ArgType) -> Result<()> {
+    fn is_arith(expr: &Expr) -> bool {
+        matches!(
+            expr,
+            Expr::BinaryOp(_, Operator::Plus, _)
+                | Expr::BinaryOp(_, Operator::Minus, _)
+                | Expr::BinaryOp(_, Operator::Divide, _)
+                | Expr::BinaryOp(_, Operator::Multiply, _)
         )
-        .matches(expr)
+    }
+
+    match expr {
+        Expr::BinaryOp(lhs, Operator::Plus, rhs)
+        | Expr::BinaryOp(lhs, Operator::Minus, rhs)
+        | Expr::BinaryOp(lhs, Operator::Divide, rhs)
+        | Expr::BinaryOp(lhs, Operator::Multiply, rhs) => {
+            if is_arith(lhs) {
+                check_arith(fname, lhs, arg)?;
+            } else {
+                check_arg(fname, lhs, arg)?;
+            }
+
+            if is_arith(rhs) {
+                check_arith(fname, rhs, arg)
+            } else {
+                check_arg(fname, rhs, arg)
+            }
+        }
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for distinct call.
-fn match_distinct(expr: &Expr) -> MatchResult {
-    match_function("distinct")
-        .and_fail(match_args(match_identifier))
-        .matches(expr)
+fn check_assign(fname: &str, expr: &Expr, larg: &ArgType, rarg: &ArgType) -> Result<()> {
+    match expr {
+        Expr::BinaryOp(lhs, Operator::Assign, rhs) => {
+            check_arg(fname, lhs, larg)?;
+            check_arg(fname, rhs, rarg)
+        }
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for filter call.
-fn match_filter(expr: &Expr) -> MatchResult {
-    let compare_op = || {
-        let dt_fn = match_function("dt")
-            .and(match_min_args(1))
-            .and(match_max_args(1))
-            .and(match_args(match_string));
-
-        let rhs_cmp = match_identifier
-            .or(match_number)
-            .or(match_string)
-            .or(match_bool)
-            .or(dt_fn);
-
-        let contains_fn = || {
-            match_function("contains")
-                .and(match_min_args(2))
-                .and(match_max_args(2))
-                .and(match_arg(0, match_identifier))
-                .and(match_arg(1, match_string.or(match_number)))
-        };
-
-        let is_null_fn = || match_column_fn("is_null");
-
-        let predicates = contains_fn()
-            .or(match_negate(contains_fn()))
-            .or(is_null_fn())
-            .or(match_negate(is_null_fn()));
-
-        match_compare(match_identifier, rhs_cmp).or(predicates)
-    };
-
-    let logic_op = match_logical(compare_op());
-    let filter_args = compare_op().or(logic_op);
-
-    match_function("filter")
-        .and_fail(match_min_args(1).and(match_args(filter_args)))
-        .matches(expr)
+fn check_bool(fname: &str, expr: &Expr) -> Result<()> {
+    match expr {
+        Expr::Identifier(s) if s == "true" => Ok(()),
+        Expr::Identifier(s) if s == "false" => Ok(()),
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for glimpse call.
-fn match_glimpse(expr: &Expr) -> MatchResult {
-    match_function("glimpse")
-        .and_fail(match_max_args(0))
-        .matches(expr)
+fn check_compare(fname: &str, expr: &Expr, larg: &ArgType, rarg: &ArgType) -> Result<()> {
+    match expr {
+        Expr::BinaryOp(lhs, Operator::Eq, rhs)
+        | Expr::BinaryOp(lhs, Operator::NotEq, rhs)
+        | Expr::BinaryOp(lhs, Operator::Lt, rhs)
+        | Expr::BinaryOp(lhs, Operator::LtEq, rhs)
+        | Expr::BinaryOp(lhs, Operator::Gt, rhs)
+        | Expr::BinaryOp(lhs, Operator::GtEq, rhs) => {
+            check_arg(fname, lhs, larg)?;
+            check_arg(fname, rhs, rarg)
+        }
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for group_by call.
-fn match_group_by(expr: &Expr) -> MatchResult {
-    match_function("group_by")
-        .and_fail(match_min_args(1).and(match_args(match_identifier)))
-        .matches(expr)
+fn check_equal(fname: &str, expr: &Expr, larg: &ArgType, rarg: &ArgType) -> Result<()> {
+    match expr {
+        Expr::BinaryOp(lhs, Operator::Eq, rhs) => {
+            check_arg(fname, lhs, larg)?;
+            check_arg(fname, rhs, rarg)
+        }
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for a head call.
-fn match_head(expr: &Expr) -> MatchResult {
-    match_function("head")
-        .and_fail(
-            match_min_args(0)
-                .and(match_max_args(1))
-                .and(match_args(match_number)),
+fn check_function(fname: &str, expr: &Expr, sig_args: &Args) -> Result<()> {
+    match expr {
+        Expr::Function(name, args) if fname == name => check_args(name, args, sig_args),
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
+}
+
+fn check_identifier(fname: &str, expr: &Expr) -> Result<()> {
+    if !matches!(expr, Expr::Identifier(_)) {
+        Err(anyhow!("Invalid argument '{expr}' for function '{fname}'"))
+    } else {
+        Ok(())
+    }
+}
+
+fn check_logical(fname: &str, expr: &Expr, arg: &ArgType) -> Result<()> {
+    fn is_logical(expr: &Expr) -> bool {
+        matches!(
+            expr,
+            Expr::BinaryOp(_, Operator::And, _) | Expr::BinaryOp(_, Operator::Or, _)
         )
-        .matches(expr)
+    }
+
+    match expr {
+        Expr::BinaryOp(lhs, Operator::And, rhs) | Expr::BinaryOp(lhs, Operator::Or, rhs) => {
+            if is_logical(lhs) {
+                check_logical(fname, lhs, arg)?;
+            } else {
+                check_arg(fname, lhs, arg)?;
+            }
+
+            if is_logical(rhs) {
+                check_logical(fname, rhs, arg)
+            } else {
+                check_arg(fname, rhs, arg)
+            }
+        }
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for a joins call.
-fn match_joins(expr: &Expr) -> MatchResult {
-    match_function("left_join")
-        .or(match_function("inner_join"))
-        .or(match_function("outer_join"))
-        .or(match_function("cross_join"))
-        .and_fail(
-            match_min_args(1)
-                .and(match_arg(0, match_identifier))
-                .and(match_args_after(
-                    0,
-                    match_equal(match_identifier, match_identifier),
-                )),
-        )
-        .matches(expr)
+fn check_named(fname: &str, name: &str, expr: &Expr) -> Result<()> {
+    match expr {
+        Expr::Identifier(s) if s == name => Ok(()),
+        _ => Err(anyhow!("Invalid argument '{expr}' for function '{fname}'")),
+    }
 }
 
-/// Checks arguments for mutate call.
-fn match_mutate(expr: &Expr) -> MatchResult {
-    let operand_fn = || {
-        match_identifier
-            .or(match_number)
-            .or(match_string)
-            .or(match_column_fn("dt"))
-            .or(match_column_fn("len"))
-            .or(match_column_fn("min"))
-            .or(match_column_fn("max"))
-            .or(match_column_fn("mean"))
-            .or(match_column_fn("median"))
-    };
-
-    let rhs = operand_fn().or(match_arith(operand_fn()));
-
-    match_function("mutate")
-        .and_fail(match_min_args(1).and(match_args(match_assign(match_identifier, rhs))))
-        .matches(expr)
+fn check_negate(fname: &str, expr: &Expr, arg: &ArgType) -> Result<()> {
+    if let Expr::UnaryOp(Operator::Not, expr) = expr {
+        check_arg(fname, expr, arg)
+    } else {
+        Err(anyhow!("Invalid argument '{expr}' for function '{fname}'"))
+    }
 }
 
-/// Checks arguments for parquet call.
-fn match_parquet(expr: &Expr) -> MatchResult {
-    let overwrite_opt = match_assign(match_named("overwrite"), match_bool);
-
-    match_function("parquet")
-        .and_fail(
-            match_max_args(2)
-                .and(match_arg(0, match_string))
-                .and(match_opt_arg(1, overwrite_opt)),
-        )
-        .matches(expr)
+fn check_number(fname: &str, expr: &Expr) -> Result<()> {
+    if !matches!(expr, Expr::Number(_)) {
+        Err(anyhow!("Invalid argument '{expr}' for function '{fname}'"))
+    } else {
+        Ok(())
+    }
 }
 
-/// Checks arguments for relocate call.
-fn match_relocate(expr: &Expr) -> MatchResult {
-    let before_opt = match_assign(match_named("before"), match_identifier);
+fn check_one_of(fname: &str, expr: &Expr, args: &[ArgType]) -> Result<()> {
+    for arg in args {
+        if check_arg(fname, expr, arg).is_ok() {
+            return Ok(());
+        }
+    }
 
-    // relocate(gain, speed, after = day)
-    let after_opt = match_assign(match_named("after"), match_identifier);
-
-    let args = match_identifier.or(before_opt).or(after_opt);
-
-    match_function("relocate")
-        .and_fail(match_min_args(1).and(match_args(args)))
-        .matches(expr)
+    Err(anyhow!("Invalid argument '{expr}' for function '{fname}'"))
 }
 
-/// Checks arguments for rename call.
-fn match_rename(expr: &Expr) -> MatchResult {
-    let rename_opt = match_assign(match_identifier, match_identifier);
-
-    match_function("rename")
-        .and_fail(match_min_args(1).and(match_args(rename_opt)))
-        .matches(expr)
-}
-
-/// Checks arguments for select call.
-fn match_select(expr: &Expr) -> MatchResult {
-    let contains_fn = || {
-        match_function("contains")
-            .and(match_min_args(1))
-            .and(match_max_args(1))
-            .and(match_args(match_string))
-    };
-
-    // select(starts_with("time"), !starts_with("time"))
-    let starts_with_fn = || {
-        match_function("starts_with")
-            .and(match_min_args(1))
-            .and(match_max_args(1))
-            .and(match_args(match_string))
-    };
-
-    // select(ends_with("time"), !ends_with("time"))
-    let ends_with_fn = || {
-        match_function("ends_with")
-            .and(match_min_args(1))
-            .and(match_max_args(1))
-            .and(match_args(match_string))
-    };
-
-    // select(tail_num = tailnum)
-    let rename_opt = match_assign(match_identifier, match_identifier);
-
-    let args = contains_fn()
-        .or(match_negate(contains_fn()))
-        .or(starts_with_fn())
-        .or(match_negate(starts_with_fn()))
-        .or(ends_with_fn())
-        .or(match_negate(ends_with_fn()))
-        .or(rename_opt)
-        .or(match_identifier);
-
-    match_function("select")
-        .and_fail(match_min_args(1).and(match_args(args)))
-        .matches(expr)
-}
-
-/// Checks arguments for a show call.
-fn match_show(expr: &Expr) -> MatchResult {
-    match_function("show")
-        .and_fail(match_max_args(0))
-        .matches(expr)
-}
-
-/// Checks arguments for summarize call.
-fn match_summarize(expr: &Expr) -> MatchResult {
-    let n_fn = match_function("n").and(match_max_args(0));
-
-    // quantile(n = quantile(passenger_count, 0.75))
-    let quantile_fn = match_function("quantile")
-        .and(match_min_args(2))
-        .and(match_max_args(2))
-        .and(match_arg(0, match_identifier))
-        .and(match_arg(1, match_number));
-
-    let summarize_op = n_fn
-        .or(quantile_fn)
-        .or(match_column_fn("list"))
-        .or(match_column_fn("max"))
-        .or(match_column_fn("mean"))
-        .or(match_column_fn("median"))
-        .or(match_column_fn("min"))
-        .or(match_column_fn("sd"))
-        .or(match_column_fn("sum"))
-        .or(match_column_fn("var"));
-
-    match_function("summarize")
-        .and_fail(match_min_args(0).and(match_args(match_assign(match_identifier, summarize_op))))
-        .matches(expr)
-}
-
-/// Checks arguments for an unnest call.
-fn match_unnest(expr: &Expr) -> MatchResult {
-    match_function("unnest")
-        .and_fail(match_min_args(1).and(match_args(match_identifier)))
-        .matches(expr)
-}
-
-/// Matches a function that takes a column identifier as parameter.
-fn match_column_fn(name: &str) -> impl Matcher {
-    match_function(name)
-        .and(match_min_args(1))
-        .and(match_max_args(1))
-        .and(match_args(match_identifier))
+fn check_string(fname: &str, expr: &Expr) -> Result<()> {
+    if !matches!(expr, Expr::String(_)) {
+        Err(anyhow!("Invalid argument '{expr}' for function '{fname}'"))
+    } else {
+        Ok(())
+    }
 }

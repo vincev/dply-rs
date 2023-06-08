@@ -1,6 +1,10 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
+## 0.1.6 - Unreleased
+### Changed 🔧
+* Add `reedline` REPL.
+
 ## 0.1.5 - 2023-05-29
 ### Changed 🔧
 * Enable `unnest` to work on struct columns.
