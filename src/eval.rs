@@ -54,6 +54,12 @@ pub struct Context {
 }
 
 impl Context {
+    /// Clear the context removing the active group and dataframe.
+    pub fn clear(&mut self) {
+        self.df = None;
+        self.group = None;
+    }
+
     /// Returns and consume the input dataframe.
     pub fn take_df(&mut self) -> Option<LazyFrame> {
         self.df.take()
@@ -156,13 +162,11 @@ pub fn eval_to_string(exprs: &[Expr]) -> Result<String> {
 fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
     for expr in exprs {
         if let Expr::Pipeline(exprs) = expr {
+            ctx.clear();
+
             for expr in exprs {
                 eval_pipeline_step(expr, ctx)?;
             }
-
-            // Consume df after the end of a pipeline so that the next pipeline
-            // starts with a clean state.
-            ctx.take_df();
         }
     }
 
