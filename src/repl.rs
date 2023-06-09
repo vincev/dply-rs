@@ -139,6 +139,7 @@ struct CustomCompleter {
 
 impl Completer for CustomCompleter {
     fn complete(&mut self, line: &str, pos: usize) -> Vec<Suggestion> {
+        let line = &line[..pos];
         let prefix_pos = line
             .rfind(&[',', '|', ' ', '\t', '\n'])
             .map(|p| p + 1)
