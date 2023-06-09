@@ -5,7 +5,7 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.1.6"
+version = "0.1.7"
 rust-version = "1.70.0"
 
 [dependencies]
