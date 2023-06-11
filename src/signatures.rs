@@ -16,6 +16,8 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
+use crate::fuzzy;
+
 pub type SignaturesMap = HashMap<&'static str, Args>;
 
 pub fn functions() -> &'static SignaturesMap {
@@ -46,7 +48,7 @@ pub fn functions() -> &'static SignaturesMap {
     })
 }
 
-pub fn completions(prefix: &str) -> Vec<String> {
+pub fn completions(pattern: &str) -> Vec<String> {
     static NAMES: OnceLock<Vec<&str>> = OnceLock::new();
 
     let names = NAMES.get_or_init(|| {
@@ -66,9 +68,11 @@ pub fn completions(prefix: &str) -> Vec<String> {
         names
     });
 
+    let matcher = fuzzy::Matcher::new(pattern);
+
     names
         .iter()
-        .filter(|s| s.starts_with(prefix))
+        .filter(|s| matcher.is_match(s))
         .map(|s| s.to_string())
         .collect()
 }
