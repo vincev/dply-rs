@@ -20,6 +20,7 @@ pub mod interpreter;
 pub mod repl;
 
 mod eval;
+mod fuzzy;
 mod parser;
 mod signatures;
 mod typing;

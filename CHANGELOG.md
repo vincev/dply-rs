@@ -5,6 +5,8 @@ Changes to the `dply` crate are documented in this file.
 ### 🐛 Fixed
 * Prevent out of bound REPL panic on completion.
 * Clear evaluation context before REPL pipeline evaluation.
+### ⭐ Added
+* Add REPL fuzzy matching.
 
 ## 0.1.6 - 2023-06-08
 ### ⭐ Added

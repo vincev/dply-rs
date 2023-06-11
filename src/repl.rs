@@ -19,7 +19,7 @@ use reedline::*;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::{eval, parser, signatures, typing};
+use crate::{eval, fuzzy, parser, signatures, typing};
 
 /// Runs a REPL for evaluation
 pub fn run() -> Result<()> {
@@ -102,16 +102,19 @@ impl Evaluator {
         Ok(())
     }
 
-    fn completions(&self, prefix: &str) -> Vec<String> {
+    fn completions(&self, pattern: &str) -> Vec<String> {
         let ctx = self.ctx.lock().unwrap();
 
-        let mut completions = signatures::completions(prefix);
+        let mut completions = signatures::completions(pattern);
         completions.extend(ctx.columns());
         completions.extend(ctx.vars());
 
         completions.sort();
         completions.dedup();
-        completions.retain(|s| s.starts_with(prefix));
+
+        let matcher = fuzzy::Matcher::new(pattern);
+
+        completions.retain(|s| matcher.is_match(s));
         completions
     }
 }
@@ -216,10 +219,12 @@ fn file_complete(prefix: &str) -> Result<Vec<String>> {
 fn read_dir(path: &Path, filter: &str) -> Result<Vec<String>> {
     let mut paths = Vec::new();
 
+    let matcher = fuzzy::Matcher::new(filter);
+
     for path in path
         .read_dir()?
         .filter_map(|de| de.map(|e| e.path()).ok())
-        .filter(|p| p.to_string_lossy().contains(filter))
+        .filter(|p| matcher.is_match(p.to_string_lossy().as_ref()))
     {
         let path_str = if path.is_dir() {
             format!("{}/", path.to_string_lossy())
