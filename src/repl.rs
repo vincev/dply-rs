@@ -63,6 +63,7 @@ pub fn run() -> Result<()> {
     println!("Use Tab for completions, arrows to move around, and Enter for selection.");
     println!("Enter twice with an empty line to execute the pipeline.");
     println!("Read a file with 'parquet' or 'csv' to get columns completions.");
+    println!("For columns only completions start completions with a dot.");
 
     let prompt = DefaultPrompt {
         left_prompt: DefaultPromptSegment::Empty,
@@ -105,14 +106,20 @@ impl Evaluator {
     fn completions(&self, pattern: &str) -> Vec<String> {
         let ctx = self.ctx.lock().unwrap();
 
-        let mut completions = signatures::completions(pattern);
+        // If pattern starts with a dot only complete columns and variables.
+        let mut completions = if pattern.starts_with('.') {
+            Vec::new()
+        } else {
+            signatures::completions(pattern)
+        };
+
         completions.extend(ctx.columns());
         completions.extend(ctx.vars());
 
         completions.sort();
         completions.dedup();
 
-        let matcher = fuzzy::Matcher::new(pattern);
+        let matcher = fuzzy::Matcher::new(pattern.trim_start_matches('.'));
 
         completions.retain(|s| matcher.is_match(s));
         completions
