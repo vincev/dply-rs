@@ -1,12 +1,16 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
+## 0.1.8 - Unreleased
+### ⭐ Added
+* Improved function completions.
+
 ## 0.1.7 - 2023-06-11
+### ⭐ Added
+* Add REPL fuzzy matching.
 ### 🐛 Fixed
 * Prevent out of bound REPL panic on completion.
 * Clear evaluation context before REPL pipeline evaluation.
-### ⭐ Added
-* Add REPL fuzzy matching.
 
 ## 0.1.6 - 2023-06-08
 ### ⭐ Added
