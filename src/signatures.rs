@@ -49,18 +49,26 @@ pub fn functions() -> &'static SignaturesMap {
 }
 
 pub fn completions(pattern: &str) -> Vec<String> {
-    static NAMES: OnceLock<Vec<&str>> = OnceLock::new();
+    static NAMES: OnceLock<Vec<String>> = OnceLock::new();
 
     let names = NAMES.get_or_init(|| {
         let mut names = Vec::with_capacity(1024);
 
         for (name, args) in functions() {
-            names.push(*name);
+            let name = if let Args::None = args {
+                format!("{name}()")
+            } else if has_string_arg(name) {
+                format!("{name}(\"")
+            } else {
+                format!("{name}(")
+            };
+
+            names.push(name);
             names.extend(args.names());
         }
 
-        names.push("true");
-        names.push("false");
+        names.push("true".to_string());
+        names.push("false".to_string());
 
         names.sort();
         names.dedup();
@@ -75,6 +83,12 @@ pub fn completions(pattern: &str) -> Vec<String> {
         .filter(|s| matcher.is_match(s))
         .map(|s| s.to_string())
         .collect()
+}
+
+fn has_string_arg(name: &str) -> bool {
+    // We don't include "contains" as the one used in filter doesn't take a
+    // string parameter (e.g. filter(contains(name, "john"))).
+    matches!(name, "parquet" | "csv" | "starts_with" | "ends_with")
 }
 
 #[derive(Debug, Clone)]
@@ -95,7 +109,7 @@ pub enum Args {
 
 impl Args {
     /// Extracts all the function and variable names in this arguments.
-    fn names(&self) -> Vec<&str> {
+    fn names(&self) -> Vec<String> {
         let mut names = Vec::new();
 
         match self {
@@ -188,7 +202,7 @@ impl ArgType {
     }
 
     /// Extracts all named types.
-    fn names(&self) -> Vec<&str> {
+    fn names(&self) -> Vec<String> {
         let mut names = Vec::new();
 
         match self {
@@ -206,11 +220,17 @@ impl ArgType {
                 names.extend(rhs.names());
             }
             ArgType::Function(name, args) => {
-                names.push(*name);
+                let name = if let Args::None = args.as_ref() {
+                    format!("{name}()")
+                } else {
+                    format!("{name}(")
+                };
+
+                names.push(name);
                 names.extend(args.names());
             }
             ArgType::Logical(arg) => names.extend(arg.names()),
-            ArgType::Named(name) => names.push(*name),
+            ArgType::Named(name) => names.push(name.to_string()),
             ArgType::Negate(arg) => names.extend(arg.names()),
             ArgType::OneOf(args) => {
                 for arg in args {
