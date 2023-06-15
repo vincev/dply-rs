@@ -9,6 +9,8 @@ on:
     paths-ignore:
       - "**.md"
       - docs/**
+  # manual trigger
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,10 +39,6 @@ jobs:
         toolchain: ${{ matrix.rust }}
     - name: Check formatting
       run: cargo fmt --all -- --check
-    - name: Run build
-      run: |
-        cargo clean
-        cargo build --verbose --release
     - name: Run tests
       run: |
         df -h .
