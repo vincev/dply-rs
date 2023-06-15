@@ -31,17 +31,15 @@ fn count_column() -> Result<()> {
         indoc!(
             r#"
             shape: (5, 2)
-            ┌──────────────┬─────┐
-            │ payment_type ┆ n   │
-            │ ---          ┆ --- │
-            │ str          ┆ u32 │
-            ╞══════════════╪═════╡
-            │ Cash         ┆ 53  │
-            │ Credit card  ┆ 185 │
-            │ Dispute      ┆ 2   │
-            │ No charge    ┆ 1   │
-            │ Unknown      ┆ 9   │
-            └──────────────┴─────┘
+            payment_type|n
+            str|u32
+            ---
+            Cash|53
+            Credit card|185
+            Dispute|2
+            No charge|1
+            Unknown|9
+            ---
         "#
         )
     );
@@ -63,17 +61,15 @@ fn count_sorted() -> Result<()> {
         indoc!(
             r#"
             shape: (5, 2)
-            ┌──────────────┬─────┐
-            │ payment_type ┆ n   │
-            │ ---          ┆ --- │
-            │ str          ┆ u32 │
-            ╞══════════════╪═════╡
-            │ Credit card  ┆ 185 │
-            │ Cash         ┆ 53  │
-            │ Unknown      ┆ 9   │
-            │ Dispute      ┆ 2   │
-            │ No charge    ┆ 1   │
-            └──────────────┴─────┘
+            payment_type|n
+            str|u32
+            ---
+            Credit card|185
+            Cash|53
+            Unknown|9
+            Dispute|2
+            No charge|1
+            ---
         "#
         )
     );
@@ -97,17 +93,15 @@ fn count_agg_column_name() -> Result<()> {
         indoc!(
             r#"
             shape: (5, 2)
-            ┌──────────────┬─────┐
-            │ payment_type ┆ nn  │
-            │ ---          ┆ --- │
-            │ str          ┆ u32 │
-            ╞══════════════╪═════╡
-            │ Credit card  ┆ 185 │
-            │ Cash         ┆ 53  │
-            │ Unknown      ┆ 9   │
-            │ Dispute      ┆ 2   │
-            │ No charge    ┆ 1   │
-            └──────────────┴─────┘
+            payment_type|nn
+            str|u32
+            ---
+            Credit card|185
+            Cash|53
+            Unknown|9
+            Dispute|2
+            No charge|1
+            ---
         "#
         )
     );
@@ -130,28 +124,26 @@ fn count_multi_cols() -> Result<()> {
         indoc!(
             r#"
             shape: (16, 3)
-            ┌──────────────┬─────────────────┬─────┐
-            │ payment_type ┆ passenger_count ┆ n   │
-            │ ---          ┆ ---             ┆ --- │
-            │ str          ┆ i64             ┆ u32 │
-            ╞══════════════╪═════════════════╪═════╡
-            │ Cash         ┆ 1               ┆ 36  │
-            │ Cash         ┆ 2               ┆ 7   │
-            │ Cash         ┆ 3               ┆ 4   │
-            │ Cash         ┆ 4               ┆ 3   │
-            │ Cash         ┆ 5               ┆ 2   │
-            │ Cash         ┆ 6               ┆ 1   │
-            │ Credit card  ┆ 0               ┆ 1   │
-            │ Credit card  ┆ 1               ┆ 144 │
-            │ Credit card  ┆ 2               ┆ 21  │
-            │ Credit card  ┆ 3               ┆ 8   │
-            │ Credit card  ┆ 4               ┆ 3   │
-            │ Credit card  ┆ 5               ┆ 8   │
-            │ Dispute      ┆ 1               ┆ 1   │
-            │ Dispute      ┆ 2               ┆ 1   │
-            │ No charge    ┆ 1               ┆ 1   │
-            │ Unknown      ┆ null            ┆ 9   │
-            └──────────────┴─────────────────┴─────┘
+            payment_type|passenger_count|n
+            str|i64|u32
+            ---
+            Cash|1|36
+            Cash|2|7
+            Cash|3|4
+            Cash|4|3
+            Cash|5|2
+            Cash|6|1
+            Credit card|0|1
+            Credit card|1|144
+            Credit card|2|21
+            Credit card|3|8
+            Credit card|4|3
+            Credit card|5|8
+            Dispute|1|1
+            Dispute|2|1
+            No charge|1|1
+            Unknown|null|9
+            ---
         "#
         )
     );
@@ -174,28 +166,26 @@ fn count_multi_cols_sorted() -> Result<()> {
         indoc!(
             r#"
             shape: (16, 3)
-            ┌──────────────┬─────────────────┬─────┐
-            │ payment_type ┆ passenger_count ┆ n   │
-            │ ---          ┆ ---             ┆ --- │
-            │ str          ┆ i64             ┆ u32 │
-            ╞══════════════╪═════════════════╪═════╡
-            │ Credit card  ┆ 1               ┆ 144 │
-            │ Cash         ┆ 1               ┆ 36  │
-            │ Credit card  ┆ 2               ┆ 21  │
-            │ Unknown      ┆ null            ┆ 9   │
-            │ Credit card  ┆ 3               ┆ 8   │
-            │ Credit card  ┆ 5               ┆ 8   │
-            │ Cash         ┆ 2               ┆ 7   │
-            │ Cash         ┆ 3               ┆ 4   │
-            │ Cash         ┆ 4               ┆ 3   │
-            │ Credit card  ┆ 4               ┆ 3   │
-            │ Cash         ┆ 5               ┆ 2   │
-            │ Cash         ┆ 6               ┆ 1   │
-            │ Credit card  ┆ 0               ┆ 1   │
-            │ Dispute      ┆ 1               ┆ 1   │
-            │ Dispute      ┆ 2               ┆ 1   │
-            │ No charge    ┆ 1               ┆ 1   │
-            └──────────────┴─────────────────┴─────┘
+            payment_type|passenger_count|n
+            str|i64|u32
+            ---
+            Credit card|1|144
+            Cash|1|36
+            Credit card|2|21
+            Unknown|null|9
+            Credit card|3|8
+            Credit card|5|8
+            Cash|2|7
+            Cash|3|4
+            Cash|4|3
+            Credit card|4|3
+            Cash|5|2
+            Cash|6|1
+            Credit card|0|1
+            Dispute|1|1
+            Dispute|2|1
+            No charge|1|1
+            ---
         "#
         )
     );
@@ -218,13 +208,11 @@ fn count_no_cols() -> Result<()> {
         indoc!(
             r#"
             shape: (1, 1)
-            ┌─────┐
-            │ n   │
-            │ --- │
-            │ u32 │
-            ╞═════╡
-            │ 250 │
-            └─────┘
+            n
+            u32
+            ---
+            250
+            ---
         "#
         )
     );

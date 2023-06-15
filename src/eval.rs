@@ -26,6 +26,7 @@ mod count;
 mod csv;
 mod distinct;
 mod filter;
+mod fmt;
 mod glimpse;
 mod group_by;
 mod head;
@@ -47,10 +48,10 @@ pub struct Context {
     df: Option<LazyFrame>,
     /// Group passed to aggregate functions.
     group: Option<LazyGroupBy>,
-    /// Optional output used for testing.
-    output: Option<Vec<u8>>,
     /// Dataframe columns.
     columns: Vec<String>,
+    /// Optional output used for testing.
+    output: Option<Vec<u8>>,
 }
 
 impl Context {
@@ -122,15 +123,24 @@ impl Context {
     }
 
     /// Print results to the context output.
-    pub fn print<F>(&mut self, out_fn: F) -> Result<()>
-    where
-        F: Fn(&mut dyn std::io::Write) -> std::io::Result<()>,
-    {
+    pub fn print(&mut self, df: DataFrame) -> Result<()> {
         if let Some(write) = self.output.as_mut() {
-            out_fn(write).map_err(anyhow::Error::from)
+            fmt::df_test(write, df)?;
         } else {
-            out_fn(&mut std::io::stdout()).map_err(anyhow::Error::from)
+            println!("{df}");
         }
+        Ok(())
+    }
+
+    /// Show a glimpse view of the datafrmae.
+    pub fn glimpse(&mut self, df: LazyFrame) -> Result<()> {
+        if let Some(write) = self.output.as_mut() {
+            fmt::glimpse(write, df)?;
+        } else {
+            fmt::glimpse(&mut std::io::stdout(), df)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -151,8 +161,8 @@ pub fn eval_to_string(exprs: &[Expr]) -> Result<String> {
     // Let the interpreters handle the number of rows in the output.
     std::env::set_var("POLARS_FMT_MAX_ROWS", i64::MAX.to_string());
     // Sets the number of columns for testing output.
-    std::env::set_var("POLARS_FMT_STR_LEN", "120");
-    std::env::set_var("POLARS_TABLE_WIDTH", "120");
+    std::env::set_var("POLARS_FMT_STR_LEN", "80");
+    std::env::set_var("POLARS_TABLE_WIDTH", "80");
 
     eval_pipelines(exprs, &mut ctx)?;
 
