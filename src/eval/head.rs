@@ -30,7 +30,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         };
 
         let df = df.limit(limit).collect()?;
-        ctx.print(|w| writeln!(w, "{df}"))?;
+        ctx.print(df)?;
     } else if ctx.is_grouping() {
         bail!("head error: must call summarize after a group_by");
     } else {
