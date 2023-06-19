@@ -19,6 +19,7 @@
 pub mod interpreter;
 pub mod repl;
 
+mod completions;
 mod eval;
 mod fuzzy;
 mod parser;

@@ -1,9 +1,11 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
-## 0.1.8 - Unreleased
+## 0.1.8 - 2023-06-19
 ### ⭐ Added
-* Improved function completions.
+* repl: Add parenthesis to functions completions. (See Issue #27)
+* repl: Completions starting with a `.` show only columns and variables.
+* repl: Show completions for most recently used columns.
 
 ## 0.1.7 - 2023-06-11
 ### ⭐ Added
