@@ -113,7 +113,7 @@ impl Evaluator {
             signatures::completions(pattern)
         };
 
-        completions.extend(ctx.columns());
+        completions.extend(ctx.completions());
         completions.extend(ctx.vars());
 
         completions.sort();

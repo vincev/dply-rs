@@ -18,6 +18,7 @@ use anyhow::{anyhow, bail, Result};
 use polars::prelude::*;
 use std::collections::HashMap;
 
+use crate::completions::Completions;
 use crate::parser::Expr;
 
 mod args;
@@ -52,22 +53,39 @@ pub struct Context {
     columns: Vec<String>,
     /// Optional output used for testing.
     output: Option<Vec<u8>>,
+    /// Completions lru
+    completions: Completions,
 }
 
 impl Context {
+    /// Returns the recently used column completions.
+    pub fn completions(&self) -> impl Iterator<Item = String> + '_ {
+        self.completions.iter().map(|s| s.to_string())
+    }
+
+    /// Returns the active dataframe variables.
+    pub fn vars(&self) -> Vec<String> {
+        self.vars.keys().cloned().collect()
+    }
+
+    /// Returns the active dataframe or group columns.
+    fn columns(&self) -> Vec<String> {
+        self.columns.clone()
+    }
+
     /// Clear the context removing the active group and dataframe.
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.df = None;
         self.group = None;
     }
 
     /// Returns and consume the input dataframe.
-    pub fn take_df(&mut self) -> Option<LazyFrame> {
+    fn take_df(&mut self) -> Option<LazyFrame> {
         self.df.take()
     }
 
     /// Sets the dataframe to be used in pipeline steps.
-    pub fn set_df(&mut self, df: LazyFrame) -> Result<()> {
+    fn set_df(&mut self, df: LazyFrame) -> Result<()> {
         assert!(self.group.is_none());
 
         self.columns = df
@@ -77,37 +95,29 @@ impl Context {
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
 
+        self.update_completions();
+
         self.df = Some(df);
         Ok(())
     }
 
     /// Returns the dataframe associated to the given variable.
-    pub fn get_df(&self, name: &str) -> Option<&LazyFrame> {
+    fn get_df(&self, name: &str) -> Option<&LazyFrame> {
         self.vars.get(name)
     }
 
-    /// Returns the active dataframe or group columns.
-    pub fn columns(&self) -> Vec<String> {
-        self.columns.clone()
-    }
-
-    /// Returns the active dataframe variables.
-    pub fn vars(&self) -> Vec<String> {
-        self.vars.keys().cloned().collect()
-    }
-
     /// Returns and consume the active group.
-    pub fn take_group(&mut self) -> Option<LazyGroupBy> {
+    fn take_group(&mut self) -> Option<LazyGroupBy> {
         self.group.take()
     }
 
     /// Gets the active group.
-    pub fn is_grouping(&mut self) -> bool {
+    fn is_grouping(&mut self) -> bool {
         self.group.is_some()
     }
 
     /// Sets the active group.
-    pub fn set_group(&mut self, group: LazyGroupBy) -> Result<()> {
+    fn set_group(&mut self, group: LazyGroupBy) -> Result<()> {
         assert!(self.df.is_none());
 
         self.columns = group
@@ -118,12 +128,14 @@ impl Context {
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
 
+        self.update_completions();
+
         self.group = Some(group);
         Ok(())
     }
 
     /// Print results to the context output.
-    pub fn print(&mut self, df: DataFrame) -> Result<()> {
+    fn print(&mut self, df: DataFrame) -> Result<()> {
         if let Some(write) = self.output.as_mut() {
             fmt::df_test(write, df)?;
         } else {
@@ -133,7 +145,7 @@ impl Context {
     }
 
     /// Show a glimpse view of the datafrmae.
-    pub fn glimpse(&mut self, df: LazyFrame) -> Result<()> {
+    fn glimpse(&mut self, df: LazyFrame) -> Result<()> {
         if let Some(write) = self.output.as_mut() {
             fmt::glimpse(write, df)?;
         } else {
@@ -141,6 +153,12 @@ impl Context {
         }
 
         Ok(())
+    }
+
+    fn update_completions(&mut self) {
+        for column in &self.columns {
+            self.completions.add(column);
+        }
     }
 }
 
