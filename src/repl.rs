@@ -201,12 +201,15 @@ fn file_complete(prefix: &str) -> Result<Vec<String>> {
         home::home_dir()
             .map(|p| p.join(prefix.trim_start_matches(['~', '/'])))
             .unwrap_or_else(|| PathBuf::from(prefix))
-    } else if prefix.is_empty() || !prefix.starts_with("./") {
+    } else if prefix.is_empty() {
         PathBuf::from(".")
+    } else if !prefix.starts_with(['/', '\\', '.']) {
+        PathBuf::from(format!("./{}", prefix))
     } else {
         PathBuf::from(prefix)
     };
 
+    let prefix = if prefix.starts_with('~') { "" } else { prefix };
     let mut paths = Vec::new();
 
     if path.is_dir() {

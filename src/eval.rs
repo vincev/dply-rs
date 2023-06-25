@@ -156,9 +156,7 @@ impl Context {
     }
 
     fn update_completions(&mut self) {
-        for column in &self.columns {
-            self.completions.add(column);
-        }
+        self.completions.add(&self.columns);
     }
 }
 
