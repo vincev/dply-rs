@@ -1,6 +1,12 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
+## 0.2.0 - Unreleased
+### 🔧 Changed
+* Use datafusion as query engine.
+* Speedup parquet writing for multiple partitions (about 40% increase).
+* parquet function now accepts a folder path for reading multiple files.
+
 ## 0.1.9 - 2023-06-28
 ### 🔧 Changed
 * Improve glimpse formmatting.

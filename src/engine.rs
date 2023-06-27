@@ -15,13 +15,20 @@
 
 //! Evaluate pipeline functions.
 use anyhow::{bail, Result};
-use datafusion::{logical_expr::LogicalPlan, prelude::Expr as DFExpr};
-use std::collections::HashMap;
+use datafusion::{
+    logical_expr::LogicalPlan,
+    physical_plan::ExecutionPlan,
+    prelude::{Expr as DFExpr, *},
+};
+use std::{collections::HashMap, future::Future, sync::Arc};
+use tokio::runtime;
 
 use crate::completions::Completions;
 use crate::parser::Expr;
 
-#[derive(Default)]
+mod args;
+mod parquet;
+
 pub struct Context {
     /// Named data frames.
     vars: HashMap<String, LogicalPlan>,
@@ -35,6 +42,29 @@ pub struct Context {
     output: Option<Vec<u8>>,
     /// Completions lru
     completions: Completions,
+    /// Tokio runtime to run async tasks.
+    runtime: runtime::Runtime,
+    /// Datafusion context
+    session: SessionContext,
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        let runtime = runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        Self {
+            vars: Default::default(),
+            df: Default::default(),
+            group: Default::default(),
+            columns: Default::default(),
+            output: Default::default(),
+            completions: Default::default(),
+            runtime,
+            session: Default::default(),
+        }
+    }
 }
 
 impl Context {
@@ -46,6 +76,28 @@ impl Context {
     /// Returns the active dataframe variables.
     pub fn vars(&self) -> Vec<String> {
         self.vars.keys().cloned().collect()
+    }
+
+    /// Returns datafusion context
+    fn session(&self) -> &SessionContext {
+        &self.session
+    }
+
+    async fn create_physical_plan(
+        &self,
+        logical_plan: &LogicalPlan,
+    ) -> Result<Arc<dyn ExecutionPlan>> {
+        let plan = self
+            .session
+            .state()
+            .create_physical_plan(logical_plan)
+            .await?;
+        Ok(plan)
+    }
+
+    /// Returns datafusion context
+    fn block_on<F: Future>(&self, future: F) -> F::Output {
+        self.runtime.block_on(future)
     }
 
     /// Clear the context removing the active group and dataframe.
@@ -122,6 +174,7 @@ fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
 fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
+            "parquet" => parquet::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
         },
         Expr::Identifier(name) => {

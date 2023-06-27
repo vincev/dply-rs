@@ -519,6 +519,8 @@ dependencies = [
  "anyhow",
  "clap",
  "comfy-table",
+ "datafusion",
+ "futures",
  "home",
  "indoc",
  "lru",
