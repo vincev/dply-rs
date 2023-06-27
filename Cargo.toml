@@ -12,15 +12,13 @@ rust-version = "1.70.0"
 anyhow = "1.0"
 clap = { version = "4.2", features = ["derive"] }
 comfy-table = "6"
+datafusion = { version = "26", default-features = false }
 home = "0.5"
 lru = "0.10.0"
 nom = "7"
 reedline = "0.20"
 thiserror = "1.0"
-
-[dependencies.polars]
-version = "0.30.0"
-features = ["dtype-full", "lazy", "parquet", "strings", "timezones"]
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "sync"] }
 
 [dev-dependencies]
 indoc = "2"
