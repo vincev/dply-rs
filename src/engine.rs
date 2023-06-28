@@ -27,6 +27,7 @@ use crate::completions::Completions;
 use crate::parser::Expr;
 
 mod args;
+mod count;
 mod fmt;
 mod parquet;
 mod show;
@@ -78,6 +79,11 @@ impl Context {
     /// Returns the active dataframe variables.
     pub fn vars(&self) -> Vec<String> {
         self.vars.keys().cloned().collect()
+    }
+
+    /// Returns the active dataframe or group columns.
+    fn columns(&self) -> &Vec<String> {
+        &self.columns
     }
 
     /// Returns datafusion context
@@ -186,6 +192,7 @@ fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
 fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
+            "count" => count::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),

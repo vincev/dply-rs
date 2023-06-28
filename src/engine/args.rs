@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::Result;
+use datafusion::logical_expr;
 use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
@@ -25,6 +26,14 @@ pub fn string(expr: &Expr) -> String {
         Expr::String(s) => s.to_owned(),
         _ => panic!("{expr} is not a string expression"),
     }
+}
+
+/// Returns a datafusion column expression and quotes the name.
+///
+/// The `col` function in datafusion makes identifiers lower case, this function
+/// quotes the name so that it preserves case.
+pub fn str_to_col(s: impl Into<String>) -> logical_expr::Expr {
+    logical_expr::col(format!(r#""{}""#, s.into()))
 }
 
 pub fn named_bool(args: &[Expr], name: &str) -> Result<bool> {
