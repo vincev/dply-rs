@@ -68,15 +68,20 @@ pub fn df_test(out: &mut dyn Write, df: DataFrame) -> Result<()> {
 pub fn glimpse(w: &mut dyn Write, df: LazyFrame) -> Result<()> {
     let count_df = df.clone().select([count()]).collect()?;
     let num_rows = count_df[0].max::<usize>().unwrap_or_default();
-    writeln!(w, "Rows: {num_rows}")?;
 
     let df = df.fetch(100)?;
     let num_cols = df.get_columns().len();
-    writeln!(w, "Columns: {num_cols}")?;
 
     let mut table = Table::new();
     table.set_content_arrangement(ContentArrangement::DynamicFullWidth);
-    table.load_preset(presets::ASCII_FULL_CONDENSED);
+    table.load_preset(presets::UTF8_FULL_CONDENSED);
+
+    let info = format!(
+        "Rows: {}\nCols: {}",
+        fmt_usize(num_rows),
+        fmt_usize(num_cols)
+    );
+    table.set_header(vec![info, "Type".into(), "Values".into()]);
 
     if let Ok(slen) = std::env::var("POLARS_FMT_STR_LEN") {
         table.set_width(slen.parse()?);
@@ -106,4 +111,15 @@ pub fn glimpse(w: &mut dyn Write, df: LazyFrame) -> Result<()> {
 
     writeln!(w, "{table}")?;
     Ok(())
+}
+
+fn fmt_usize(n: usize) -> String {
+    // Colon separated groups of 3.
+    let mut s = n.to_string();
+
+    for idx in (1..s.len().max(2) - 2).rev().step_by(3) {
+        s.insert(idx, ',');
+    }
+
+    s
 }
