@@ -1,7 +1,9 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
-## 0.1.9 - Unreleased
+## 0.1.9 - 2023-06-28
+### 🔧 Changed
+* Improve glimpse formmatting.
 ### 🐛 Fixed
 * repl: Fix completions for absolute and tilde paths.
 * repl: Keep all completion columns for big dataframes.
