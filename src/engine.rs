@@ -27,7 +27,9 @@ use crate::completions::Completions;
 use crate::parser::Expr;
 
 mod args;
+mod fmt;
 mod parquet;
+mod show;
 
 pub struct Context {
     /// Named data frames.
@@ -137,6 +139,16 @@ impl Context {
     fn update_completions(&mut self) {
         self.completions.add(&self.columns);
     }
+
+    fn show(&mut self, plan: LogicalPlan) -> Result<()> {
+        if let Some(mut output) = self.output.take() {
+            self.runtime.block_on(fmt::test(self, plan, &mut output))?;
+            self.output = Some(output);
+            Ok(())
+        } else {
+            self.runtime.block_on(fmt::show(self, plan))
+        }
+    }
 }
 
 /// Evaluate pipelines expressions to standard output.
@@ -175,6 +187,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
             "parquet" => parquet::eval(args, ctx)?,
+            "show" => show::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
         },
         Expr::Identifier(name) => {
