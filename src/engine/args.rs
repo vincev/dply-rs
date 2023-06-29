@@ -38,6 +38,16 @@ pub fn number(expr: &Expr) -> f64 {
     }
 }
 
+/// Returns the string from an identifier expression.
+///
+/// Panics if the expression is not an identifier.
+pub fn identifier(expr: &Expr) -> String {
+    match expr {
+        Expr::Identifier(s) => s.to_owned(),
+        _ => panic!("{expr} is not an identifier expression"),
+    }
+}
+
 /// Returns a datafusion column expression and quotes the name.
 ///
 /// The `col` function in datafusion makes identifiers lower case, this function

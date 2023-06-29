@@ -21,7 +21,6 @@ use dply::interpreter;
 fn glimpse_parquet() -> Result<()> {
     let input = r#"parquet("tests/data/nyctaxi.parquet") | glimpse()"#;
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
