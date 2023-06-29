@@ -26,6 +26,7 @@ use tokio::runtime;
 use crate::{completions::Completions, config::FormatConfig, parser::Expr};
 
 mod args;
+mod arrange;
 mod count;
 mod filter;
 mod fmt;
@@ -36,10 +37,10 @@ mod select;
 mod show;
 
 pub struct Context {
-    /// Named data frames.
+    /// Named logical plans.
     vars: HashMap<String, LogicalPlan>,
-    /// Input dataframe passed from one pipeline step to the next.
-    df: Option<LogicalPlan>,
+    /// Logical plan passed from one pipeline step to the next.
+    plan: Option<LogicalPlan>,
     /// Columns passed to aggregate functions.
     group: Option<Vec<DFExpr>>,
     /// Dataframe columns.
@@ -64,7 +65,7 @@ impl Default for Context {
             .unwrap();
         Self {
             vars: Default::default(),
-            df: Default::default(),
+            plan: Default::default(),
             group: Default::default(),
             columns: Default::default(),
             output: Default::default(),
@@ -121,21 +122,21 @@ impl Context {
 
     /// Clear the context removing the active group and dataframe.
     fn clear(&mut self) {
-        self.df = None;
+        self.plan = None;
         self.group = None;
     }
 
     /// Returns and consume the input dataframe.
     fn take_plan(&mut self) -> Option<LogicalPlan> {
-        self.df.take()
+        self.plan.take()
     }
 
     /// Sets the dataframe to be used in pipeline steps.
-    fn set_plan(&mut self, df: LogicalPlan) -> Result<()> {
+    fn set_plan(&mut self, plan: LogicalPlan) -> Result<()> {
         assert!(self.group.is_none());
 
         // Get unqualified column names.
-        self.columns = df
+        self.columns = plan
             .schema()
             .fields()
             .iter()
@@ -144,7 +145,7 @@ impl Context {
 
         self.update_completions();
 
-        self.df = Some(df);
+        self.plan = Some(plan);
         Ok(())
     }
 
@@ -219,6 +220,7 @@ fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
 fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
+            "arrange" => arrange::eval(args, ctx)?,
             "count" => count::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,

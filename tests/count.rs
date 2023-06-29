@@ -33,7 +33,7 @@ fn count_column() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|n
-            str|u32
+            str|i64
             ---
             Cash|53
             Credit card|185
@@ -116,6 +116,7 @@ fn count_multi_cols() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             count(payment_type, passenger_count) |
+            arrange(payment_type, passenger_count) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
