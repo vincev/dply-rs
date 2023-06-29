@@ -595,6 +595,7 @@ fn filter_str_contains() -> Result<()> {
         parquet("tests/data/nyctaxi.parquet") |
             filter(contains(payment_type, "(?i:no)")) |
             distinct(payment_type) |
+            arrange(payment_type) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -607,8 +608,8 @@ fn filter_str_contains() -> Result<()> {
             payment_type
             str
             ---
-            Unknown
             No charge
+            Unknown
             ---
        "#
         )
@@ -624,6 +625,7 @@ fn filter_str_not_contains() -> Result<()> {
         parquet("tests/data/nyctaxi.parquet") |
             filter(!contains(payment_type, "(?i:no)")) |
             distinct(payment_type) |
+            arrange(payment_type) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -636,8 +638,8 @@ fn filter_str_not_contains() -> Result<()> {
             payment_type
             str
             ---
-            Credit card
             Cash
+            Credit card
             Dispute
             ---
        "#
