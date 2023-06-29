@@ -34,6 +34,7 @@ mod fmt;
 mod glimpse;
 mod head;
 mod parquet;
+mod rename;
 mod select;
 mod show;
 
@@ -228,6 +229,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "glimpse" => glimpse::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
+            "rename" => rename::eval(args, ctx)?,
             "select" => select::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),

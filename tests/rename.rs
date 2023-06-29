@@ -21,6 +21,12 @@ use dply::interpreter;
 fn rename() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
+            select(
+                VendorID,
+                ends_with("time"),
+                ends_with("LocationID"),
+                total_amount
+            ) |
             rename(
                 vendor_id = VendorID,
                 pickup_datetime = tpep_pickup_datetime,
@@ -31,16 +37,17 @@ fn rename() -> Result<()> {
             head(1)
     "#};
     let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
 
     assert_eq!(
         output,
         indoc!(
             r#"
-            shape: (1, 19)
-            vendor_id|pickup_datetime|dropoff_datetime|passenger_count|trip_distance|rate_code|store_and_fwd_flag|pu_location_id|do_location_id|payment_type|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee
-            i64|datetime[ns]|datetime[ns]|i64|f64|str|str|i64|i64|str|f64|f64|f64|f64|f64|f64|f64|f64|f64
+            shape: (1, 6)
+            vendor_id|pickup_datetime|dropoff_datetime|pu_location_id|do_location_id|total_amount
+            i64|datetime[μs]|datetime[μs]|i64|i64|f64
             ---
-            2|2022-11-22 19:27:01|2022-11-22 19:45:53|1|3.14|Standard|N|234|141|Credit card|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
+            2|2022-11-22 19:27:01|2022-11-22 19:45:53|234|141|22.56
             ---
         "#
         )
