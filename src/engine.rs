@@ -23,8 +23,7 @@ use datafusion::{
 use std::{collections::HashMap, future::Future, sync::Arc};
 use tokio::runtime;
 
-use crate::completions::Completions;
-use crate::parser::Expr;
+use crate::{completions::Completions, config::FormatConfig, parser::Expr};
 
 mod args;
 mod count;
@@ -47,6 +46,8 @@ pub struct Context {
     columns: Vec<String>,
     /// Optional output used for testing.
     output: Option<Vec<u8>>,
+    /// Output format configuration
+    format_config: FormatConfig,
     /// Completions lru
     completions: Completions,
     /// Tokio runtime to run async tasks.
@@ -67,6 +68,7 @@ impl Default for Context {
             group: Default::default(),
             columns: Default::default(),
             output: Default::default(),
+            format_config: Default::default(),
             completions: Default::default(),
             runtime,
             session: Default::default(),
@@ -93,6 +95,11 @@ impl Context {
     /// Returns datafusion context
     fn session(&self) -> &SessionContext {
         &self.session
+    }
+
+    /// Returns the current format configuration
+    fn format_config(&self) -> &FormatConfig {
+        &self.format_config
     }
 
     async fn create_physical_plan(
@@ -183,6 +190,10 @@ pub fn eval(ctx: &mut Context, exprs: &[Expr]) -> Result<()> {
 pub fn eval_to_string(exprs: &[Expr]) -> Result<String> {
     let mut ctx = Context {
         output: Some(Default::default()),
+        format_config: FormatConfig {
+            max_table_width: Some(82),
+            ..Default::default()
+        },
         ..Default::default()
     };
 

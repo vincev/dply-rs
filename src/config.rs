@@ -14,35 +14,22 @@
 // limitations under the License.
 
 /// Configuration for table formatting.
+#[derive(Debug, Clone, Copy)]
 pub struct FormatConfig {
     /// Maximum number or table columns.
-    max_columns: usize,
+    pub max_columns: usize,
     /// Maximum column width
-    max_colwidth: usize,
+    pub max_column_width: usize,
+    /// Maximum table width, use default if None
+    pub max_table_width: Option<u16>,
 }
 
 impl Default for FormatConfig {
     fn default() -> Self {
         Self {
             max_columns: 8,
-            max_colwidth: 80,
+            max_column_width: 80,
+            max_table_width: None,
         }
-    }
-}
-
-impl FormatConfig {
-    /// Return the maximum number of table columns.
-    ///
-    /// If a table has more columns than this value the columns to the right are
-    /// truncated.
-    pub fn max_columns(&self) -> usize {
-        self.max_columns
-    }
-
-    /// Return the maximum column width.
-    ///
-    /// A column value with a length greater than this maximum is truncated.
-    pub fn max_colwidth(&self) -> usize {
-        self.max_colwidth
     }
 }

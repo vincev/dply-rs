@@ -28,23 +28,21 @@ use datafusion::{
 use futures::TryStreamExt;
 use std::{io::Write, sync::Arc};
 
-use crate::config::FormatConfig;
-
 use super::{count, Context};
 
 /// Prints the plan results.
 pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
     // Get column types before consuming the dataframe so that we can show them
     // even if the dataframe is empty.
-    let fmt_cfg = FormatConfig::default();
+    let format_config = ctx.format_config();
     let num_cols = plan.schema().fields().len();
-    let truncate_cols = fmt_cfg.max_columns() < num_cols;
+    let truncate_cols = format_config.max_columns < num_cols;
 
     let mut fields = plan
         .schema()
         .fields()
         .iter()
-        .take(fmt_cfg.max_columns())
+        .take(format_config.max_columns)
         .map(|f| format!("{}\n---\n{}", f.name(), fmt_data_type(f.data_type())))
         .collect::<Vec<_>>();
 
@@ -75,14 +73,19 @@ pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
         let formatters = batch
             .columns()
             .iter()
-            .take(fmt_cfg.max_columns())
+            .take(format_config.max_columns)
             .map(|c| ArrayFormatter::try_new(c.as_ref(), &fmt_opts))
             .collect::<Result<Vec<_>, _>>()?;
 
         for row in 0..batch.num_rows() {
             let mut cells = formatters
                 .iter()
-                .map(|f| Cell::new(fmt_value(f.value(row).to_string(), fmt_cfg.max_colwidth())))
+                .map(|f| {
+                    Cell::new(fmt_value(
+                        f.value(row).to_string(),
+                        format_config.max_column_width,
+                    ))
+                })
                 .collect::<Vec<_>>();
 
             if truncate_cols {
@@ -182,9 +185,15 @@ pub async fn glimpse(ctx: &Context, plan: LogicalPlan, output: &mut dyn Write) -
 
     let num_cols = plan.schema().fields().len();
 
+    let format_config = ctx.format_config();
+
     let mut table = Table::new();
     table.set_content_arrangement(ContentArrangement::DynamicFullWidth);
     table.load_preset(UTF8_FULL_CONDENSED);
+
+    if let Some(cols) = format_config.max_table_width {
+        table.set_width(cols);
+    }
 
     let info = format!(
         "Rows: {}\nCols: {}",
@@ -199,7 +208,6 @@ pub async fn glimpse(ctx: &Context, plan: LogicalPlan, output: &mut dyn Write) -
         .limit(0, Some(NUM_VALUES))?
         .build()?;
 
-    let fmt_cfg = FormatConfig::default();
     let fmt_opts = fmt_opts();
 
     for_each_batch(ctx, plan, |batch| {
@@ -216,7 +224,7 @@ pub async fn glimpse(ctx: &Context, plan: LogicalPlan, output: &mut dyn Write) -
             for idx in 0..col.len() {
                 values.push(fmt_value(
                     fmt.value(idx).to_string(),
-                    fmt_cfg.max_colwidth(),
+                    format_config.max_column_width,
                 ));
             }
 
@@ -311,8 +319,8 @@ fn fmt_data_type(dt: &DataType) -> String {
         DataType::Float64 => "f64",
         DataType::Timestamp(tu, tz) => {
             return match tz {
-                Some(tz) => format!("timestamp[{}, {}]", fmt_time_unit(tu), tz),
-                None => format!("timestamp[{}]", fmt_time_unit(tu)),
+                Some(tz) => format!("datetime[{}, {}]", fmt_time_unit(tu), tz),
+                None => format!("datetime[{}]", fmt_time_unit(tu)),
             }
         }
         DataType::Date32 => "date32",

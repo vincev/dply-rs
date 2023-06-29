@@ -38,7 +38,7 @@ fn select_columns() -> Result<()> {
             r#"
             shape: (3, 5)
             rate_code|tip_amount|tpep_pickup_datetime|airport_fee|tpep_dropoff_datetime
-            str|f64|datetime[ns]|f64|datetime[ns]
+            str|f64|datetime[μs]|f64|datetime[μs]
             ---
             Standard|3.76|2022-11-22 19:27:01|0.0|2022-11-22 19:45:53
             Standard|0.0|2022-11-27 16:43:26|0.0|2022-11-27 16:50:06
@@ -71,7 +71,7 @@ fn select_rename() -> Result<()> {
             r#"
             shape: (3, 4)
             pickup_datetime|dropoff_datetime|vendor_id|pu_location_id
-            datetime[ns]|datetime[ns]|i64|i64
+            datetime[μs]|datetime[μs]|i64|i64
             ---
             2022-11-22 19:27:01|2022-11-22 19:45:53|2|234
             2022-11-27 16:43:26|2022-11-27 16:50:06|2|48
@@ -99,7 +99,7 @@ fn select_starts_with() -> Result<()> {
             r#"
             shape: (3, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[ns]|datetime[ns]
+            datetime[μs]|datetime[μs]
             ---
             2022-11-22 19:27:01|2022-11-22 19:45:53
             2022-11-27 16:43:26|2022-11-27 16:50:06
@@ -163,7 +163,7 @@ fn select_ends_with() -> Result<()> {
             r#"
             shape: (3, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[ns]|datetime[ns]
+            datetime[μs]|datetime[μs]
             ---
             2022-11-22 19:27:01|2022-11-22 19:45:53
             2022-11-27 16:43:26|2022-11-27 16:50:06
@@ -225,7 +225,7 @@ fn select_contains() -> Result<()> {
             r#"
             shape: (3, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[ns]|datetime[ns]
+            datetime[μs]|datetime[μs]
             ---
             2022-11-22 19:27:01|2022-11-22 19:45:53
             2022-11-27 16:43:26|2022-11-27 16:50:06
