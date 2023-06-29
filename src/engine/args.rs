@@ -12,8 +12,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::Result;
-use datafusion::logical_expr;
+use anyhow::{anyhow, Result};
+use chrono::{NaiveDate, NaiveDateTime};
+use datafusion::{
+    common::DFSchema,
+    logical_expr::{self, Expr as DFExpr},
+    prelude::*,
+};
 use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
@@ -52,8 +57,36 @@ pub fn identifier(expr: &Expr) -> String {
 ///
 /// The `col` function in datafusion makes identifiers lower case, this function
 /// quotes the name so that it preserves case.
-pub fn str_to_col(s: impl Into<String>) -> logical_expr::Expr {
+pub fn str_to_col(s: impl Into<String>) -> DFExpr {
     logical_expr::col(format!(r#""{}""#, s.into()))
+}
+
+/// Returns a datafusion column if it is in the schema.
+pub fn expr_to_col(expr: &Expr, schema: &DFSchema) -> Result<DFExpr> {
+    let column = identifier(expr);
+    if schema.has_column_with_unqualified_name(&column) {
+        Ok(str_to_col(column))
+    } else {
+        Err(anyhow!("Unknown column '{expr}'"))
+    }
+}
+
+/// Returns a date time from a string.
+///
+/// Returns an error if the string is not a valid date time.
+pub fn timestamp(expr: &Expr) -> Result<DFExpr> {
+    let ts = string(expr);
+    let ts = ts.trim();
+
+    let dt = NaiveDateTime::parse_from_str(ts, "%Y-%m-%d %H:%M:%S%.f")
+        .or_else(|_| NaiveDateTime::parse_from_str(ts, "%Y-%m-%d %H:%M:%S"))
+        .or_else(|_| {
+            NaiveDate::parse_from_str(ts, "%Y-%m-%d")
+                .map(|d| NaiveDateTime::new(d, Default::default()))
+        })
+        .map_err(|e| anyhow!("Invalid timestamp string {ts}: {e}"))?;
+
+    Ok(lit_timestamp_nano(dt.timestamp_nanos()))
 }
 
 pub fn named_bool(args: &[Expr], name: &str) -> Result<bool> {

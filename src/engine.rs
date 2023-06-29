@@ -28,6 +28,7 @@ use crate::parser::Expr;
 
 mod args;
 mod count;
+mod filter;
 mod fmt;
 mod glimpse;
 mod head;
@@ -208,6 +209,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
             "count" => count::eval(args, ctx)?,
+            "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
