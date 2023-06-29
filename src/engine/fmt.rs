@@ -18,18 +18,19 @@ use comfy_table::*;
 use datafusion::{
     arrow::datatypes::{DataType, IntervalUnit, TimeUnit},
     arrow::{
+        array::Int64Array,
         record_batch::RecordBatch,
         util::display::{ArrayFormatter, FormatOptions},
     },
     execution::context::TaskContext,
-    logical_expr::LogicalPlan,
+    logical_expr::{LogicalPlan, LogicalPlanBuilder},
 };
 use futures::TryStreamExt;
 use std::{io::Write, sync::Arc};
 
 use crate::config::FormatConfig;
 
-use super::Context;
+use super::{count, Context};
 
 /// Prints the plan results.
 pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
@@ -102,7 +103,7 @@ pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
 }
 
 /// Prints a dataframe in test format, used for test comparisons.
-pub async fn test(ctx: &Context, plan: LogicalPlan, out: &mut dyn Write) -> Result<()> {
+pub async fn test(ctx: &Context, plan: LogicalPlan, output: &mut dyn Write) -> Result<()> {
     // Get column types before consuming the dataframe so that we can show them
     // even if the dataframe is empty.
     let col_names = plan
@@ -128,16 +129,16 @@ pub async fn test(ctx: &Context, plan: LogicalPlan, out: &mut dyn Write) -> Resu
 
     let num_rows = batches.iter().map(|b| b.num_rows()).sum::<usize>();
 
-    writeln!(out, "shape: ({}, {})", num_rows, col_names.len())?;
+    writeln!(output, "shape: ({}, {})", num_rows, col_names.len())?;
 
     // Write columns
-    writeln!(out, "{}", col_names.join("|"))?;
+    writeln!(output, "{}", col_names.join("|"))?;
 
     // Write columns types
-    writeln!(out, "{}", col_types.join("|"))?;
+    writeln!(output, "{}", col_types.join("|"))?;
 
     // Header separator
-    writeln!(out, "---")?;
+    writeln!(output, "---")?;
 
     // Write values
     let fmt_opts = fmt_opts();
@@ -154,13 +155,88 @@ pub async fn test(ctx: &Context, plan: LogicalPlan, out: &mut dyn Write) -> Resu
                 .iter()
                 .map(|f| fmt_value(f.value(row).to_string(), 1024))
                 .collect::<Vec<_>>();
-            writeln!(out, "{}", values.join("|"))?;
+            writeln!(output, "{}", values.join("|"))?;
         }
     }
 
     // Data separator
-    writeln!(out, "---")?;
+    writeln!(output, "---")?;
 
+    Ok(())
+}
+
+/// Prints a dataframe in glimpse format.
+pub async fn glimpse(ctx: &Context, plan: LogicalPlan, output: &mut dyn Write) -> Result<()> {
+    let mut num_rows = 0;
+    let count_plan = count::count(plan.clone(), vec![], "n")?;
+    for_each_batch(ctx, count_plan, |batch| {
+        num_rows = *batch
+            .columns()
+            .first()
+            .and_then(|c| c.as_any().downcast_ref::<Int64Array>())
+            .and_then(|a| a.values().first())
+            .unwrap_or(&0) as usize;
+        Ok(())
+    })
+    .await?;
+
+    let num_cols = plan.schema().fields().len();
+
+    let mut table = Table::new();
+    table.set_content_arrangement(ContentArrangement::DynamicFullWidth);
+    table.load_preset(UTF8_FULL_CONDENSED);
+
+    let info = format!(
+        "Rows: {}\nCols: {}",
+        fmt_usize(num_rows),
+        fmt_usize(num_cols)
+    );
+    table.set_header(vec![info, "Type".into(), "Values".into()]);
+
+    const NUM_VALUES: usize = 100;
+
+    let plan = LogicalPlanBuilder::from(plan)
+        .limit(0, Some(NUM_VALUES))?
+        .build()?;
+
+    let fmt_cfg = FormatConfig::default();
+    let fmt_opts = fmt_opts();
+
+    for_each_batch(ctx, plan, |batch| {
+        let columns = batch.columns().iter();
+
+        for (fld, col) in batch.schema().fields().into_iter().zip(columns) {
+            let mut row = Row::new();
+            row.add_cell(fld.name().into());
+            row.add_cell(fmt_data_type(fld.data_type()).into());
+
+            let fmt = ArrayFormatter::try_new(col.as_ref(), &fmt_opts)?;
+            let mut values = Vec::with_capacity(NUM_VALUES);
+
+            for idx in 0..col.len() {
+                values.push(fmt_value(
+                    fmt.value(idx).to_string(),
+                    fmt_cfg.max_colwidth(),
+                ));
+            }
+
+            row.add_cell(values.join(", ").into());
+            row.max_height(1);
+
+            table.add_row(row);
+        }
+
+        Ok(())
+    })
+    .await?;
+
+    table.set_constraints(vec![
+        ColumnConstraint::LowerBoundary(Width::Fixed(10)),
+        ColumnConstraint::LowerBoundary(Width::Fixed(8)),
+        ColumnConstraint::UpperBoundary(Width::Percentage(90)),
+    ]);
+
+    writeln!(output, "{table}")?;
     Ok(())
 }
 

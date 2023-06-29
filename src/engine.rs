@@ -29,6 +29,7 @@ use crate::parser::Expr;
 mod args;
 mod count;
 mod fmt;
+mod glimpse;
 mod parquet;
 mod show;
 
@@ -155,6 +156,18 @@ impl Context {
             self.runtime.block_on(fmt::show(self, plan))
         }
     }
+
+    fn glimpse(&mut self, plan: LogicalPlan) -> Result<()> {
+        if let Some(mut output) = self.output.take() {
+            self.runtime
+                .block_on(fmt::glimpse(self, plan, &mut output))?;
+            self.output = Some(output);
+            Ok(())
+        } else {
+            let output = &mut std::io::stdout();
+            self.runtime.block_on(fmt::glimpse(self, plan, output))
+        }
+    }
 }
 
 /// Evaluate pipelines expressions to standard output.
@@ -193,6 +206,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
             "count" => count::eval(args, ctx)?,
+            "glimpse" => glimpse::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
