@@ -28,6 +28,16 @@ pub fn string(expr: &Expr) -> String {
     }
 }
 
+/// Returns the value from a number expression.
+///
+/// Panics if the expression is not a number.
+pub fn number(expr: &Expr) -> f64 {
+    match expr {
+        Expr::Number(s) => *s,
+        _ => panic!("{expr} is not a number expression"),
+    }
+}
+
 /// Returns a datafusion column expression and quotes the name.
 ///
 /// The `col` function in datafusion makes identifiers lower case, this function

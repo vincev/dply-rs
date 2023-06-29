@@ -30,6 +30,7 @@ mod args;
 mod count;
 mod fmt;
 mod glimpse;
+mod head;
 mod parquet;
 mod show;
 
@@ -207,6 +208,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
         Expr::Function(name, args) => match name.as_str() {
             "count" => count::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
+            "head" => head::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
