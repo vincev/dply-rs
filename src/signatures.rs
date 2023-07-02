@@ -353,6 +353,13 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::function("mean", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("median", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("min", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function(
+            "to_ns",
+            Args::Ordered(vec![ArgType::OneOf(vec![
+                ArgType::Identifier,
+                ArgType::arith(ArgType::Identifier),
+            ])]),
+        ),
     ]);
 
     let expr = ArgType::OneOf(vec![operand.clone(), ArgType::arith(operand)]);

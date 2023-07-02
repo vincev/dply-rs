@@ -33,6 +33,7 @@ mod filter;
 mod fmt;
 mod glimpse;
 mod head;
+mod mutate;
 mod parquet;
 mod relocate;
 mod rename;
@@ -229,6 +230,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
+            "mutate" => mutate::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,

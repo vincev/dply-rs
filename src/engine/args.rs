@@ -14,11 +14,7 @@
 // limitations under the License.
 use anyhow::{anyhow, Result};
 use chrono::{NaiveDate, NaiveDateTime};
-use datafusion::{
-    common::DFSchema,
-    logical_expr::{self, Expr as DFExpr},
-    prelude::*,
-};
+use datafusion::{common::DFSchema, logical_expr::Expr as DFExpr, prelude::*};
 use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
@@ -58,7 +54,7 @@ pub fn identifier(expr: &Expr) -> String {
 /// The `col` function in datafusion makes identifiers lower case, this function
 /// quotes the name so that it preserves case.
 pub fn str_to_col(s: impl Into<String>) -> DFExpr {
-    logical_expr::col(format!(r#""{}""#, s.into()))
+    DFExpr::Column(Column::new_unqualified(s))
 }
 
 /// Returns a datafusion column if it is in the schema.
@@ -66,6 +62,21 @@ pub fn expr_to_col(expr: &Expr, schema: &DFSchema) -> Result<DFExpr> {
     let column = identifier(expr);
     if schema.has_column_with_unqualified_name(&column) {
         Ok(str_to_col(column))
+    } else {
+        Err(anyhow!("Unknown column '{expr}'"))
+    }
+}
+
+/// Returns a datafusion qualified column if it is in the schema.
+///
+/// This is needed for when window function expressions are transformed to a
+/// column expression as their name needs the table.
+pub fn expr_to_qualified_col(expr: &Expr, schema: &DFSchema) -> Result<DFExpr> {
+    let column = identifier(expr);
+
+    if let Ok(field) = schema.field_with_unqualified_name(&column) {
+        let qualifier = field.qualifier().cloned();
+        Ok(DFExpr::Column(Column::new(qualifier, field.name())))
     } else {
         Err(anyhow!("Unknown column '{expr}'"))
     }

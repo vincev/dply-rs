@@ -26,32 +26,33 @@ fn mutate_arith() -> Result<()> {
                 trip_distance_mi = trip_distance
             ) |
             mutate(
-                travel_time_ns = tpep_dropoff_datetime - tpep_pickup_datetime,
+                travel_time = tpep_dropoff_datetime - tpep_pickup_datetime,
                 trip_distance_km = trip_distance_mi * 1.60934,
-                avg_speed_km_h = trip_distance_km / (travel_time_ns / 3.6e12)
+                avg_speed_km_h = trip_distance_km / (to_ns(travel_time) / 3.6e12)
             ) |
             relocate(trip_distance_km, after = trip_distance_mi) |
             head(10)
     "#};
     let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
 
     assert_eq!(
         output,
         indoc!(
             r#"
             shape: (10, 6)
-            tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance_mi|trip_distance_km|travel_time_ns|avg_speed_km_h
-            datetime[ns]|datetime[ns]|f64|f64|duration[ns]|f64
+            tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance_mi|trip_distance_km|travel_time|avg_speed_km_h
+            datetime[μs]|datetime[μs]|f64|f64|interval[mdn]|f64
             ---
-            2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|5.0533276|18m 52s|16.070653
-            2022-11-27 16:43:26|2022-11-27 16:50:06|1.06|1.7059004|6m 40s|15.353104
-            2022-11-12 16:58:37|2022-11-12 17:12:31|2.36|3.7980424|13m 54s|16.394428
+            2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|5.053328|18m 52s|16.070653
+            2022-11-27 16:43:26|2022-11-27 16:50:06|1.06|1.7059|6m 40s|15.353104
+            2022-11-12 16:58:37|2022-11-12 17:12:31|2.36|3.798042|13m 54s|16.394428
             2022-11-30 22:24:08|2022-11-30 22:39:16|5.2|8.368568|15m 8s|33.179344
             2022-11-26 23:03:41|2022-11-26 23:23:48|0.0|0.0|20m 7s|0.0
-            2022-11-30 14:46:43|2022-11-30 15:17:39|2.39|3.8463226|30m 56s|7.46054
-            2022-11-22 14:36:34|2022-11-22 14:46:38|1.52|2.4461968|10m 4s|14.579981
-            2022-11-28 09:54:14|2022-11-28 10:02:07|0.51|0.8207634|7m 53s|6.246825
-            2022-11-09 17:39:58|2022-11-09 17:58:30|0.98|1.5771532|18m 32s|5.105892
+            2022-11-30 14:46:43|2022-11-30 15:17:39|2.39|3.846323|30m 56s|7.46054
+            2022-11-22 14:36:34|2022-11-22 14:46:38|1.52|2.446197|10m 4s|14.579981
+            2022-11-28 09:54:14|2022-11-28 10:02:07|0.51|0.820763|7m 53s|6.246825
+            2022-11-09 17:39:58|2022-11-09 17:58:30|0.98|1.577153|18m 32s|5.105892
             2022-11-20 00:33:58|2022-11-20 00:42:35|2.14|3.443988|8m 37s|23.981345
             ---
        "#
@@ -221,7 +222,7 @@ fn mutate_dt() -> Result<()> {
             r#"
             shape: (2, 4)
             trip_distance|tpep_pickup_datetime|date_string|date_datetime
-            f64|datetime[ns]|str|datetime[ns]
+            f64|datetime[μs]|str|datetime[ms]
             ---
             3.14|2022-11-22 19:27:01|2022-11-27 16:43:26|2022-11-27 16:43:26
             1.06|2022-11-27 16:43:26|2022-11-27 16:43:26|2022-11-27 16:43:26
@@ -246,6 +247,7 @@ fn mutate_len() -> Result<()> {
             head()
     "#};
     let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
 
     assert_eq!(
         output,
