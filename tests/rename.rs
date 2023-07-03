@@ -37,7 +37,6 @@ fn rename() -> Result<()> {
             head(1)
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,

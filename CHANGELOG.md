@@ -6,6 +6,7 @@ Changes to the `dply` crate are documented in this file.
 * Use datafusion as query engine.
 * Speedup parquet writing for multiple partitions (about 40% increase).
 * parquet function now accepts a folder path for reading multiple files.
+* parquet write now uses compression to reduce file size.
 
 ## 0.1.9 - 2023-06-28
 ### 🔧 Changed

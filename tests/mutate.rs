@@ -34,7 +34,6 @@ fn mutate_arith() -> Result<()> {
             head(10)
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -247,7 +246,6 @@ fn mutate_len() -> Result<()> {
             head()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,

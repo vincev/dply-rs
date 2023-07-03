@@ -33,6 +33,7 @@ mod distinct;
 mod filter;
 mod fmt;
 mod glimpse;
+mod group_by;
 mod head;
 mod mutate;
 mod parquet;
@@ -40,6 +41,7 @@ mod relocate;
 mod rename;
 mod select;
 mod show;
+mod summarize;
 
 pub struct Context {
     /// Named logical plans.
@@ -240,12 +242,14 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "distinct" => distinct::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
+            "group_by" => group_by::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
             "mutate" => mutate::eval(args, ctx)?,
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,
             "select" => select::eval(args, ctx)?,
+            "summarize" => summarize::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
         },
