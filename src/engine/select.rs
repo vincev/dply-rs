@@ -67,7 +67,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         let plan = LogicalPlanBuilder::from(plan)
             .project(select_columns)?
             .build()?;
-        ctx.set_plan(plan)?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("select error: must call summarize after a group_by");
     } else {

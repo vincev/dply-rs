@@ -56,7 +56,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             count(plan, vec![], &agg_col)?
         };
 
-        ctx.set_plan(plan)?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("count error: must call summarize after a group_by");
     } else {

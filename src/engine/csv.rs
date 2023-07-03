@@ -44,7 +44,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             bail!("csv error: file '{}' already exists.", path);
         }
 
-        ctx.set_plan(plan.clone())?;
+        ctx.set_plan(plan.clone());
 
         let file = std::fs::File::create(&path)
             .map_err(|e| anyhow!("csv error: cannot create file '{}' {e}", path))?;
@@ -116,7 +116,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         let table_source = provider_as_source(Arc::new(table_provider));
         let plan = LogicalPlanBuilder::scan(UNNAMED_TABLE, table_source, None)?.build()?;
 
-        ctx.set_plan(plan)?;
+        ctx.set_plan(plan);
     }
 
     Ok(())

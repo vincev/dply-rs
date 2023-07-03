@@ -137,7 +137,7 @@ impl Context {
     }
 
     /// Sets the dataframe to be used in pipeline steps.
-    fn set_plan(&mut self, plan: LogicalPlan) -> Result<()> {
+    fn set_plan(&mut self, plan: LogicalPlan) {
         assert!(self.group.is_none());
 
         // Get unqualified column names.
@@ -151,7 +151,16 @@ impl Context {
         self.update_completions();
 
         self.plan = Some(plan);
-        Ok(())
+    }
+
+    /// Sets the grouping columns used for aggregation.
+    fn set_group(&mut self, plan: LogicalPlan, group: Vec<DFExpr>) {
+        self.set_plan(plan);
+        self.group = Some(group);
+    }
+
+    fn take_group(&mut self) -> Option<Vec<DFExpr>> {
+        self.group.take()
     }
 
     /// Gets the active group.
@@ -242,11 +251,11 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
         },
         Expr::Identifier(name) => {
             // If there is an input assign it to the variable.
-            if let Some(df) = ctx.take_plan() {
-                ctx.vars.insert(name.to_owned(), df.clone());
-                ctx.set_plan(df)?;
-            } else if let Some(df) = ctx.vars.get(name) {
-                ctx.set_plan(df.clone())?;
+            if let Some(plan) = ctx.take_plan() {
+                ctx.vars.insert(name.to_owned(), plan.clone());
+                ctx.set_plan(plan);
+            } else if let Some(plan) = ctx.vars.get(name) {
+                ctx.set_plan(plan.clone());
             } else if ctx.is_grouping() {
                 bail!("Cannot assign a group to variable '{name}'");
             } else {

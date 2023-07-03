@@ -83,7 +83,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_plan(plan)?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("mutate error: must call summarize after a group_by");
     } else {
@@ -137,9 +137,10 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
                 let data_type = plan
                     .schema()
                     .field_with_unqualified_name(id)
-                    .map_err(|_| anyhow!("to_ns: Unknown columns {id}"))?;
+                    .map(|f| f.data_type())
+                    .map_err(|_| anyhow!("to_ns: Unknown column {id}"))?;
                 let arg = args::str_to_col(id);
-                if let DataType::Interval(_) = data_type.data_type() {
+                if let DataType::Interval(_) = data_type {
                     cast(arg, DataType::Duration(TimeUnit::Nanosecond))
                 } else {
                     arg

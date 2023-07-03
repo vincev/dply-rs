@@ -46,7 +46,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         let plan = LogicalPlanBuilder::from(plan)
             .project(schema_cols)?
             .build()?;
-        ctx.set_plan(plan)?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("rename error: must call summarize after a group_by");
     } else {
