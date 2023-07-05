@@ -42,6 +42,7 @@ mod rename;
 mod select;
 mod show;
 mod summarize;
+mod unnest;
 
 pub struct Context {
     /// Named logical plans.
@@ -251,6 +252,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "select" => select::eval(args, ctx)?,
             "summarize" => summarize::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
+            "unnest" => unnest::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
         },
         Expr::Identifier(name) => {
