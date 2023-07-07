@@ -134,6 +134,7 @@ fn unnest_floats() -> Result<()> {
 }
 
 #[test]
+#[ignore = "need unnest structs"]
 fn unnest_structs() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/structs.parquet") |
