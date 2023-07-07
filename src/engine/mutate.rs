@@ -23,8 +23,8 @@ use datafusion::{
         tree_node::{Transformed, TreeNode},
     },
     logical_expr::{
-        aggregate_function::AggregateFunction, expr, expr_fn, utils, window_frame::WindowFrame,
-        Expr as DFExpr, LogicalPlanBuilder, Volatility, WindowFunction,
+        aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
+        window_frame::WindowFrame, Expr as DFExpr, LogicalPlanBuilder, Volatility, WindowFunction,
     },
     physical_plan::functions::make_scalar_function,
 };

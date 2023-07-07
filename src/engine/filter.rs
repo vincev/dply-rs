@@ -20,7 +20,7 @@ use datafusion::{
     },
     common::cast::{as_list_array, as_primitive_array, as_string_array},
     common::DFSchema,
-    logical_expr::{Expr as DFExpr, LogicalPlanBuilder, Volatility},
+    logical_expr::{create_udf, lit, Expr as DFExpr, LogicalPlanBuilder, Volatility},
     physical_plan::functions::make_scalar_function,
 };
 use std::sync::Arc;

@@ -80,7 +80,7 @@ fn left_join() -> Result<()> {
         indoc!(
             r#"
             shape: (10, 4)
-            shape_id|left_key|shape_id_right|right_val
+            shape_id|left_key|shape_id_rhs|right_val
             u32|f64|u32|f64
             ---
             1|2.0|null|null
@@ -168,20 +168,20 @@ fn outer_join() -> Result<()> {
         output,
         indoc!(
             r#"
-            shape: (10, 3)
-            shape_id|left_val|right_val
-            u32|f64|f64
+            shape: (10, 4)
+            shape_id|left_val|shape_id_rhs|right_val
+            u32|f64|u32|f64
             ---
-            1|2.0|null
-            2|4.0|null
-            3|6.0|null
-            4|8.0|null
-            5|10.0|10.0
-            6|12.0|12.0
-            7|14.0|14.0
-            8|null|16.0
-            9|null|18.0
-            10|null|20.0
+            1|2.0|null|null
+            2|4.0|null|null
+            3|6.0|null|null
+            4|8.0|null|null
+            5|10.0|5|10.0
+            6|12.0|6|12.0
+            7|14.0|7|14.0
+            null|null|11|22.0
+            null|null|21|42.0
+            null|null|35|70.0
             ---
        "#
         )
@@ -214,7 +214,7 @@ fn cross_join() -> Result<()> {
         indoc!(
             r#"
             shape: (6, 4)
-            shape_id|left_val|shape_id_right|right_val
+            shape_id|left_val|shape_id_rhs|right_val
             u32|f64|u32|f64
             ---
             21|42.0|1|2.0
@@ -280,6 +280,46 @@ fn multi_columns_join() -> Result<()> {
             8|8|16.0|24.0
             9|9|18.0|27.0
             10|10|20.0|30.0
+            ---
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn anti_join() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+            select(shape_id) |
+            mutate(right_val = shape_id * 2) |
+            filter(shape_id > 5) |
+            right_df
+
+        parquet("tests/data/lists.parquet") |
+            select(shape_id) |
+            filter(shape_id < 8) |
+            mutate(left_val = shape_id * 2) |
+            anti_join(right_df) |
+            arrange(shape_id) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (5, 2)
+            shape_id|left_val
+            u32|f64
+            ---
+            1|2.0
+            2|4.0
+            3|6.0
+            4|8.0
+            5|10.0
             ---
        "#
         )

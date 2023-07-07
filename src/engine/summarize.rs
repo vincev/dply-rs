@@ -16,7 +16,8 @@ use anyhow::{anyhow, bail, Result};
 use datafusion::{
     common::DFSchema,
     logical_expr::{
-        aggregate_function::AggregateFunction, expr, expr_fn, Expr as DFExpr, LogicalPlanBuilder,
+        aggregate_function::AggregateFunction, expr, expr_fn, lit, Expr as DFExpr,
+        LogicalPlanBuilder,
     },
 };
 use std::collections::HashSet;

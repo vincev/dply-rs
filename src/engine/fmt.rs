@@ -276,9 +276,27 @@ impl<'a> ArrayFormatter<'a> {
     fn value(&self, idx: usize) -> String {
         match &self {
             ArrayFormatter::Arrow(f) => f.value(idx).to_string(),
-            ArrayFormatter::Float16(a) => fmt_float(f64::from(a.value(idx))),
-            ArrayFormatter::Float32(a) => fmt_float(f64::from(a.value(idx))),
-            ArrayFormatter::Float64(a) => fmt_float(a.value(idx)),
+            ArrayFormatter::Float16(a) => {
+                if a.is_null(idx) {
+                    "null".to_string()
+                } else {
+                    fmt_float(f64::from(a.value(idx)))
+                }
+            }
+            ArrayFormatter::Float32(a) => {
+                if a.is_null(idx) {
+                    "null".to_string()
+                } else {
+                    fmt_float(f64::from(a.value(idx)))
+                }
+            }
+            ArrayFormatter::Float64(a) => {
+                if a.is_null(idx) {
+                    "null".to_string()
+                } else {
+                    fmt_float(a.value(idx))
+                }
+            }
             ArrayFormatter::Interval(tu, a) => fmt_interval(tu, *a, idx),
         }
     }
@@ -357,108 +375,112 @@ fn fmt_usize(n: usize) -> String {
 }
 
 fn fmt_interval(tu: &IntervalUnit, array: &dyn Array, idx: usize) -> String {
-    match tu {
-        IntervalUnit::YearMonth => {
-            let interval = array
-                .as_any()
-                .downcast_ref::<IntervalYearMonthArray>()
-                .unwrap()
-                .value(idx) as f64;
-            let years = (interval / 12_f64).floor();
-            let month = interval - (years * 12_f64);
-            format!("{years}Y {month}M")
-        }
-        IntervalUnit::DayTime => {
-            let value = array
-                .as_any()
-                .downcast_ref::<IntervalDayTimeArray>()
-                .unwrap()
-                .value(idx) as u64;
-
-            let days: i32 = ((value & 0xFFFFFFFF00000000) >> 32) as i32;
-            let ms_part: i32 = (value & 0xFFFFFFFF) as i32;
-            let secs = ms_part / 1_000;
-            let mins = secs / 60;
-            let hours = mins / 60;
-            let secs = secs - (mins * 60);
-            let mins = mins - (hours * 60);
-            let ms = ms_part % 1_000;
-            let sign = if secs < 0 || ms < 0 { "-" } else { "" };
-
-            if days != 0 {
-                format!(
-                    "{}D {}h {}m {}{}.{:03}s",
-                    days,
-                    hours,
-                    mins,
-                    sign,
-                    secs.abs(),
-                    ms.abs(),
-                )
-            } else if hours != 0 {
-                format!(
-                    "{}h {}m {}{}.{:03}s",
-                    hours,
-                    mins,
-                    sign,
-                    secs.abs(),
-                    ms.abs(),
-                )
-            } else if mins != 0 {
-                format!("{}m {}{}.{:03}s", mins, sign, secs.abs(), ms.abs(),)
-            } else {
-                format!("{}{}.{:03}s", sign, secs.abs(), ms.abs())
+    if array.is_null(idx) {
+        "null".to_string()
+    } else {
+        match tu {
+            IntervalUnit::YearMonth => {
+                let interval = array
+                    .as_any()
+                    .downcast_ref::<IntervalYearMonthArray>()
+                    .unwrap()
+                    .value(idx) as f64;
+                let years = (interval / 12_f64).floor();
+                let month = interval - (years * 12_f64);
+                format!("{years}Y {month}M")
             }
-        }
-        IntervalUnit::MonthDayNano => {
-            let value = array
-                .as_any()
-                .downcast_ref::<IntervalMonthDayNanoArray>()
-                .unwrap()
-                .value(idx) as u128;
+            IntervalUnit::DayTime => {
+                let value = array
+                    .as_any()
+                    .downcast_ref::<IntervalDayTimeArray>()
+                    .unwrap()
+                    .value(idx) as u64;
 
-            let months: i32 = ((value & 0xFFFFFFFF000000000000000000000000) >> 96) as i32;
-            let days: i32 = ((value & 0xFFFFFFFF0000000000000000) >> 64) as i32;
-            let ns_part: i64 = (value & 0xFFFFFFFFFFFFFFFF) as i64;
-            let secs = ns_part / 1_000_000_000;
-            let mins = secs / 60;
-            let hours = mins / 60;
-            let secs = secs - (mins * 60);
-            let mins = mins - (hours * 60);
-            let ns = ns_part % 1_000_000_000;
-            let secs_sign = if secs < 0 || ns < 0 { "-" } else { "" };
+                let days: i32 = ((value & 0xFFFFFFFF00000000) >> 32) as i32;
+                let ms_part: i32 = (value & 0xFFFFFFFF) as i32;
+                let secs = ms_part / 1_000;
+                let mins = secs / 60;
+                let hours = mins / 60;
+                let secs = secs - (mins * 60);
+                let mins = mins - (hours * 60);
+                let ms = ms_part % 1_000;
+                let sign = if secs < 0 || ms < 0 { "-" } else { "" };
 
-            let ns = if ns == 0 {
-                "s".to_string()
-            } else {
-                format!(".{:09}s", ns.abs())
-            };
+                if days != 0 {
+                    format!(
+                        "{}D {}h {}m {}{}.{:03}s",
+                        days,
+                        hours,
+                        mins,
+                        sign,
+                        secs.abs(),
+                        ms.abs(),
+                    )
+                } else if hours != 0 {
+                    format!(
+                        "{}h {}m {}{}.{:03}s",
+                        hours,
+                        mins,
+                        sign,
+                        secs.abs(),
+                        ms.abs(),
+                    )
+                } else if mins != 0 {
+                    format!("{}m {}{}.{:03}s", mins, sign, secs.abs(), ms.abs(),)
+                } else {
+                    format!("{}{}.{:03}s", sign, secs.abs(), ms.abs())
+                }
+            }
+            IntervalUnit::MonthDayNano => {
+                let value = array
+                    .as_any()
+                    .downcast_ref::<IntervalMonthDayNanoArray>()
+                    .unwrap()
+                    .value(idx) as u128;
 
-            if months != 0 {
-                format!(
-                    "{}M {}D {}h {}m {}{}{ns}",
-                    months,
-                    days,
-                    hours,
-                    mins,
-                    secs_sign,
-                    secs.abs(),
-                )
-            } else if days != 0 {
-                format!(
-                    "{}D {}h {}m {}{}{ns}",
-                    days,
-                    hours,
-                    mins,
-                    secs_sign,
-                    secs.abs(),
-                )
-            } else if hours != 0 {
-                format!("{}h {}m {}{}{ns}", hours, mins, secs_sign, secs.abs(),)
-            } else if mins != 0 {
-                format!("{}m {}{}{ns}", mins, secs_sign, secs.abs())
-            } else {
-                format!("{}{}{ns}", secs_sign, secs.abs())
+                let months: i32 = ((value & 0xFFFFFFFF000000000000000000000000) >> 96) as i32;
+                let days: i32 = ((value & 0xFFFFFFFF0000000000000000) >> 64) as i32;
+                let ns_part: i64 = (value & 0xFFFFFFFFFFFFFFFF) as i64;
+                let secs = ns_part / 1_000_000_000;
+                let mins = secs / 60;
+                let hours = mins / 60;
+                let secs = secs - (mins * 60);
+                let mins = mins - (hours * 60);
+                let ns = ns_part % 1_000_000_000;
+                let secs_sign = if secs < 0 || ns < 0 { "-" } else { "" };
+
+                let ns = if ns == 0 {
+                    "s".to_string()
+                } else {
+                    format!(".{:09}s", ns.abs())
+                };
+
+                if months != 0 {
+                    format!(
+                        "{}M {}D {}h {}m {}{}{ns}",
+                        months,
+                        days,
+                        hours,
+                        mins,
+                        secs_sign,
+                        secs.abs(),
+                    )
+                } else if days != 0 {
+                    format!(
+                        "{}D {}h {}m {}{}{ns}",
+                        days,
+                        hours,
+                        mins,
+                        secs_sign,
+                        secs.abs(),
+                    )
+                } else if hours != 0 {
+                    format!("{}h {}m {}{}{ns}", hours, mins, secs_sign, secs.abs(),)
+                } else if mins != 0 {
+                    format!("{}m {}{}{ns}", mins, secs_sign, secs.abs())
+                } else {
+                    format!("{}{}{ns}", secs_sign, secs.abs())
+                }
             }
         }
     }

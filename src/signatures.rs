@@ -336,6 +336,7 @@ fn def_joins(signatures: &mut SignaturesMap) {
         ArgType::eq(ArgType::Identifier, ArgType::Identifier),
     );
 
+    signatures.insert("anti_join", args.clone());
     signatures.insert("cross_join", args.clone());
     signatures.insert("inner_join", args.clone());
     signatures.insert("left_join", args.clone());

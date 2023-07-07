@@ -16,9 +16,8 @@
 //! Evaluate pipeline functions.
 use anyhow::{bail, Result};
 use datafusion::{
-    logical_expr::LogicalPlan,
-    physical_plan::ExecutionPlan,
-    prelude::{Expr as DFExpr, *},
+    execution::context::SessionContext, logical_expr::LogicalPlan, physical_plan::ExecutionPlan,
+    prelude::Expr as DFExpr,
 };
 use std::{collections::HashMap, future::Future, sync::Arc};
 use tokio::runtime;
@@ -35,6 +34,7 @@ mod fmt;
 mod glimpse;
 mod group_by;
 mod head;
+mod joins;
 mod mutate;
 mod parquet;
 mod relocate;
@@ -94,6 +94,11 @@ impl Context {
     /// Returns the active dataframe variables.
     pub fn vars(&self) -> Vec<String> {
         self.vars.keys().cloned().collect()
+    }
+
+    /// Returns the plan associated with the given variable.
+    fn get_plan(&self, name: &str) -> Option<LogicalPlan> {
+        self.vars.get(name).cloned()
     }
 
     /// Returns the active dataframe or group columns.
@@ -237,21 +242,26 @@ fn eval_pipelines(exprs: &[Expr], ctx: &mut Context) -> Result<()> {
 fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
     match expr {
         Expr::Function(name, args) => match name.as_str() {
+            "anti_join" => joins::eval(args, ctx, joins::JoinType::Anti)?,
             "arrange" => arrange::eval(args, ctx)?,
             "count" => count::eval(args, ctx)?,
+            "cross_join" => joins::eval(args, ctx, joins::JoinType::Cross)?,
             "csv" => csv::eval(args, ctx)?,
             "distinct" => distinct::eval(args, ctx)?,
             "filter" => filter::eval(args, ctx)?,
             "glimpse" => glimpse::eval(args, ctx)?,
             "group_by" => group_by::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
+            "inner_join" => joins::eval(args, ctx, joins::JoinType::Inner)?,
+            "left_join" => joins::eval(args, ctx, joins::JoinType::Left)?,
             "mutate" => mutate::eval(args, ctx)?,
+            "outer_join" => joins::eval(args, ctx, joins::JoinType::Outer)?,
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,
             "select" => select::eval(args, ctx)?,
-            "summarize" => summarize::eval(args, ctx)?,
             "show" => show::eval(args, ctx)?,
+            "summarize" => summarize::eval(args, ctx)?,
             "unnest" => unnest::eval(args, ctx)?,
             _ => panic!("Unknown function {name}"),
         },
