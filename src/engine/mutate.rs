@@ -14,14 +14,8 @@
 // limitations under the License.
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
-    arrow::{
-        array::{ArrayRef, UInt32Array},
-        datatypes::*,
-    },
-    common::{
-        cast::as_list_array,
-        tree_node::{Transformed, TreeNode},
-    },
+    arrow::{array::ArrayRef, compute::kernels, datatypes::*},
+    common::tree_node::{Transformed, TreeNode},
     logical_expr::{
         aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
         window_frame::WindowFrame, Expr as DFExpr, LogicalPlanBuilder, Volatility, WindowFunction,
@@ -159,8 +153,8 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
                 .field_with_unqualified_name(&column)
                 .map(|f| f.data_type())
             {
-                Ok(dt @ DataType::List(_)) => list_len(&column, dt),
-                Ok(_) => Err(anyhow!("`len` column '{column}' must be list")),
+                Ok(dt @ DataType::List(_) | dt @ DataType::Utf8) => list_len(&column, dt),
+                Ok(_) => Err(anyhow!("`len` column '{column}' must be a list or string")),
                 Err(_) => Err(anyhow!("Unknown column '{column}'")),
             }
         }
@@ -181,12 +175,8 @@ fn window_fn(expr: DFExpr, agg: AggregateFunction) -> DFExpr {
 fn list_len(column: &str, list_type: &DataType) -> Result<DFExpr> {
     let len_udf = move |args: &[ArrayRef]| {
         assert_eq!(args.len(), 1);
-
-        let result = as_list_array(&args[0])?
-            .iter()
-            .map(|list| list.map(|a| a.len() as u32).unwrap_or(0))
-            .collect::<UInt32Array>();
-        Ok(Arc::new(result) as ArrayRef)
+        let result = kernels::length::length(&args[0])?;
+        Ok(result)
     };
 
     let len_udf = make_scalar_function(len_udf);
@@ -194,7 +184,7 @@ fn list_len(column: &str, list_type: &DataType) -> Result<DFExpr> {
     let len_udf = create_udf(
         "len",
         vec![list_type.clone()],
-        Arc::new(DataType::UInt32),
+        Arc::new(DataType::Int32),
         Volatility::Immutable,
         len_udf,
     );

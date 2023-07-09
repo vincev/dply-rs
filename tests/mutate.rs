@@ -253,18 +253,45 @@ fn mutate_len() -> Result<()> {
             r#"
             shape: (10, 3)
             ints_len|floats_len|tags_len
-            u32|u32|u32
+            i32|i32|i32
             ---
             3|4|4
             1|3|1
-            0|4|1
+            null|4|1
             2|4|1
-            0|4|3
+            null|4|3
             1|1|3
             4|1|4
-            0|2|0
-            4|0|0
+            null|2|null
+            4|null|null
             1|4|4
+            ---
+       "#
+        )
+    );
+
+    // Lengths on strings
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            count(rate_code) |
+            mutate(rate_len = len(rate_code)) |
+            arrange(rate_code) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (4, 3)
+            rate_code|n|rate_len
+            str|i64|i32
+            ---
+            JFK|11|3
+            Negotiated|2|10
+            Standard|228|8
+            null|9|null
             ---
        "#
         )
