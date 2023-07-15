@@ -299,3 +299,72 @@ fn mutate_len() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn mutate_field() -> Result<()> {
+    // Extract a field from a struct.
+    let input = indoc! {r#"
+        parquet("tests/data/structs.parquet") |
+            filter(!is_null(points)) |
+            unnest(points) |
+            mutate(
+                x = field(points, x),
+                y = field(points, y)
+            ) |
+            select(shape_id, x, y) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 3)
+            shape_id|x|y
+            u32|f32|f32
+            ---
+            1|-7.144482|-2.752852
+            1|-3.377404|-2.862458
+            1|-4.05302|6.336014
+            3|-8.744724|-0.039072
+            4|-0.807573|-7.81899
+            5|-2.831063|5.288568
+            6|4.039896|-3.030655
+            7|4.160488|9.694407
+            7|-7.926216|-4.505739
+            7|8.11179|8.441616
+            ---
+       "#
+        )
+    );
+
+    // Lengths on strings
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            count(rate_code) |
+            mutate(rate_len = len(rate_code)) |
+            arrange(rate_code) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (4, 3)
+            rate_code|n|rate_len
+            str|i64|i32
+            ---
+            JFK|11|3
+            Negotiated|2|10
+            Standard|228|8
+            null|9|null
+            ---
+       "#
+        )
+    );
+
+    Ok(())
+}

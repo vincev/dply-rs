@@ -349,6 +349,10 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::Number,
         ArgType::String,
         ArgType::function("dt", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function(
+            "field",
+            Args::Ordered(vec![ArgType::Identifier, ArgType::Identifier]),
+        ),
         ArgType::function("len", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("max", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("mean", Args::Ordered(vec![ArgType::Identifier])),

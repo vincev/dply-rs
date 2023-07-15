@@ -18,9 +18,11 @@ use datafusion::{
     common::tree_node::{Transformed, TreeNode},
     logical_expr::{
         aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
-        window_frame::WindowFrame, Expr as DFExpr, LogicalPlanBuilder, Volatility, WindowFunction,
+        window_frame::WindowFrame, Expr as DFExpr, GetIndexedField, LogicalPlanBuilder, Volatility,
+        WindowFunction,
     },
     physical_plan::functions::make_scalar_function,
+    scalar::ScalarValue,
 };
 
 use crate::parser::{Expr, Operator};
@@ -110,6 +112,26 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
         Expr::Function(name, args) if name == "dt" => {
             args::expr_to_col(&args[0], schema).map(expr_fn::to_timestamp_millis)
         }
+        Expr::Function(name, args) if name == "field" => {
+            let field_name = args::identifier(&args[1]);
+            args::expr_to_qualified_col(&args[0], schema).map(|e| {
+                DFExpr::GetIndexedField(GetIndexedField {
+                    expr: Box::new(e),
+                    key: ScalarValue::Utf8(Some(field_name)),
+                })
+            })
+        }
+        Expr::Function(name, args) if name == "len" => {
+            let column = args::identifier(&args[0]);
+            match schema
+                .field_with_unqualified_name(&column)
+                .map(|f| f.data_type())
+            {
+                Ok(dt @ DataType::List(_) | dt @ DataType::Utf8) => list_len(&column, dt),
+                Ok(_) => Err(anyhow!("`len` column '{column}' must be a list or string")),
+                Err(_) => Err(anyhow!("Unknown column '{column}'")),
+            }
+        }
         Expr::Function(name, args) if name == "mean" => {
             args::expr_to_qualified_col(&args[0], schema)
                 .map(|e| window_fn(e, AggregateFunction::Avg))
@@ -146,17 +168,6 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
             };
 
             Ok(cast(arg, DataType::Int64))
-        }
-        Expr::Function(name, args) if name == "len" => {
-            let column = args::identifier(&args[0]);
-            match schema
-                .field_with_unqualified_name(&column)
-                .map(|f| f.data_type())
-            {
-                Ok(dt @ DataType::List(_) | dt @ DataType::Utf8) => list_len(&column, dt),
-                Ok(_) => Err(anyhow!("`len` column '{column}' must be a list or string")),
-                Err(_) => Err(anyhow!("Unknown column '{column}'")),
-            }
         }
         _ => panic!("Unexpected mutate expression {expr}"),
     }

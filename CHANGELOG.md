@@ -7,8 +7,10 @@ Changes to the `dply` crate are documented in this file.
 * `parquet`: Speedup parquet writing for multiple partitions (about 40% increase).
 * `parquet`: A folder path reads all parquet files in the folder.
 * `parquet`: write now uses compression to reduce file size.
-* `anti_join`: Added `anti_join` to select rows not found in the orther data frame.
 * `mutate`: Make `len` function to work on strings.
+### ⭐ Added
+* `anti_join`: Added `anti_join` to select rows not found in the orther data frame.
+* `mutate`: Add `field` function to extract fields from a struct list.
 
 ## 0.1.9 - 2023-06-28
 ### 🔧 Changed
