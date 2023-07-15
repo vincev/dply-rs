@@ -91,7 +91,6 @@ fn group_by_min_max() -> Result<()> {
 }
 
 #[test]
-#[ignore = "need non approx median"]
 fn group_by_median_quantile() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
@@ -108,7 +107,6 @@ fn group_by_median_quantile() -> Result<()> {
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -118,10 +116,10 @@ fn group_by_median_quantile() -> Result<()> {
             payment_type|median_price|q25_price|q50_price|q75_price|q95_price|n
             str|f64|f64|f64|f64|f64|i64
             ---
-            Credit card|16.56|12.43|16.56|23.76|64.114|185
-            Cash|14.8|11.8|14.8|22.3|49.67|53
-            Unknown|22.72|18.17|22.72|28.39|50.882|9
-            Dispute|-0.5|-4.4|-0.5|3.4|6.52|2
+            Credit card|16.56|12.43|16.56|23.76|66.12|185
+            Cash|14.8|11.8|14.8|22.3|41.55|53
+            Unknown|22.72|18.17|22.72|28.39|54.47|9
+            Dispute|-0.5|-8.3|7.3|7.3|7.3|2
             No charge|8.8|8.8|8.8|8.8|8.8|1
             ---
        "#
@@ -132,7 +130,6 @@ fn group_by_median_quantile() -> Result<()> {
 }
 
 #[test]
-#[ignore = "need non approx median"]
 fn summarize_median_quantile() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
@@ -153,11 +150,11 @@ fn summarize_median_quantile() -> Result<()> {
         output,
         indoc!(
             r#"
-            shape: (1, 4)
-            mean_price|std_price|var_price|n
-            f64|f64|f64|u32
+            shape: (1, 6)
+            median_price|q25_price|q50_price|q75_price|q95_price|n
+            f64|f64|f64|f64|f64|i64
             ---
-            21.4712|15.474215|239.451342|250
+            16.145|12.36|16.3|22.88|61.85|250
             ---
        "#
         )

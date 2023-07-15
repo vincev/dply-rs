@@ -15,10 +15,12 @@ clap = { version = "4.2", features = ["derive"] }
 comfy-table = "6"
 datafusion = { version = "27", default-features = false }
 futures = "0.3.28"
+hashbrown = "0.14.0"
 home = "0.5"
 lru = "0.10.0"
 nom = "7"
 num-traits = "0.2.15"
+parking_lot = "0.12.1"
 reedline = "0.20"
 regex = "1.8.4"
 thiserror = "1.0"
