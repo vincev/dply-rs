@@ -159,7 +159,7 @@ fn outer_join() -> Result<()> {
             filter(shape_id < 8) |
             mutate(left_val = shape_id * 2) |
             outer_join(right_df) |
-            arrange(shape_id) |
+            arrange(shape_id, left_val, shape_id_rhs, right_val) |
             head()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -179,9 +179,9 @@ fn outer_join() -> Result<()> {
             5|10.0|5|10.0
             6|12.0|6|12.0
             7|14.0|7|14.0
-            null|null|11|22.0
-            null|null|21|42.0
-            null|null|35|70.0
+            null|null|8|16.0
+            null|null|9|18.0
+            null|null|10|20.0
             ---
        "#
         )

@@ -51,7 +51,7 @@ fn distinct() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             distinct(passenger_count, store_and_fwd_flag) |
-            arrange(passenger_count) |
+            arrange(passenger_count, store_and_fwd_flag) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
