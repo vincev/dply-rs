@@ -45,7 +45,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         let plan = if !columns.is_empty() {
             let plan = count(plan, columns.clone(), &agg_col)?;
 
-            if args::named_bool(args, "sort")? {
+            if args::named_bool(args, "sort") {
                 let mut sort_cols = vec![args::str_to_col(&agg_col).sort(false, false)];
                 sort_cols.extend(columns.into_iter().map(|c| c.sort(true, false)));
                 LogicalPlanBuilder::from(plan).sort(sort_cols)?.build()?

@@ -100,17 +100,34 @@ pub fn timestamp(expr: &Expr) -> Result<DFExpr> {
     Ok(lit_timestamp_nano(dt.timestamp_nanos()))
 }
 
-pub fn named_bool(args: &[Expr], name: &str) -> Result<bool> {
+/// Returns the value of a named boolean variable like `overwrite = false`.
+pub fn named_bool(args: &[Expr], name: &str) -> bool {
     for arg in args {
         if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
             match (lhs.as_ref(), rhs.as_ref()) {
                 (Expr::Identifier(lhs), Expr::Identifier(rhs)) if lhs == name => {
-                    return Ok(bool::from_str(rhs)?);
+                    return bool::from_str(rhs).unwrap_or(false);
                 }
                 _ => {}
             }
         }
     }
 
-    Ok(false)
+    false
+}
+
+/// Returns the value of a named integer variable like `schema_rows = 2000`.
+pub fn named_int(args: &[Expr], name: &str) -> Option<i64> {
+    for arg in args {
+        if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
+            match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Identifier(lhs), Expr::Number(rhs)) if lhs == name => {
+                    return Some(*rhs as i64);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    None
 }

@@ -35,6 +35,7 @@ mod glimpse;
 mod group_by;
 mod head;
 mod joins;
+mod json;
 mod mutate;
 mod parquet;
 mod relocate;
@@ -253,6 +254,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "group_by" => group_by::eval(args, ctx)?,
             "head" => head::eval(args, ctx)?,
             "inner_join" => joins::eval(args, ctx, joins::JoinType::Inner)?,
+            "json" => json::eval(args, ctx)?,
             "left_join" => joins::eval(args, ctx, joins::JoinType::Left)?,
             "mutate" => mutate::eval(args, ctx)?,
             "outer_join" => joins::eval(args, ctx, joins::JoinType::Outer)?,

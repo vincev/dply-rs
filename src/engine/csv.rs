@@ -36,7 +36,7 @@ use super::*;
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     let path = args::string(&args[0]);
-    let overwrite = args::named_bool(args, "overwrite")?;
+    let overwrite = args::named_bool(args, "overwrite");
 
     // If there is an input dataframe save it to disk.
     if let Some(plan) = ctx.take_plan() {

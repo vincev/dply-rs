@@ -35,6 +35,7 @@ pub fn functions() -> &'static SignaturesMap {
         def_group_by(&mut signatures);
         def_head(&mut signatures);
         def_joins(&mut signatures);
+        def_json(&mut signatures);
         def_mutate(&mut signatures);
         def_parquet(&mut signatures);
         def_relocate(&mut signatures);
@@ -88,7 +89,10 @@ pub fn completions(pattern: &str) -> Vec<String> {
 fn has_string_arg(name: &str) -> bool {
     // We don't include "contains" as the one used in filter doesn't take a
     // string parameter (e.g. filter(contains(name, "john"))).
-    matches!(name, "parquet" | "csv" | "starts_with" | "ends_with")
+    matches!(
+        name,
+        "parquet" | "csv" | "json" | "starts_with" | "ends_with"
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -341,6 +345,19 @@ fn def_joins(signatures: &mut SignaturesMap) {
     signatures.insert("inner_join", args.clone());
     signatures.insert("left_join", args.clone());
     signatures.insert("outer_join", args);
+}
+
+fn def_json(signatures: &mut SignaturesMap) {
+    signatures.insert(
+        "json",
+        Args::OneThenMore(
+            ArgType::String,
+            ArgType::OneOf(vec![
+                ArgType::assign(ArgType::Named("overwrite"), ArgType::Bool),
+                ArgType::assign(ArgType::Named("schema_rows"), ArgType::Number),
+            ]),
+        ),
+    );
 }
 
 fn def_mutate(signatures: &mut SignaturesMap) {

@@ -9,8 +9,9 @@ Changes to the `dply` crate are documented in this file.
 * `parquet`: write now uses compression to reduce file size.
 * `mutate`: Make `len` function to work on strings.
 ### ⭐ Added
+* `json`: Read and write NdJSON files.
 * `anti_join`: Added `anti_join` to select rows not found in the orther data frame.
-* `mutate`: Add `field` function to extract fields from a struct list.
+* `mutate`: Add `field` function to extract fields from a JSON/struct objects.
 
 ## 0.1.9 - 2023-06-28
 ### 🔧 Changed

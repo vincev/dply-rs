@@ -192,7 +192,9 @@ impl Completer for CustomCompleter {
 }
 
 fn is_file_completion(prefix: &str) -> bool {
-    let is_file_function = prefix.starts_with("parquet(\"") | prefix.starts_with("csv(\"");
+    let is_file_function = prefix.starts_with("parquet(\"")
+        | prefix.starts_with("csv(\"")
+        | prefix.starts_with("json(\"");
     is_file_function && prefix.matches('"').count() == 1
 }
 
