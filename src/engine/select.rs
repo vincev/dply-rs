@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::lazy::dsl::Expr as PolarsExpr;
-use polars::prelude::*;
+use datafusion::logical_expr::{Expr as DFExpr, LogicalPlanBuilder};
 
 use crate::parser::{Expr, Operator};
 
@@ -24,19 +23,19 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
+    if let Some(plan) = ctx.take_plan() {
         let schema_cols = ctx.columns();
         let mut select_columns = Vec::new();
 
         for arg in args {
             match arg {
                 Expr::Function(_, _) => {
-                    let mut filter_cols = filter_columns(arg, &schema_cols, false);
+                    let mut filter_cols = filter_columns(arg, schema_cols, false);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
                 Expr::UnaryOp(Operator::Not, expr) => {
-                    let mut filter_cols = filter_columns(expr, &schema_cols, true);
+                    let mut filter_cols = filter_columns(expr, schema_cols, true);
                     filter_cols.retain(|e| !select_columns.contains(e));
                     select_columns.extend(filter_cols);
                 }
@@ -44,7 +43,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     // select(alias = column)
                     let alias = args::identifier(lhs);
                     let column = args::identifier(rhs);
-                    let expr = col(&column).alias(&alias);
+                    let expr = args::str_to_col(&column).alias(&alias);
 
                     if !select_columns.contains(&expr) {
                         select_columns.push(expr);
@@ -56,7 +55,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("select error: Unknown column {column}");
                     }
 
-                    let expr = col(column);
+                    let expr = args::str_to_col(column);
                     if !select_columns.contains(&expr) {
                         select_columns.push(expr);
                     }
@@ -65,7 +64,10 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_df(df.select(&select_columns))?;
+        let plan = LogicalPlanBuilder::from(plan)
+            .project(select_columns)?
+            .build()?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("select error: must call summarize after a group_by");
     } else {
@@ -75,7 +77,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<PolarsExpr> {
+fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<DFExpr> {
     match expr {
         Expr::Function(name, args) if name == "starts_with" => {
             // select(starts_with("pattern"))
@@ -83,7 +85,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<Pola
             schema_cols
                 .iter()
                 .filter(|c| c.starts_with(&pattern) ^ negate)
-                .map(|c| col(c))
+                .map(args::str_to_col)
                 .collect()
         }
         Expr::Function(name, args) if name == "ends_with" => {
@@ -92,7 +94,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<Pola
             schema_cols
                 .iter()
                 .filter(|c| c.ends_with(&pattern) ^ negate)
-                .map(|c| col(c))
+                .map(args::str_to_col)
                 .collect()
         }
         Expr::Function(name, args) if name == "contains" => {
@@ -101,7 +103,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<Pola
             schema_cols
                 .iter()
                 .filter(|c| c.contains(&pattern) ^ negate)
-                .map(|c| col(c))
+                .map(args::str_to_col)
                 .collect()
         }
         _ => Vec::new(),

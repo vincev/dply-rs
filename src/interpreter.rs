@@ -16,15 +16,15 @@
 //! Interpreter for dply expressions.
 use anyhow::Result;
 
-use crate::{eval, parser, typing};
+use crate::{engine, parser, typing};
 
 /// Evaluates a dply script.
 pub fn eval(input: &str) -> Result<()> {
     let pipelines = parser::parse(input)?;
     typing::validate(&pipelines)?;
 
-    let mut ctx = eval::Context::default();
-    eval::eval(&mut ctx, &pipelines)?;
+    let mut ctx = engine::Context::default();
+    engine::eval(&mut ctx, &pipelines)?;
 
     Ok(())
 }
@@ -33,5 +33,5 @@ pub fn eval(input: &str) -> Result<()> {
 pub fn eval_to_string(input: &str) -> Result<String> {
     let pipelines = parser::parse(input)?;
     typing::validate(&pipelines)?;
-    eval::eval_to_string(&pipelines)
+    engine::eval_to_string(&pipelines)
 }

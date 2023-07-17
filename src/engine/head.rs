@@ -13,36 +13,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::prelude::*;
+use datafusion::logical_expr::LogicalPlanBuilder;
 
 use crate::parser::Expr;
 
 use super::*;
 
-/// Evaluates an unnest call.
+/// Evaluates a head call.
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(mut df) = ctx.take_df() {
-        for arg in args {
-            let column = args::identifier(arg);
-            let schema = df.schema().map_err(|e| anyhow!("unnest error: {e}"))?;
+    if let Some(plan) = ctx.take_plan() {
+        let limit = if !args.is_empty() {
+            args::number(&args[0]) as usize
+        } else {
+            10
+        };
 
-            match schema.get(&column) {
-                Some(DataType::List(_)) => {
-                    df = df.explode(vec![col(&column)]);
-                }
-                Some(DataType::Struct(_)) => {
-                    df = df.unnest([&column]);
-                }
-                Some(_) => bail!("unnest error: '{column}' is not a list or struct type"),
-                None => bail!("unnest error: unknown column '{column}'"),
-            }
-        }
+        let plan = LogicalPlanBuilder::from(plan)
+            .limit(0, Some(limit))?
+            .build()?;
 
-        ctx.set_df(df)?;
+        ctx.show(plan)?;
+    } else if ctx.is_grouping() {
+        bail!("head error: must call summarize after a group_by");
     } else {
-        bail!("unnest error: missing input dataframe");
+        bail!("head error: missing input dataframe");
     }
 
     Ok(())

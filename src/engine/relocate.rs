@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::prelude::*;
+use datafusion::logical_expr::LogicalPlanBuilder;
 
 use crate::parser::{Expr, Operator};
 
@@ -33,8 +33,8 @@ enum RelocateTo {
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
-        let schema_cols = ctx.columns();
+    if let Some(plan) = ctx.take_plan() {
+        let mut schema_cols = ctx.columns().clone();
         let mut relocate_cols = Vec::new();
         let mut relocate_to = RelocateTo::Default;
 
@@ -68,7 +68,6 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        let mut schema_cols = schema_cols;
         match relocate_to {
             RelocateTo::Default => {
                 // Relocate columns to the left.
@@ -89,8 +88,14 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         };
 
-        let columns = schema_cols.into_iter().map(|c| col(&c)).collect::<Vec<_>>();
-        ctx.set_df(df.select(&columns))?;
+        let columns = schema_cols
+            .into_iter()
+            .map(args::str_to_col)
+            .collect::<Vec<_>>();
+
+        let plan = LogicalPlanBuilder::from(plan).project(columns)?.build()?;
+
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("relocate error: must call summarize after a group_by");
     } else {

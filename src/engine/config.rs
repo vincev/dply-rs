@@ -12,29 +12,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{bail, Result};
-
 use crate::parser::Expr;
 
 use super::*;
 
-/// Evaluates a head call.
+/// Evaluates a config call.
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
-        let limit = if !args.is_empty() {
-            args::number(&args[0]) as u32
-        } else {
-            10
-        };
+    if let Ok(Some(value)) = args::named_usize(args, "max_columns") {
+        ctx.format_config.max_columns = value;
+    }
 
-        let df = df.limit(limit).collect()?;
-        ctx.print(df)?;
-    } else if ctx.is_grouping() {
-        bail!("head error: must call summarize after a group_by");
-    } else {
-        bail!("head error: missing input dataframe");
+    if let Ok(Some(value)) = args::named_usize(args, "max_column_width") {
+        ctx.format_config.max_column_width = value;
+    }
+
+    if let Ok(Some(value)) = args::named_usize(args, "max_table_width") {
+        ctx.format_config.max_table_width = if value > 0 { Some(value) } else { None };
     }
 
     Ok(())

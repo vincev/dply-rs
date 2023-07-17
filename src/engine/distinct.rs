@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::prelude::*;
+use datafusion::logical_expr::LogicalPlanBuilder;
 
 use crate::parser::Expr;
 
@@ -23,7 +23,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
+    if let Some(plan) = ctx.take_plan() {
         let schema_cols = ctx.columns();
         let mut select_columns = Vec::new();
 
@@ -38,15 +38,21 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        let df = if !select_columns.is_empty() {
-            let columns = select_columns.iter().map(|c| col(c)).collect::<Vec<_>>();
-            df.select(&columns)
-                .unique_stable(Some(select_columns), UniqueKeepStrategy::First)
+        let plan = if !select_columns.is_empty() {
+            let columns = select_columns
+                .iter()
+                .map(args::str_to_col)
+                .collect::<Vec<_>>();
+
+            LogicalPlanBuilder::from(plan)
+                .project(columns)?
+                .distinct()?
+                .build()?
         } else {
-            df.unique_stable(None, UniqueKeepStrategy::First)
+            LogicalPlanBuilder::from(plan).distinct()?.build()?
         };
 
-        ctx.set_df(df)?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("distinct error: must call summarize after a group_by");
     } else {

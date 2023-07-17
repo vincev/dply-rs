@@ -5,22 +5,32 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.1.9"
+version = "0.2.0"
 rust-version = "1.70.0"
 
 [dependencies]
 anyhow = "1.0"
+chrono = { version = "0.4.26", default-features = false }
 clap = { version = "4.2", features = ["derive"] }
 comfy-table = "6"
+futures = "0.3.28"
+hashbrown = "0.14.0"
 home = "0.5"
 lru = "0.10.0"
 nom = "7"
-reedline = "0.20"
+num-traits = "0.2.15"
+parking_lot = "0.12.1"
+reedline = "0.21"
+regex = "1.8.4"
 thiserror = "1.0"
+tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "sync"] }
 
-[dependencies.polars]
-version = "0.30.0"
-features = ["dtype-full", "lazy", "parquet", "strings", "timezones"]
+[dependencies.datafusion]
+#version = "27"
+# path = "../arrow-datafusion/datafusion/core"
+git = "https://github.com/apache/arrow-datafusion"
+rev = "b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+default-features = false
 
 [dev-dependencies]
 indoc = "2"

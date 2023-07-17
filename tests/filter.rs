@@ -357,7 +357,7 @@ fn filter_dates() -> Result<()> {
             r#"
             shape: (9, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[ns]|datetime[ns]
+            datetime[μs]|datetime[μs]
             ---
             2022-11-01 07:31:16|2022-11-01 08:19:44
             2022-11-01 10:45:13|2022-11-01 10:53:56
@@ -391,7 +391,7 @@ fn filter_dates() -> Result<()> {
             r#"
             shape: (4, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[ns]|datetime[ns]
+            datetime[μs]|datetime[μs]
             ---
             2022-11-01 17:43:51|2022-11-01 17:52:45
             2022-11-01 17:48:38|2022-11-01 17:59:55
@@ -420,7 +420,7 @@ fn filter_dates() -> Result<()> {
             r#"
             shape: (4, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[ns]|datetime[ns]
+            datetime[μs]|datetime[μs]
             ---
             2022-11-02 02:02:12|2022-11-02 02:02:19
             2022-11-02 10:17:58|2022-11-02 10:36:07
@@ -452,14 +452,14 @@ fn filter_list_contains() -> Result<()> {
             floats
             list[f64]
             ---
-            [2.5, 3.5, … 23.0]
+            [2.5, 3.5, 6.0, 23.0]
             [3.5, 15.0, 23.0]
-            [2.5, 2.5, … 19.0]
+            [2.5, 2.5, 3.5, 19.0]
             [3.5]
-            [2.5, 3.5, … 5.0]
+            [2.5, 3.5, 5.0, 5.0]
             [2.5, 3.5, 6.0]
             [3.5, 6.0]
-            [3.5, 3.5, … 19.0]
+            [3.5, 3.5, 6.0, 19.0]
             [3.5, 19.0, 19.0]
             [3.5, 15.0]
             ---
@@ -508,16 +508,16 @@ fn filter_list_contains() -> Result<()> {
             tags
             list[str]
             ---
-            ["tag7"]
-            ["tag2", "tag4", "tag7"]
-            ["tag5", "tag6", … "tag7"]
-            ["tag2", "tag3", … "tag8"]
-            ["tag4", "tag7", "tag8"]
-            ["tag2", "tag2", … "tag7"]
-            ["tag7"]
-            ["tag5", "tag7"]
-            ["tag6", "tag7"]
-            ["tag5", "tag6", … "tag9"]
+            [tag7]
+            [tag2, tag4, tag7]
+            [tag5, tag6, tag7, tag7]
+            [tag2, tag3, tag7, tag8]
+            [tag4, tag7, tag8]
+            [tag2, tag2, tag2, tag7]
+            [tag7]
+            [tag5, tag7]
+            [tag6, tag7]
+            [tag5, tag6, tag7, tag9]
             ---
        "#
         )
@@ -549,9 +549,9 @@ fn filter_list_not_contains() -> Result<()> {
             [43, 97]
             null
             [65]
-            [1, 22, … 87]
+            [1, 22, 61, 87]
             null
-            [36, 37, … 48]
+            [36, 37, 44, 48]
             [6]
             null
             ---
@@ -575,11 +575,11 @@ fn filter_list_not_contains() -> Result<()> {
             tags
             list[str]
             ---
-            ["tag2", "tag5", … "tag8"]
-            ["tag9"]
-            ["tag5"]
-            ["tag7"]
-            ["tag2", "tag3", "tag4"]
+            [tag2, tag5, tag8, tag8]
+            [tag9]
+            [tag5]
+            [tag7]
+            [tag2, tag3, tag4]
             ---
        "#
         )
@@ -595,6 +595,7 @@ fn filter_str_contains() -> Result<()> {
         parquet("tests/data/nyctaxi.parquet") |
             filter(contains(payment_type, "(?i:no)")) |
             distinct(payment_type) |
+            arrange(payment_type) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -607,8 +608,8 @@ fn filter_str_contains() -> Result<()> {
             payment_type
             str
             ---
-            Unknown
             No charge
+            Unknown
             ---
        "#
         )
@@ -624,6 +625,7 @@ fn filter_str_not_contains() -> Result<()> {
         parquet("tests/data/nyctaxi.parquet") |
             filter(!contains(payment_type, "(?i:no)")) |
             distinct(payment_type) |
+            arrange(payment_type) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -636,8 +638,8 @@ fn filter_str_not_contains() -> Result<()> {
             payment_type
             str
             ---
-            Credit card
             Cash
+            Credit card
             Dispute
             ---
        "#
@@ -666,16 +668,16 @@ fn filter_is_null() -> Result<()> {
             ints|tags
             list[u32]|list[str]
             ---
-            null|["tag1", "tag3", "tag5"]
-            null|["tag1", "tag4", … "tag5"]
-            null|["tag1", "tag3", … "tag8"]
-            null|["tag1", "tag2", "tag8"]
-            null|["tag1", "tag9"]
-            null|["tag1", "tag2", "tag7"]
-            null|["tag1", "tag2", "tag6"]
-            null|["tag1", "tag3"]
-            null|["tag1", "tag7", … "tag9"]
-            null|["tag1", "tag8"]
+            null|[tag1, tag3, tag5]
+            null|[tag1, tag4, tag5, tag5]
+            null|[tag1, tag3, tag7, tag8]
+            null|[tag1, tag2, tag8]
+            null|[tag1, tag9]
+            null|[tag1, tag2, tag7]
+            null|[tag1, tag2, tag6]
+            null|[tag1, tag3]
+            null|[tag1, tag7, tag9, tag9]
+            null|[tag1, tag8]
             ---
        "#
         )
@@ -703,16 +705,16 @@ fn filter_is_not_null() -> Result<()> {
             ints|tags
             list[u32]|list[str]
             ---
-            [6]|["tag1", "tag3", … "tag9"]
-            [9, 23, … 92]|["tag1", "tag5", … "tag9"]
-            [4]|["tag1", "tag5", "tag9"]
-            [8, 46, … 88]|["tag1"]
-            [11, 49]|["tag1", "tag4", … "tag8"]
-            [47]|["tag1", "tag6", "tag9"]
-            [34, 77]|["tag1", "tag7"]
-            [21, 28, 94]|["tag1", "tag3", "tag9"]
-            [17, 43]|["tag1", "tag2", … "tag9"]
-            [26, 62]|["tag1", "tag4", "tag6"]
+            [6]|[tag1, tag3, tag6, tag9]
+            [9, 23, 38, 92]|[tag1, tag5, tag9, tag9]
+            [4]|[tag1, tag5, tag9]
+            [8, 46, 49, 88]|[tag1]
+            [11, 49]|[tag1, tag4, tag8, tag8]
+            [47]|[tag1, tag6, tag9]
+            [34, 77]|[tag1, tag7]
+            [21, 28, 94]|[tag1, tag3, tag9]
+            [17, 43]|[tag1, tag2, tag5, tag9]
+            [26, 62]|[tag1, tag4, tag6]
             ---
        "#
         )

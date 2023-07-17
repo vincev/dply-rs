@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::prelude::*;
+use datafusion::logical_expr::LogicalPlanBuilder;
 
 use crate::parser::Expr;
 
@@ -23,10 +23,9 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
+    if let Some(plan) = ctx.take_plan() {
         let schema_cols = ctx.columns();
         let mut columns = Vec::with_capacity(args.len());
-        let mut descending = Vec::with_capacity(args.len());
 
         for arg in args {
             match arg {
@@ -37,8 +36,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("arrange error: Unknown column {column}");
                     }
 
-                    columns.push(col(&column));
-                    descending.push(true);
+                    columns.push(args::str_to_col(&column).sort(false, false));
                 }
                 Expr::Identifier(column) => {
                     // arrange(column)
@@ -46,14 +44,14 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("arrange error: Unknown column {column}");
                     }
 
-                    columns.push(col(column));
-                    descending.push(false);
+                    columns.push(args::str_to_col(column).sort(true, false));
                 }
                 _ => {}
             }
         }
 
-        ctx.set_df(df.sort_by_exprs(columns, descending, true))?;
+        let plan = LogicalPlanBuilder::from(plan).sort(columns)?.build()?;
+        ctx.set_plan(plan);
     } else if ctx.is_grouping() {
         bail!("arrange error: must call summarize after a group_by");
     } else {

@@ -18,11 +18,10 @@ use indoc::indoc;
 use dply::interpreter;
 
 #[test]
-fn distinct() -> Result<()> {
+fn json_load() -> Result<()> {
     let input = indoc! {r#"
-        parquet("tests/data/nyctaxi.parquet") |
-            distinct(passenger_count) |
-            arrange(passenger_count) |
+        json("tests/data/github.json") |
+            count() |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -31,49 +30,45 @@ fn distinct() -> Result<()> {
         output,
         indoc!(
             r#"
-            shape: (8, 1)
-            passenger_count
+            shape: (1, 1)
+            n
             i64
             ---
-            0
-            1
-            2
-            3
             4
-            5
-            6
-            null
             ---
         "#
         )
     );
 
+    Ok(())
+}
+
+#[test]
+fn json_field() -> Result<()> {
     let input = indoc! {r#"
-        parquet("tests/data/nyctaxi.parquet") |
-            distinct(passenger_count, store_and_fwd_flag) |
-            arrange(passenger_count, store_and_fwd_flag) |
+        json("tests/data/github.json") |
+            mutate(
+                login = field(actor, login),
+                head = field(payload, head)
+            ) |
+            select(login, head) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
+    println!("{output}");
 
     assert_eq!(
         output,
         indoc!(
             r#"
-            shape: (10, 2)
-            passenger_count|store_and_fwd_flag
-            i64|str
+            shape: (4, 2)
+            login|head
+            str|str
             ---
-            0|N
-            1|N
-            1|Y
-            2|N
-            2|Y
-            3|N
-            4|N
-            5|N
-            6|N
-            null|null
+            github-actions[bot]|a02be18dc2a0faa0faec14f50c8b190ca0b50034
+            user2|13b4ac97a4f61aab3a4d866ba167c0708676cd88
+            user3|null
+            user4|1aad310db433d20a7fbff132e4b23a4b4e4461ed
             ---
         "#
         )

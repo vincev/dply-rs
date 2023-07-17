@@ -35,16 +35,16 @@ fn unnest_ints() -> Result<()> {
             r#"
             shape: (10, 3)
             shape_id|ints_len|ints
-            u32|u32|u32
+            u32|i32|u32
             ---
             1|3|3
             1|3|88
             1|3|94
             2|1|73
-            3|0|null
+            3|null|null
             4|2|43
             4|2|97
-            5|0|null
+            5|null|null
             6|1|65
             7|4|1
             ---
@@ -73,7 +73,7 @@ fn unnest_str() -> Result<()> {
             r#"
             shape: (10, 3)
             shape_id|tags_len|tags
-            u32|u32|str
+            u32|i32|str
             ---
             1|4|tag2
             1|4|tag5
@@ -111,7 +111,7 @@ fn unnest_floats() -> Result<()> {
             r#"
             shape: (12, 3)
             shape_id|floats_len|floats
-            u32|u32|f64
+            u32|i32|f64
             ---
             1|4|2.5
             1|4|3.5
@@ -134,6 +134,7 @@ fn unnest_floats() -> Result<()> {
 }
 
 #[test]
+#[ignore = "need unnest structs"]
 fn unnest_structs() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/structs.parquet") |

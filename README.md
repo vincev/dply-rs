@@ -1,15 +1,77 @@
 dply is a command line tool for viewing, querying, and writing csv and parquet
 files, inspired by [dplyr](https://dplyr.tidyverse.org/index.html) and powered by
-[Polars](https://github.com/pola-rs/polars).
+[DataFusion](https://github.com/apache/arrow-datafusion).
 
 ## Usage overview
 
 A dply pipeline consists of a number of functions to read, transform, or write
 Parquet or CSV files.
 
-The following dply command runs a pipeline that reads a Parquet file[^1], computes
-the minimum, mean, and maximum fare for each payment type, saves the result to
-`fares.csv` CSV file, and shows the result:
+### Conversions between CSV, JSON, and Parquet files
+
+The functions `csv`, `json` and `parquet` read and write data for their respective
+formats. The following two steps pipeline converts a Parquet file to JSON:
+
+```
+$ dply -c 'parquet("nyctaxi.parquet") | json("nyctaxi.json")'
+```
+
+We can use a `select` step if we want to convert a subset of the columns:
+
+```
+$ dply -c 'parquet("nyctaxi.parquet") |
+    select(ends_with("time"), payment_type) |
+    json("nyctaxi.json")'
+$ head -2 nyctaxi.json| jq
+{
+  "payment_type": "Credit card",
+  "tpep_dropoff_datetime": "2022-11-22T19:45:53",
+  "tpep_pickup_datetime": "2022-11-22T19:27:01"
+}
+{
+  "payment_type": "Cash",
+  "tpep_dropoff_datetime": "2022-11-27T16:50:06",
+  "tpep_pickup_datetime": "2022-11-27T16:43:26"
+}
+```
+
+### Extracting nested fields from nested JSON
+
+To extract a nested field in a JSON file we can use the `field` function in a
+`mutate` step. The following example extracts the `sha` from the list of
+`commits` in the `payload` object:
+
+```
+$ dply -c 'json("./tests/data/github.json") |
+    mutate(commits = field(payload, commits)) |
+    unnest(commits) |
+    mutate(sha = field(commits, sha)) |
+    select(sha) |
+    show()'
+shape: (4, 1)
+┌──────────────────────────────────────────┐
+│ sha                                      │
+│ ---                                      │
+│ str                                      │
+╞══════════════════════════════════════════╡
+│ a02be18dc2a0faa0faec14f50c8b190ca0b50034 │
+│ ac97a4ab3a4d86f61a6ba167c06cd8813b470867 │
+│ null                                     │
+│ e4b233f1323a4b4e4461ed1aad31d20a7fbf0db4 │
+└──────────────────────────────────────────┘
+```
+
+Complex JSON files can be converted to Parquet for faster query processing:
+
+```
+$ dply -c 'json("github.json") | parquet("github.parquet")'
+```
+
+### Grouping, sorting columns, and saving results to a file
+
+The following pipeline reads a Parquet file[^1], group rows by `payment_type`,
+computes the minimum, mean, and maximum fare for each payment type, saves the
+result to `fares.csv` CSV file, and shows the result:
 
 ```
 $ dply -c 'parquet("nyctaxi.parquet") |
@@ -52,6 +114,7 @@ Running dply without any parameter starts the interactive client:
 
 - [arrange](docs/functions.md#arrange) Sorts rows by column values
 - [count](docs/functions.md#count) Counts columns unique values
+- [config](docs/functions.md#config) Configure display format options
 - [csv](docs/functions.md#csv) Reads or writes a dataframe in CSV format
 - [distinct](docs/functions.md#distinct) Retains unique rows
 - [filter](docs/functions.md#filter) Filters rows that satisfy given predicates
@@ -59,6 +122,7 @@ Running dply without any parameter starts the interactive client:
 - [group by and summarize](docs/functions.md#group_by-and-summarize) Performs grouped aggregations
 - [head](docs/functions.md#head) Shows the first few dataframe rows in table format
 - [joins](docs/functions.md#joins) Left, inner, outer and cross joins
+- [json](docs/functions.md#json) Reads or writes a dataframe in JSON format
 - [mutate](docs/functions.md#mutate) Creates or mutate columns
 - [parquet](docs/functions.md#parquet) Reads or writes a dataframe in Parquet format
 - [relocate](docs/functions.md#relocate) Moves columns positions

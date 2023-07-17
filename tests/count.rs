@@ -22,6 +22,7 @@ fn count_column() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             count(payment_type) |
+            arrange(payment_type) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -32,7 +33,7 @@ fn count_column() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|n
-            str|u32
+            str|i64
             ---
             Cash|53
             Credit card|185
@@ -62,7 +63,7 @@ fn count_sorted() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|n
-            str|u32
+            str|i64
             ---
             Credit card|185
             Cash|53
@@ -94,7 +95,7 @@ fn count_agg_column_name() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|nn
-            str|u32
+            str|i64
             ---
             Credit card|185
             Cash|53
@@ -115,6 +116,7 @@ fn count_multi_cols() -> Result<()> {
     let input = indoc! {r#"
         parquet("tests/data/nyctaxi.parquet") |
             count(payment_type, passenger_count) |
+            arrange(payment_type, passenger_count) |
             show()
     "#};
     let output = interpreter::eval_to_string(input)?;
@@ -125,7 +127,7 @@ fn count_multi_cols() -> Result<()> {
             r#"
             shape: (16, 3)
             payment_type|passenger_count|n
-            str|i64|u32
+            str|i64|i64
             ---
             Cash|1|36
             Cash|2|7
@@ -167,7 +169,7 @@ fn count_multi_cols_sorted() -> Result<()> {
             r#"
             shape: (16, 3)
             payment_type|passenger_count|n
-            str|i64|u32
+            str|i64|i64
             ---
             Credit card|1|144
             Cash|1|36
@@ -209,7 +211,7 @@ fn count_no_cols() -> Result<()> {
             r#"
             shape: (1, 1)
             n
-            u32
+            i64
             ---
             250
             ---

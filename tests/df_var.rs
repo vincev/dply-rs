@@ -30,7 +30,6 @@ fn df_variable() -> Result<()> {
         times_df | head()
     "#};
     let output = interpreter::eval_to_string(input)?;
-    println!("{output}");
 
     assert_eq!(
         output,
@@ -53,7 +52,7 @@ fn df_variable() -> Result<()> {
             ---
             shape: (10, 5)
             tpep_pickup_datetime|tpep_dropoff_datetime|passenger_count|trip_distance|total_amount
-            datetime[ns]|datetime[ns]|i64|f64|f64
+            datetime[μs]|datetime[μs]|i64|f64|f64
             ---
             2022-11-22 19:27:01|2022-11-22 19:45:53|1|3.14|22.56
             2022-11-27 16:43:26|2022-11-27 16:50:06|2|1.06|9.8

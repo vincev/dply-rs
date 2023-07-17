@@ -348,7 +348,9 @@ fn argument(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         "argument",
         preceded(
             multispace0,
-            alt((assign_op, logical_op, compare_op, unary_op, expression)),
+            alt((
+                assign_op, logical_op, compare_op, unary_op, arith_op, expression,
+            )),
         ),
     )(input)
 }
@@ -751,6 +753,58 @@ mod tests {
                     post_binary_op: And
                   post_function: select(1)
                 post_pipeline"
+            )
+        );
+    }
+
+    #[test]
+    fn mutate_functions() {
+        let text = indoc! {r#"
+            mutate(
+                travel_time_ns = to_ns(tpep_dropoff_datetime - tpep_pickup_datetime),
+                avg_distance_plus_std = mean(trip_distance_km) + sd(trip_distance_km),
+                avg_speed_km_h = trip_distance_km / (travel_time_ns / 3.6e12)
+            )
+        "#};
+
+        assert_parser!(
+            text,
+            indoc!(
+                r#"
+                pre_pipeline
+                  pre_function: mutate(3)
+                    pre_binary_op: Assign
+                      identifier: travel_time_ns
+                      pre_function: to_ns(1)
+                        pre_binary_op: Minus
+                          identifier: tpep_dropoff_datetime
+                          identifier: tpep_pickup_datetime
+                        post_binary_op: Minus
+                      post_function: to_ns(1)
+                    post_binary_op: Assign
+                    pre_binary_op: Assign
+                      identifier: avg_distance_plus_std
+                      pre_binary_op: Plus
+                        pre_function: mean(1)
+                          identifier: trip_distance_km
+                        post_function: mean(1)
+                        pre_function: sd(1)
+                          identifier: trip_distance_km
+                        post_function: sd(1)
+                      post_binary_op: Plus
+                    post_binary_op: Assign
+                    pre_binary_op: Assign
+                      identifier: avg_speed_km_h
+                      pre_binary_op: Divide
+                        identifier: trip_distance_km
+                        pre_binary_op: Divide
+                          identifier: travel_time_ns
+                          number: 3600000000000
+                        post_binary_op: Divide
+                      post_binary_op: Divide
+                    post_binary_op: Assign
+                  post_function: mutate(3)
+                post_pipeline"#
             )
         );
     }

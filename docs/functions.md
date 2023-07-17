@@ -10,6 +10,7 @@
 
 - [arrange](#arrange) Sorts rows by column values
 - [count](#count) Counts columns unique values
+- [config](#config) Configure display format options
 - [csv](#csv) Reads or writes a dataframe in CSV format
 - [distinct](#distinct) Retains unique rows
 - [filter](#filter) Filters rows that satisfy given predicates
@@ -17,6 +18,7 @@
 - [group by and summarize](#group_by-and-summarize) Performs grouped aggregations
 - [head](#head) Shows the first few dataframe rows in table format
 - [joins](#joins) Left, inner, outer and cross joins
+- [json](#json) Reads or writes a dataframe in JSON format
 - [mutate](#mutate) Creates or mutate columns
 - [parquet](#parquet) Reads or writes a dataframe in Parquet format
 - [relocate](#relocate) Moves columns positions
@@ -78,6 +80,39 @@ shape: (8, 3)
 │ Cash         ┆ 1        ┆ 12  │
 │ Cash         ┆ 2        ┆ 41  │
 └──────────────┴──────────┴─────┘
+```
+
+### config
+
+`config` configures display options, it supports the following attributes:
+
+- `max_columns`: The maximum number of columns in a table.
+- `max_column_width`: The maximum number of characters used in a column value.
+- `max_table_width`: The maximum table width. Pass 0 for using the terminal width.
+
+The following example shows only 2 columns:
+
+```
+$ dply -c 'config(max_columns = 2)
+    parquet("nyctaxi.parquet") |
+    count(payment_type, VendorID) |
+    arrange(desc(payment_type), n) |
+    show()'
+shape: (8, 3)
+┌────────────────┬────────────────┬─────┐
+│ payment_type   ┆ VendorID       ┆ ... │
+│ ---            ┆ ---            ┆     │
+│ str            ┆ i64            ┆     │
+╞════════════════╪════════════════╪═════╡
+│ Unknown        ┆ 2              ┆ ... │
+│ Unknown        ┆ 1              ┆ ... │
+│ No charge      ┆ 1              ┆ ... │
+│ Dispute        ┆ 2              ┆ ... │
+│ Credit card    ┆ 1              ┆ ... │
+│ Credit card    ┆ 2              ┆ ... │
+│ Cash           ┆ 1              ┆ ... │
+│ Cash           ┆ 2              ┆ ... │
+└────────────────┴────────────────┴─────┘
 ```
 
 ### count
@@ -531,6 +566,60 @@ shape: (5, 2)
 │ 79           ┆ East Village          │
 │ 237          ┆ Upper East Side South │
 └──────────────┴───────────────────────┘
+```
+
+### json
+
+When `json` is called as the first step in a pipeline it reads a JSON file from disk:
+
+```
+$ dply -c 'json("./tests/data/github.json") |
+    select(created_at, public, repo, type) |
+    head()'
+shape: (4, 4)
+┌──────────────────────┬───────────────┬──────────────────────────────────────────────────┬────────────┐
+│ created_at           ┆ public        ┆ repo                                             ┆ type       │
+│ ---                  ┆ ---           ┆ ---                                              ┆ ---        │
+│ str                  ┆ bool          ┆ struct[3]                                        ┆ str        │
+╞══════════════════════╪═══════════════╪══════════════════════════════════════════════════╪════════════╡
+│ 2023-07-16T11:00:00Z ┆ true          ┆ {id: 278515889, name: user2134, url:             ┆ PushEvent  │
+│                      ┆               ┆ https://api.github.com/repos/some_repo}          ┆            │
+│ 2023-07-16T11:00:00Z ┆ true          ┆ {id: 21090723, name: User123/tdi-studio-se, url: ┆ PushEvent  │
+│                      ┆               ┆ https://api.github.com/repos/S...                ┆            │
+│ 2023-07-16T11:00:01Z ┆ true          ┆ {id: 26810458, name: User5/user-name, url:       ┆ ForkEvent  │
+│                      ┆               ┆ https://api.github.com/repos/Some_re...          ┆            │
+│ 2023-07-16T11:00:01Z ┆ true          ┆ {id: 940421158, name: the repo name, url:        ┆ PushEvent  │
+│                      ┆               ┆ https://api.github.com/repos/Some_rep...         ┆            │
+└──────────────────────┴───────────────┴──────────────────────────────────────────────────┴────────────┘
+```
+
+when called after the first step it writes the active dataframe as a JSON file to
+disk:
+
+```
+$ dply -c 'parquet("nyctaxi.parquet") | json("nyctaxi.json")'
+$ head -1 nyctaxi.json| jq
+{
+  "DOLocationID": 141,
+  "PULocationID": 234,
+  "VendorID": 2,
+  "airport_fee": 0,
+  "congestion_surcharge": 2.5,
+  "extra": 1,
+  "fare_amount": 14.5,
+  "improvement_surcharge": 0.3,
+  "mta_tax": 0.5,
+  "passenger_count": 1,
+  "payment_type": "Credit card",
+  "rate_code": "Standard",
+  "store_and_fwd_flag": "N",
+  "tip_amount": 3.76,
+  "tolls_amount": 0,
+  "total_amount": 22.56,
+  "tpep_dropoff_datetime": "2022-11-22T19:45:53",
+  "tpep_pickup_datetime": "2022-11-22T19:27:01",
+  "trip_distance": 3.14
+}
 ```
 
 ### mutate

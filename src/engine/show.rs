@@ -12,17 +12,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use anyhow::{bail, Result};
 
-//! Data manipulation tool inspired by the [dplyr](https://dplyr.tidyverse.org/) grammar.
-#![warn(clippy::all, rust_2018_idioms, missing_docs)]
+use crate::parser::Expr;
 
-pub mod interpreter;
-pub mod repl;
+use super::*;
 
-mod completions;
-mod config;
-mod engine;
-mod fuzzy;
-mod parser;
-mod signatures;
-mod typing;
+/// Evaluates a show call.
+///
+/// Parameters are checked before evaluation by the typing module.
+pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
+    if let Some(plan) = ctx.take_plan() {
+        ctx.show(plan)?;
+    } else if ctx.is_grouping() {
+        bail!("show error: must call summarize after a group_by");
+    } else {
+        bail!("show error: missing input dataframe");
+    }
+
+    Ok(())
+}

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::prelude::*;
+use datafusion::prelude::*;
 
 use crate::parser::Expr;
 
@@ -23,7 +23,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
+    if let Some(plan) = ctx.take_plan() {
         let schema_cols = ctx.columns();
         let mut columns = Vec::new();
 
@@ -40,7 +40,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_group(df.groupby_stable(&columns))?;
+        ctx.set_group(plan, columns);
     } else {
         bail!("group_by error: missing input dataframe");
     }

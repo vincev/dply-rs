@@ -19,7 +19,7 @@ use reedline::*;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::{eval, fuzzy, parser, signatures, typing};
+use crate::{engine, fuzzy, parser, signatures, typing};
 
 /// Runs a REPL for evaluation
 pub fn run() -> Result<()> {
@@ -87,7 +87,7 @@ pub fn run() -> Result<()> {
 
 #[derive(Default)]
 struct Evaluator {
-    ctx: Mutex<eval::Context>,
+    ctx: Mutex<engine::Context>,
 }
 
 impl Evaluator {
@@ -97,7 +97,7 @@ impl Evaluator {
             typing::validate(&pipelines)?;
 
             let mut ctx = self.ctx.lock().unwrap();
-            eval::eval(&mut ctx, &pipelines)?;
+            engine::eval(&mut ctx, &pipelines)?;
         }
 
         Ok(())
@@ -192,7 +192,9 @@ impl Completer for CustomCompleter {
 }
 
 fn is_file_completion(prefix: &str) -> bool {
-    let is_file_function = prefix.starts_with("parquet(\"") | prefix.starts_with("csv(\"");
+    let is_file_function = prefix.starts_with("parquet(\"")
+        | prefix.starts_with("csv(\"")
+        | prefix.starts_with("json(\"");
     is_file_function && prefix.matches('"').count() == 1
 }
 

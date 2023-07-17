@@ -12,24 +12,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{bail, Result};
 
-use crate::parser::Expr;
+/// Configuration for table formatting.
+#[derive(Debug, Clone, Copy)]
+pub struct FormatConfig {
+    /// Maximum number or table columns.
+    pub max_columns: usize,
+    /// Maximum column width
+    pub max_column_width: usize,
+    /// Maximum table width, use default if None
+    pub max_table_width: Option<usize>,
+}
 
-use super::*;
-
-/// Evaluates a show call.
-///
-/// Parameters are checked before evaluation by the typing module.
-pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(df) = ctx.take_df() {
-        let df = df.collect()?;
-        ctx.print(df)?;
-    } else if ctx.is_grouping() {
-        bail!("show error: must call summarize after a group_by");
-    } else {
-        bail!("show error: missing input dataframe");
+impl Default for FormatConfig {
+    fn default() -> Self {
+        Self {
+            max_columns: 8,
+            max_column_width: 80,
+            max_table_width: None,
+        }
     }
-
-    Ok(())
 }
