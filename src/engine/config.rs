@@ -12,24 +12,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use crate::parser::Expr;
 
-/// Configuration for table formatting.
-#[derive(Debug, Clone, Copy)]
-pub struct FormatConfig {
-    /// Maximum number or table columns.
-    pub max_columns: usize,
-    /// Maximum column width
-    pub max_column_width: usize,
-    /// Maximum table width, use default if None
-    pub max_table_width: Option<usize>,
-}
+use super::*;
 
-impl Default for FormatConfig {
-    fn default() -> Self {
-        Self {
-            max_columns: 8,
-            max_column_width: 80,
-            max_table_width: None,
-        }
+/// Evaluates a config call.
+///
+/// Parameters are checked before evaluation by the typing module.
+pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
+    if let Ok(Some(value)) = args::named_usize(args, "max_columns") {
+        ctx.format_config.max_columns = value;
     }
+
+    if let Ok(Some(value)) = args::named_usize(args, "max_column_width") {
+        ctx.format_config.max_column_width = value;
+    }
+
+    if let Ok(Some(value)) = args::named_usize(args, "max_table_width") {
+        ctx.format_config.max_table_width = if value > 0 { Some(value) } else { None };
+    }
+
+    Ok(())
 }

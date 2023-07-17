@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use chrono::{NaiveDate, NaiveDateTime};
 use datafusion::{common::DFSchema, logical_expr::Expr as DFExpr, prelude::*};
 use std::str::FromStr;
@@ -117,17 +117,21 @@ pub fn named_bool(args: &[Expr], name: &str) -> bool {
 }
 
 /// Returns the value of a named integer variable like `schema_rows = 2000`.
-pub fn named_int(args: &[Expr], name: &str) -> Option<i64> {
+pub fn named_usize(args: &[Expr], name: &str) -> Result<Option<usize>> {
     for arg in args {
         if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
             match (lhs.as_ref(), rhs.as_ref()) {
-                (Expr::Identifier(lhs), Expr::Number(rhs)) if lhs == name => {
-                    return Some(*rhs as i64);
+                (Expr::Identifier(lhs), Expr::Number(value)) if lhs == name => {
+                    if *value >= 0.0 {
+                        return Ok(Some(*value as usize));
+                    } else {
+                        bail!("{name} must have positive value");
+                    }
                 }
                 _ => {}
             }
         }
     }
 
-    None
+    Ok(None)
 }

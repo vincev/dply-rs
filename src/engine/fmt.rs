@@ -68,6 +68,10 @@ pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
     table.set_header(fields);
     table.set_constraints(constraints);
 
+    if let Some(cols) = format_config.max_table_width {
+        table.set_width(cols as u16);
+    }
+
     let fmt_opts = fmt_opts();
     let mut num_rows = 0;
 
@@ -190,7 +194,7 @@ pub async fn glimpse(ctx: &Context, plan: LogicalPlan, output: &mut dyn Write) -
     table.load_preset(UTF8_FULL_CONDENSED);
 
     if let Some(cols) = format_config.max_table_width {
-        table.set_width(cols);
+        table.set_width(cols as u16);
     }
 
     let info = format!(

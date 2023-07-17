@@ -60,9 +60,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .unwrap_or(NonZeroUsize::new(2).unwrap())
             .get();
 
-        let schema_infer_rows = args::named_int(args, "schema_rows")
-            .filter(|n| *n > 0)
-            .map(|n| n as usize);
+        let schema_infer_rows = args::named_usize(args, "schema_rows")?;
 
         let file_format = JsonFormat::default().with_schema_infer_max_rec(schema_infer_rows);
 

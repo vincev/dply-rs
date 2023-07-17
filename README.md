@@ -1,6 +1,6 @@
 dply is a command line tool for viewing, querying, and writing csv and parquet
 files, inspired by [dplyr](https://dplyr.tidyverse.org/index.html) and powered by
-[Polars](https://github.com/pola-rs/polars).
+[DataFusion](https://github.com/apache/arrow-datafusion).
 
 ## Usage overview
 

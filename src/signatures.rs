@@ -27,6 +27,7 @@ pub fn functions() -> &'static SignaturesMap {
         let mut signatures = HashMap::new();
 
         def_arrange(&mut signatures);
+        def_config(&mut signatures);
         def_count(&mut signatures);
         def_csv(&mut signatures);
         def_distinct(&mut signatures);
@@ -254,6 +255,17 @@ fn def_arrange(signatures: &mut SignaturesMap) {
         Args::OneOrMore(ArgType::OneOf(vec![
             ArgType::Identifier,
             ArgType::function("desc", Args::Ordered(vec![ArgType::Identifier])),
+        ])),
+    );
+}
+
+fn def_config(signatures: &mut SignaturesMap) {
+    signatures.insert(
+        "config",
+        Args::ZeroOrMore(ArgType::OneOf(vec![
+            ArgType::assign(ArgType::Named("max_columns"), ArgType::Number),
+            ArgType::assign(ArgType::Named("max_column_width"), ArgType::Number),
+            ArgType::assign(ArgType::Named("max_table_width"), ArgType::Number),
         ])),
     );
 }

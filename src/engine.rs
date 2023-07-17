@@ -26,6 +26,7 @@ use crate::{completions::Completions, config::FormatConfig, parser::Expr};
 
 mod args;
 mod arrange;
+mod config;
 mod count;
 mod csv;
 mod distinct;
@@ -246,6 +247,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
         Expr::Function(name, args) => match name.as_str() {
             "anti_join" => joins::eval(args, ctx, joins::JoinType::Anti)?,
             "arrange" => arrange::eval(args, ctx)?,
+            "config" => config::eval(args, ctx)?,
             "count" => count::eval(args, ctx)?,
             "cross_join" => joins::eval(args, ctx, joins::JoinType::Cross)?,
             "csv" => csv::eval(args, ctx)?,

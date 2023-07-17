@@ -3,13 +3,14 @@ Changes to the `dply` crate are documented in this file.
 
 ## 0.2.0 - Unreleased
 ### 🔧 Changed
-* engine: Use datafusion as query engine.
+* Use DataFusion as query engine.
 * `parquet`: Speedup parquet writing for multiple partitions (about 40% increase).
 * `parquet`: A folder path reads all parquet files in the folder.
 * `parquet`: write now uses compression to reduce file size.
 * `mutate`: Make `len` function to work on strings.
 ### ⭐ Added
-* `json`: Read and write NdJSON files.
+* Added `json` function to read and write NdJSON files.
+* Added `config` function to set display options (number of columns, and column and table width).
 * `anti_join`: Added `anti_join` to select rows not found in the orther data frame.
 * `mutate`: Add `field` function to extract fields from a JSON/struct objects.
 
