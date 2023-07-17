@@ -34,6 +34,7 @@ mod fmt;
 mod glimpse;
 mod group_by;
 mod head;
+mod io;
 mod joins;
 mod json;
 mod mutate;

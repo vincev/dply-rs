@@ -14,13 +14,11 @@
 // limitations under the License.
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
-    arrow::record_batch::RecordBatch,
     datasource::{
         file_format::parquet::{ParquetFormat, DEFAULT_PARQUET_EXTENSION},
         listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
         provider_as_source,
     },
-    execution::context::TaskContext,
     logical_expr::{LogicalPlanBuilder, UNNAMED_TABLE},
     parquet::{
         arrow::arrow_writer::ArrowWriter,
@@ -28,9 +26,7 @@ use datafusion::{
         file::properties::WriterProperties,
     },
 };
-use futures::StreamExt;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
-use tokio::sync::mpsc;
 
 use crate::parser::Expr;
 
@@ -51,58 +47,20 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_plan(plan.clone());
 
+        let (schema, mut rx) = io::execute_plan(plan, ctx)?;
+
         let file = std::fs::File::create(&path)
             .map_err(|e| anyhow!("parquet error: cannot create file '{}' {e}", path))?;
+        let props = WriterProperties::builder()
+            .set_compression(Compression::ZSTD(ZstdLevel::default()))
+            .build();
+        let mut writer = ArrowWriter::try_new(file, schema, Some(props))?;
 
-        ctx.block_on(async {
-            // Persist all partitions to a single parquet file.
-            let plan = ctx.create_physical_plan(&plan).await?;
+        while let Some(batch) = rx.blocking_recv() {
+            writer.write(&batch?)?;
+        }
 
-            let props = WriterProperties::builder()
-                .set_compression(Compression::ZSTD(ZstdLevel::default()))
-                .build();
-
-            let mut writer = ArrowWriter::try_new(file, plan.schema(), Some(props))?;
-            let task_context = Arc::new(TaskContext::from(ctx.session()));
-
-            let num_partitions = plan.output_partitioning().partition_count();
-            let (tx, mut rx) = mpsc::channel::<Result<RecordBatch>>(num_partitions * 16);
-
-            for partition in 0..plan.output_partitioning().partition_count() {
-                tokio::task::spawn({
-                    let plan = plan.clone();
-                    let sender = tx.clone();
-                    let task_context = task_context.clone();
-                    async move {
-                        match plan.execute(partition, task_context) {
-                            Ok(mut s) => {
-                                while let Some(batch) = s.next().await {
-                                    sender
-                                        .send(batch.map_err(anyhow::Error::from))
-                                        .await
-                                        .unwrap();
-                                }
-                            }
-                            Err(e) => sender
-                                .send(Err(anyhow!("Parquet write error: {e}")))
-                                .await
-                                .unwrap(),
-                        }
-                        Ok::<_, anyhow::Error>(())
-                    }
-                });
-            }
-
-            drop(tx);
-
-            while let Some(batch) = rx.recv().await {
-                writer.write(&batch?)?;
-            }
-
-            writer.close()?;
-
-            Ok::<_, anyhow::Error>(())
-        })?;
+        writer.close()?;
     } else {
         // Read the data frame and set it as input for the next task.
         let table_path = ListingTableUrl::parse(path)?;

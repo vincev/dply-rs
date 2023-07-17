@@ -14,18 +14,15 @@
 // limitations under the License.
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
-    arrow::{json, record_batch::RecordBatch},
+    arrow::json,
     datasource::{
         file_format::json::{JsonFormat, DEFAULT_JSON_EXTENSION},
         listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
         provider_as_source,
     },
-    execution::context::TaskContext,
     logical_expr::{LogicalPlanBuilder, UNNAMED_TABLE},
 };
-use futures::StreamExt;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
-use tokio::sync::mpsc;
 
 use crate::parser::Expr;
 
@@ -46,51 +43,15 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         ctx.set_plan(plan.clone());
 
+        let (_, mut rx) = io::execute_plan(plan, ctx)?;
+
         let file = std::fs::File::create(&path)
             .map_err(|e| anyhow!("json error: cannot create file '{}' {e}", path))?;
+        let mut writer = json::LineDelimitedWriter::new(file);
 
-        ctx.block_on(async {
-            // Persist all partitions to a single json file.
-            let plan = ctx.create_physical_plan(&plan).await?;
-
-            let mut writer = json::LineDelimitedWriter::new(file);
-            let task_context = Arc::new(TaskContext::from(ctx.session()));
-            let num_partitions = plan.output_partitioning().partition_count();
-            let (tx, mut rx) = mpsc::channel::<Result<RecordBatch>>(num_partitions * 16);
-
-            for partition in 0..plan.output_partitioning().partition_count() {
-                tokio::task::spawn({
-                    let plan = plan.clone();
-                    let sender = tx.clone();
-                    let task_context = task_context.clone();
-                    async move {
-                        match plan.execute(partition, task_context) {
-                            Ok(mut s) => {
-                                while let Some(batch) = s.next().await {
-                                    sender
-                                        .send(batch.map_err(anyhow::Error::from))
-                                        .await
-                                        .unwrap();
-                                }
-                            }
-                            Err(e) => sender
-                                .send(Err(anyhow!("Json write error: {e}")))
-                                .await
-                                .unwrap(),
-                        }
-                        Ok::<_, anyhow::Error>(())
-                    }
-                });
-            }
-
-            drop(tx);
-
-            while let Some(batch) = rx.recv().await {
-                writer.write(&batch?)?;
-            }
-
-            Ok::<_, anyhow::Error>(())
-        })?;
+        while let Some(batch) = rx.blocking_recv() {
+            writer.write(&batch?)?;
+        }
     } else {
         // Read the data frame and set it as input for the next task.
         let table_path = ListingTableUrl::parse(path)?;
