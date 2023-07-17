@@ -255,7 +255,7 @@ impl Accumulator for Quantile {
             nulls_first: false,
         };
 
-        let idx = ((length - 1) as f64 * self.quantile).round() as usize;
+        let idx = ((length - 1) as f64 * self.quantile).floor() as usize;
         let limit = (idx + 1).min(length);
         let sorted = compute::sort_limit(&values, Some(options), Some(limit))?;
         ScalarValue::try_from_array(&sorted, idx)

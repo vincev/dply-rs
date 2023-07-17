@@ -116,10 +116,10 @@ fn group_by_median_quantile() -> Result<()> {
             payment_type|median_price|q25_price|q50_price|q75_price|q95_price|n
             str|f64|f64|f64|f64|f64|i64
             ---
-            Credit card|16.56|12.43|16.56|23.76|66.12|185
+            Credit card|16.56|12.43|16.56|23.76|56.09|185
             Cash|14.8|11.8|14.8|22.3|41.55|53
-            Unknown|22.72|18.17|22.72|28.39|54.47|9
-            Dispute|-0.5|-8.3|7.3|7.3|7.3|2
+            Unknown|22.72|18.17|22.72|28.39|45.5|9
+            Dispute|-0.5|-8.3|-8.3|-8.3|-8.3|2
             No charge|8.8|8.8|8.8|8.8|8.8|1
             ---
        "#
@@ -132,13 +132,14 @@ fn group_by_median_quantile() -> Result<()> {
 #[test]
 fn summarize_median_quantile() -> Result<()> {
     let input = indoc! {r#"
-        parquet("tests/data/nyctaxi.parquet") |
+        parquet("tests/data/lists.parquet") |
+            filter(shape_id <= 100) |
             summarize(
-                median_price = median(total_amount),
-                q25_price = quantile(total_amount, .25),
-                q50_price = quantile(total_amount, .50),
-                q75_price = quantile(total_amount, .75),
-                q95_price = quantile(total_amount, .95),
+                median = median(shape_id),
+                q25 = quantile(shape_id, .25),
+                q50 = quantile(shape_id, .50),
+                q75 = quantile(shape_id, .75),
+                q95 = quantile(shape_id, .95),
                 n = n()
             ) |
             arrange(desc(n)) |
@@ -151,10 +152,10 @@ fn summarize_median_quantile() -> Result<()> {
         indoc!(
             r#"
             shape: (1, 6)
-            median_price|q25_price|q50_price|q75_price|q95_price|n
-            f64|f64|f64|f64|f64|i64
+            median|q25|q50|q75|q95|n
+            u32|u32|u32|u32|u32|i64
             ---
-            16.145|12.36|16.3|22.88|61.85|250
+            50|25|50|75|95|100
             ---
        "#
         )
