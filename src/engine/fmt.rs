@@ -29,7 +29,7 @@ use datafusion::{
     logical_expr::{LogicalPlan, LogicalPlanBuilder},
 };
 use futures::TryStreamExt;
-use std::{io::Write, sync::Arc};
+use std::{io::Write, sync::Arc, time::Instant};
 
 use super::{count, Context};
 
@@ -75,6 +75,8 @@ pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
     let fmt_opts = fmt_opts();
     let mut num_rows = 0;
 
+    let start = Instant::now();
+
     for_each_batch(ctx, plan, |batch| {
         num_rows += batch.num_rows();
         let formatters = batch
@@ -101,7 +103,12 @@ pub async fn show(ctx: &Context, plan: LogicalPlan) -> Result<()> {
     })
     .await?;
 
-    println!("shape: ({}, {})", fmt_usize(num_rows), fmt_usize(num_cols));
+    println!(
+        "shape: ({}, {}) elapsed: {:.3}s",
+        fmt_usize(num_rows),
+        fmt_usize(num_cols),
+        start.elapsed().as_millis() as f64 / 1000.0
+    );
     println!("{}", table);
 
     Ok(())

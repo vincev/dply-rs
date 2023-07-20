@@ -29,7 +29,7 @@ tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "sync"] }
 #version = "27"
 # path = "../arrow-datafusion/datafusion/core"
 git = "https://github.com/apache/arrow-datafusion"
-rev = "b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+rev = "a6dcd943051a083693c352c6b4279156548490a0"
 default-features = false
 
 [dev-dependencies]
