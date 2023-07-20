@@ -387,6 +387,7 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::function("mean", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("median", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("min", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("row", Args::None),
         ArgType::function(
             "to_ns",
             Args::Ordered(vec![ArgType::OneOf(vec![

@@ -337,6 +337,44 @@ fn mutate_len() -> Result<()> {
 }
 
 #[test]
+fn mutate_row_number() -> Result<()> {
+    // When using the row() function we need to select another column otherwise we
+    // get error from the planner.
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            mutate(row = row() % 5) |
+            select(row, rate_code) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 2)
+            row|rate_code
+            u64|str
+            ---
+            1|Standard
+            2|Standard
+            3|Standard
+            4|Standard
+            0|Standard
+            1|Standard
+            2|Standard
+            3|Standard
+            4|Standard
+            0|Standard
+            ---
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
 fn mutate_field() -> Result<()> {
     // Extract a field from a struct.
     let input = indoc! {r#"

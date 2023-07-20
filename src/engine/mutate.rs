@@ -18,8 +18,8 @@ use datafusion::{
     common::tree_node::{Transformed, TreeNode},
     logical_expr::{
         aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
-        window_frame::WindowFrame, Expr as DFExpr, GetIndexedField, LogicalPlanBuilder, Volatility,
-        WindowFunction,
+        window_frame::WindowFrame, BuiltInWindowFunction, Expr as DFExpr, GetIndexedField,
+        LogicalPlanBuilder, Volatility, WindowFunction,
     },
     physical_plan::functions::make_scalar_function,
     scalar::ScalarValue,
@@ -149,6 +149,7 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
             args::expr_to_qualified_col(&args[0], schema)
                 .map(|e| window_fn(e, AggregateFunction::Max))
         }
+        Expr::Function(name, _args) if name == "row" => Ok(row_fn()),
         Expr::Function(name, args) if name == "to_ns" => {
             let arg = if let Expr::Identifier(id) = &args[0] {
                 let data_type = plan
@@ -178,6 +179,16 @@ fn window_fn(expr: DFExpr, agg: AggregateFunction) -> DFExpr {
     DFExpr::WindowFunction(expr::WindowFunction::new(
         WindowFunction::AggregateFunction(agg),
         vec![expr],
+        vec![],
+        vec![],
+        WindowFrame::new(false),
+    ))
+}
+
+fn row_fn() -> DFExpr {
+    DFExpr::WindowFunction(expr::WindowFunction::new(
+        WindowFunction::BuiltInWindowFunction(BuiltInWindowFunction::RowNumber),
+        vec![],
         vec![],
         vec![],
         WindowFrame::new(false),
