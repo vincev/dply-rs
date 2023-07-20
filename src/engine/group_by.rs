@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use datafusion::prelude::*;
 
 use crate::parser::Expr;
 
@@ -33,7 +32,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     bail!("group_by error: Unknown column {column}");
                 }
 
-                let expr = col(column);
+                let expr = args::str_to_col(column);
                 if !columns.contains(&expr) {
                     columns.push(expr);
                 }
