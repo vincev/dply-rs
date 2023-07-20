@@ -128,6 +128,7 @@ fn check_arith(fname: &str, expr: &Expr, arg: &ArgType) -> Result<()> {
                 | Expr::BinaryOp(_, Operator::Minus, _)
                 | Expr::BinaryOp(_, Operator::Divide, _)
                 | Expr::BinaryOp(_, Operator::Multiply, _)
+                | Expr::BinaryOp(_, Operator::Mod, _)
         )
     }
 
@@ -135,7 +136,8 @@ fn check_arith(fname: &str, expr: &Expr, arg: &ArgType) -> Result<()> {
         Expr::BinaryOp(lhs, Operator::Plus, rhs)
         | Expr::BinaryOp(lhs, Operator::Minus, rhs)
         | Expr::BinaryOp(lhs, Operator::Divide, rhs)
-        | Expr::BinaryOp(lhs, Operator::Multiply, rhs) => {
+        | Expr::BinaryOp(lhs, Operator::Multiply, rhs)
+        | Expr::BinaryOp(lhs, Operator::Mod, rhs) => {
             if is_arith(lhs) {
                 check_arith(fname, lhs, arg)?;
             } else {

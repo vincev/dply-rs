@@ -491,9 +491,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.3.12"
+version = "4.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3eab9e8ceb9afdade1ab3f0fd8dbce5b1b2f468ad653baf10e771781b2b67b73"
+checksum = "5b0827b011f6f8ab38590295339817b0d26f344aa4932c3ced71b45b0c54b4a9"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -502,9 +502,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.3.12"
+version = "4.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f2763db829349bf00cfc06251268865ed4363b93a943174f638daf3ecdba2cd"
+checksum = "9441b403be87be858db6a23edb493e7f694761acdc3343d5a0fcaafd304cbc9e"
 dependencies = [
  "anstream",
  "anstyle",
@@ -665,7 +665,7 @@ dependencies = [
 [[package]]
 name = "datafusion"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "ahash",
  "arrow",
@@ -708,7 +708,7 @@ dependencies = [
 [[package]]
 name = "datafusion-common"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -722,7 +722,7 @@ dependencies = [
 [[package]]
 name = "datafusion-execution"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "dashmap",
  "datafusion-common",
@@ -739,7 +739,7 @@ dependencies = [
 [[package]]
 name = "datafusion-expr"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "ahash",
  "arrow",
@@ -753,7 +753,7 @@ dependencies = [
 [[package]]
 name = "datafusion-optimizer"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "arrow",
  "async-trait",
@@ -770,7 +770,7 @@ dependencies = [
 [[package]]
 name = "datafusion-physical-expr"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "ahash",
  "arrow",
@@ -797,7 +797,7 @@ dependencies = [
 [[package]]
 name = "datafusion-row"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "arrow",
  "datafusion-common",
@@ -808,7 +808,7 @@ dependencies = [
 [[package]]
 name = "datafusion-sql"
 version = "27.0.0"
-source = "git+https://github.com/apache/arrow-datafusion?rev=b0d24912acd9d86ca6ce3af26b4d845ec250048d#b0d24912acd9d86ca6ce3af26b4d845ec250048d"
+source = "git+https://github.com/apache/arrow-datafusion?rev=a6dcd943051a083693c352c6b4279156548490a0#a6dcd943051a083693c352c6b4279156548490a0"
 dependencies = [
  "arrow",
  "arrow-schema",
@@ -1916,18 +1916,18 @@ checksum = "a3f0bf26fd526d2a95683cd0f87bf103b8539e2ca1ef48ce002d67aad59aa0b4"
 
 [[package]]
 name = "serde"
-version = "1.0.171"
+version = "1.0.173"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30e27d1e4fd7659406c492fd6cfaf2066ba8773de45ca75e855590f856dc34a9"
+checksum = "e91f70896d6720bc714a4a57d22fc91f1db634680e65c8efe13323f1fa38d53f"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.171"
+version = "1.0.173"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "389894603bd18c46fa56231694f8d827779c0951a667087194cf9de94ed24682"
+checksum = "a6250dde8342e0232232be9ca3db7aa40aceb5a3e5dd9bddbc00d99a007cde49"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1947,9 +1947,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b824b6e687aff278cdbf3b36f07aa52d4bd4099699324d5da86a2ebce3aa00b3"
+checksum = "8621587d4798caf8eb44879d42e56b9a93ea5dcd315a6487c357130095b62801"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -2626,18 +2626,18 @@ checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
 
 [[package]]
 name = "zstd"
-version = "0.12.3+zstd.1.5.2"
+version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76eea132fb024e0e13fd9c2f5d5d595d8a967aa72382ac2f9d39fcc95afd0806"
+checksum = "1a27595e173641171fc74a1232b7b1c7a7cb6e18222c11e9dfb9888fa424c53c"
 dependencies = [
  "zstd-safe",
 ]
 
 [[package]]
 name = "zstd-safe"
-version = "6.0.5+zstd.1.5.4"
+version = "6.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d56d9e60b4b1758206c238a10165fbcae3ca37b01744e394c463463f6529d23b"
+checksum = "ee98ffd0b48ee95e6c5168188e44a54550b1564d9d530ee21d5f0eaed1069581"
 dependencies = [
  "libc",
  "zstd-sys",

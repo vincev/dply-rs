@@ -58,6 +58,42 @@ fn mutate_arith() -> Result<()> {
         )
     );
 
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+            mutate(group_id = shape_id % 10 ) |
+            select(group_id) |
+            head(15)
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (15, 1)
+            group_id
+            u64
+            ---
+            1
+            2
+            3
+            4
+            5
+            6
+            7
+            8
+            9
+            0
+            1
+            2
+            3
+            4
+            5
+            ---
+       "#
+        )
+    );
+
     Ok(())
 }
 
@@ -292,6 +328,44 @@ fn mutate_len() -> Result<()> {
             Negotiated|2|10
             Standard|228|8
             null|9|null
+            ---
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn mutate_row_number() -> Result<()> {
+    // When using the row() function we need to select another column otherwise we
+    // get error from the planner.
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            mutate(row = row() % 5) |
+            select(row, rate_code) |
+            head()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (10, 2)
+            row|rate_code
+            u64|str
+            ---
+            1|Standard
+            2|Standard
+            3|Standard
+            4|Standard
+            0|Standard
+            1|Standard
+            2|Standard
+            3|Standard
+            4|Standard
+            0|Standard
             ---
        "#
         )

@@ -13,6 +13,8 @@ Changes to the `dply` crate are documented in this file.
 * Added `config` function to set display options (number of columns, and column and table width).
 * `anti_join`: Added `anti_join` to select rows not found in the orther data frame.
 * `mutate`: Add `field` function to extract fields from a JSON/struct objects.
+* `mutate`: Add `row` function that returns the row number.
+* Show execution time on dataframe header.
 
 ## 0.1.9 - 2023-06-28
 ### 🔧 Changed
