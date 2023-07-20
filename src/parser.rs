@@ -63,10 +63,12 @@ pub enum Operator {
     Plus,
     /// Subtraction
     Minus,
-    /// Multiplication operator, like `*`
+    /// Multiplication
     Multiply,
-    /// Division operator, like `/`
+    /// Division
     Divide,
+    /// Mod
+    Mod,
     /// Logical and
     And,
     /// Logical or
@@ -90,6 +92,7 @@ impl fmt::Display for Operator {
             Operator::Minus => "-",
             Operator::Multiply => "*",
             Operator::Divide => "/",
+            Operator::Mod => "%",
             Operator::And => "&",
             Operator::Or => "|",
             Operator::Not => "!",
@@ -314,6 +317,7 @@ fn arith_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         map(tag("-"), |_| Operator::Minus),
         map(tag("*"), |_| Operator::Multiply),
         map(tag("/"), |_| Operator::Divide),
+        map(tag("%"), |_| Operator::Mod),
     ));
 
     context(
@@ -639,7 +643,10 @@ mod tests {
     fn numbers() {
         let text = indoc! {r#"
             parquet("test.parquet") |
-              mutate(distance = 9.8 / 2 * time * time)
+              mutate(
+                distance = 9.8 / 2 * time * time,
+                group_id = id % 10
+              )
         "#};
 
         assert_parser!(
@@ -650,7 +657,7 @@ mod tests {
                   pre_function: parquet(1)
                     string: test.parquet
                   post_function: parquet(1)
-                  pre_function: mutate(1)
+                  pre_function: mutate(2)
                     pre_binary_op: Assign
                       identifier: distance
                       pre_binary_op: Divide
@@ -664,7 +671,14 @@ mod tests {
                         post_binary_op: Multiply
                       post_binary_op: Divide
                     post_binary_op: Assign
-                  post_function: mutate(1)
+                    pre_binary_op: Assign
+                      identifier: group_id
+                      pre_binary_op: Mod
+                        identifier: id
+                        number: 10
+                      post_binary_op: Mod
+                    post_binary_op: Assign
+                  post_function: mutate(2)
                 post_pipeline"
             )
         );

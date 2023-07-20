@@ -101,6 +101,7 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
                 Operator::Minus => lhs - rhs,
                 Operator::Multiply => lhs * rhs,
                 Operator::Divide => lhs / rhs,
+                Operator::Mod => lhs % expr_fn::cast(rhs, DataType::UInt64),
                 _ => panic!("Unexpected mutate operator {op}"),
             };
 

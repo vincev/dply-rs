@@ -58,6 +58,42 @@ fn mutate_arith() -> Result<()> {
         )
     );
 
+    let input = indoc! {r#"
+        parquet("tests/data/lists.parquet") |
+            mutate(group_id = shape_id % 10 ) |
+            select(group_id) |
+            head(15)
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (15, 1)
+            group_id
+            u64
+            ---
+            1
+            2
+            3
+            4
+            5
+            6
+            7
+            8
+            9
+            0
+            1
+            2
+            3
+            4
+            5
+            ---
+       "#
+        )
+    );
+
     Ok(())
 }
 
