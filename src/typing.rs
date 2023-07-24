@@ -261,7 +261,7 @@ fn check_number(fname: &str, expr: &Expr) -> Result<()> {
     }
 }
 
-fn check_one_of(fname: &str, expr: &Expr, args: &[ArgType]) -> Result<()> {
+fn check_one_of(fname: &str, expr: &Expr, args: &[&ArgType]) -> Result<()> {
     for arg in args {
         if check_arg(fname, expr, arg).is_ok() {
             return Ok(());

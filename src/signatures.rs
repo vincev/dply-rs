@@ -18,7 +18,7 @@ use std::sync::OnceLock;
 
 use crate::fuzzy;
 
-pub type SignaturesMap = HashMap<&'static str, Args>;
+pub type SignaturesMap = HashMap<&'static str, &'static Args>;
 
 pub fn functions() -> &'static SignaturesMap {
     static SIGNATURES: OnceLock<SignaturesMap> = OnceLock::new();
@@ -109,7 +109,7 @@ pub enum Args {
     /// One argument of the first type and zero or more arguments of the second.
     OneThenMore(ArgType, ArgType),
     /// A function with a fixed number of arguments.
-    Ordered(Vec<ArgType>),
+    Ordered(&'static [ArgType]),
 }
 
 impl Args {
@@ -126,7 +126,7 @@ impl Args {
                 names.extend(rest.names());
             }
             Args::Ordered(args) => {
-                for arg in args {
+                for arg in &args[..] {
                     names.extend(arg.names());
                 }
             }
@@ -143,69 +143,34 @@ impl Args {
 #[derive(Debug, Clone)]
 pub enum ArgType {
     /// An arithmetich expression.
-    Arith(Box<ArgType>),
+    Arith(&'static ArgType),
     /// An assign expression
-    Assign(Box<ArgType>, Box<ArgType>),
+    Assign(&'static ArgType, &'static ArgType),
     /// A bool type.
     Bool,
     /// A compare expression.
-    Compare(Box<ArgType>, Box<ArgType>),
+    Compare(&'static ArgType, &'static ArgType),
     /// An equality expression.
-    Eq(Box<ArgType>, Box<ArgType>),
+    Eq(&'static ArgType, &'static ArgType),
     /// A function call expression.
-    Function(&'static str, Box<Args>),
+    Function(&'static str, &'static Args),
     /// An identifier expression.
     Identifier,
     /// A logical expression.
-    Logical(Box<ArgType>),
+    Logical(&'static ArgType),
     /// A named identifier.
     Named(&'static str),
     /// A negation expression.
-    Negate(Box<ArgType>),
+    Negate(&'static ArgType),
     /// A number.
     Number,
     /// A multi type argument.
-    OneOf(Vec<ArgType>),
+    OneOf(&'static [&'static ArgType]),
     /// A string argument.
     String,
 }
 
 impl ArgType {
-    /// Creates an assignment type.
-    fn assign(lhs: ArgType, rhs: ArgType) -> Self {
-        Self::Assign(lhs.into(), rhs.into())
-    }
-
-    /// Creates an arithmetic type (+, *, -, /).
-    fn arith(arg: ArgType) -> Self {
-        Self::Arith(arg.into())
-    }
-
-    /// Creates a comparison type (<, >, !=, ==, <=, >=).
-    fn compare(lhs: ArgType, rhs: ArgType) -> Self {
-        Self::Compare(lhs.into(), rhs.into())
-    }
-
-    /// Creates an equality type.
-    fn eq(lhs: ArgType, rhs: ArgType) -> Self {
-        Self::Eq(lhs.into(), rhs.into())
-    }
-
-    /// Creates a logical type (&, |).
-    fn logical(arg: ArgType) -> Self {
-        Self::Logical(arg.into())
-    }
-
-    /// Creates a not type.
-    fn negate(arg: ArgType) -> Self {
-        Self::Negate(arg.into())
-    }
-
-    /// Creates a function ßtype.
-    fn function(name: &'static str, args: Args) -> Self {
-        ArgType::Function(name, args.into())
-    }
-
     /// Extracts all named types.
     fn names(&self) -> Vec<String> {
         let mut names = Vec::new();
@@ -225,7 +190,7 @@ impl ArgType {
                 names.extend(rhs.names());
             }
             ArgType::Function(name, args) => {
-                let name = if let Args::None = args.as_ref() {
+                let name = if let Args::None = args {
                     format!("{name}()")
                 } else {
                     format!("{name}(")
@@ -238,7 +203,7 @@ impl ArgType {
             ArgType::Named(name) => names.push(name.to_string()),
             ArgType::Negate(arg) => names.extend(arg.names()),
             ArgType::OneOf(args) => {
-                for arg in args {
+                for arg in &args[..] {
                     names.extend(arg.names());
                 }
             }
@@ -252,9 +217,9 @@ impl ArgType {
 fn def_arrange(signatures: &mut SignaturesMap) {
     signatures.insert(
         "arrange",
-        Args::OneOrMore(ArgType::OneOf(vec![
-            ArgType::Identifier,
-            ArgType::function("desc", Args::Ordered(vec![ArgType::Identifier])),
+        &Args::OneOrMore(ArgType::OneOf(&[
+            &ArgType::Identifier,
+            &ArgType::Function("desc", &Args::Ordered(&[ArgType::Identifier])),
         ])),
     );
 }
@@ -262,10 +227,10 @@ fn def_arrange(signatures: &mut SignaturesMap) {
 fn def_config(signatures: &mut SignaturesMap) {
     signatures.insert(
         "config",
-        Args::ZeroOrMore(ArgType::OneOf(vec![
-            ArgType::assign(ArgType::Named("max_columns"), ArgType::Number),
-            ArgType::assign(ArgType::Named("max_column_width"), ArgType::Number),
-            ArgType::assign(ArgType::Named("max_table_width"), ArgType::Number),
+        &Args::ZeroOrMore(ArgType::OneOf(&[
+            &ArgType::Assign(&ArgType::Named("max_columns"), &ArgType::Number),
+            &ArgType::Assign(&ArgType::Named("max_column_width"), &ArgType::Number),
+            &ArgType::Assign(&ArgType::Named("max_table_width"), &ArgType::Number),
         ])),
     );
 }
@@ -273,9 +238,9 @@ fn def_config(signatures: &mut SignaturesMap) {
 fn def_count(signatures: &mut SignaturesMap) {
     signatures.insert(
         "count",
-        Args::ZeroOrMore(ArgType::OneOf(vec![
-            ArgType::Identifier,
-            ArgType::assign(ArgType::Named("sort"), ArgType::Bool),
+        &Args::ZeroOrMore(ArgType::OneOf(&[
+            &ArgType::Identifier,
+            &ArgType::Assign(&ArgType::Named("sort"), &ArgType::Bool),
         ])),
     );
 }
@@ -283,134 +248,132 @@ fn def_count(signatures: &mut SignaturesMap) {
 fn def_csv(signatures: &mut SignaturesMap) {
     signatures.insert(
         "csv",
-        Args::OneThenMore(
+        &Args::OneThenMore(
             ArgType::String,
-            ArgType::assign(ArgType::Named("overwrite"), ArgType::Bool),
+            ArgType::Assign(&ArgType::Named("overwrite"), &ArgType::Bool),
         ),
     );
 }
 
 fn def_distinct(signatures: &mut SignaturesMap) {
-    signatures.insert("distinct", Args::OneOrMore(ArgType::Identifier));
+    signatures.insert("distinct", &Args::OneOrMore(ArgType::Identifier));
 }
 
 fn def_filter(signatures: &mut SignaturesMap) {
-    let compare_args = ArgType::compare(
-        ArgType::Identifier,
-        ArgType::OneOf(vec![
-            ArgType::Identifier,
-            ArgType::Number,
-            ArgType::String,
-            ArgType::Bool,
-            ArgType::function("dt", Args::Ordered(vec![ArgType::String])),
+    const COMPARE_ARGS: &ArgType = &ArgType::Compare(
+        &ArgType::Identifier,
+        &ArgType::OneOf(&[
+            &ArgType::Identifier,
+            &ArgType::Number,
+            &ArgType::String,
+            &ArgType::Bool,
+            &ArgType::Function("dt", &Args::Ordered(&[ArgType::String])),
         ]),
     );
 
-    let contains_fn = ArgType::function(
+    const CONTAINS_FN: &ArgType = &ArgType::Function(
         "contains",
-        Args::Ordered(vec![
+        &Args::Ordered(&[
             ArgType::Identifier,
-            ArgType::OneOf(vec![ArgType::String, ArgType::Number]),
+            ArgType::OneOf(&[&ArgType::String, &ArgType::Number]),
         ]),
     );
 
-    let is_null_fn = ArgType::function("is_null", Args::Ordered(vec![ArgType::Identifier]));
+    const IS_NULL_FN: &ArgType =
+        &ArgType::Function("is_null", &Args::Ordered(&[ArgType::Identifier]));
 
-    let predicates = ArgType::OneOf(vec![
-        contains_fn.clone(),
-        ArgType::negate(contains_fn),
-        is_null_fn.clone(),
-        ArgType::negate(is_null_fn),
+    const PREDICATES: &ArgType = &ArgType::OneOf(&[
+        CONTAINS_FN,
+        &ArgType::Negate(CONTAINS_FN),
+        IS_NULL_FN,
+        &ArgType::Negate(IS_NULL_FN),
     ]);
 
-    let filter_arg = ArgType::OneOf(vec![compare_args, predicates]);
+    const FILTER_ARG: &ArgType = &ArgType::OneOf(&[COMPARE_ARGS, PREDICATES]);
 
     signatures.insert(
         "filter",
-        Args::OneOrMore(ArgType::OneOf(vec![
-            filter_arg.clone(),
-            ArgType::logical(filter_arg),
-        ])),
+        &Args::OneOrMore(ArgType::OneOf(&[FILTER_ARG, &ArgType::Logical(FILTER_ARG)])),
     );
 }
 
 fn def_glimpse(signatures: &mut SignaturesMap) {
-    signatures.insert("glimpse", Args::None);
+    signatures.insert("glimpse", &Args::None);
 }
 
 fn def_group_by(signatures: &mut SignaturesMap) {
-    signatures.insert("group_by", Args::OneOrMore(ArgType::Identifier));
+    signatures.insert("group_by", &Args::OneOrMore(ArgType::Identifier));
 }
 
 fn def_head(signatures: &mut SignaturesMap) {
-    signatures.insert("head", Args::NoneOrOne(ArgType::Number));
+    signatures.insert("head", &Args::NoneOrOne(ArgType::Number));
 }
 
 fn def_joins(signatures: &mut SignaturesMap) {
-    let args = Args::OneThenMore(
+    let args = &Args::OneThenMore(
         ArgType::Identifier,
-        ArgType::eq(ArgType::Identifier, ArgType::Identifier),
+        ArgType::Eq(&ArgType::Identifier, &ArgType::Identifier),
     );
 
-    signatures.insert("anti_join", args.clone());
-    signatures.insert("cross_join", args.clone());
-    signatures.insert("inner_join", args.clone());
-    signatures.insert("left_join", args.clone());
+    signatures.insert("anti_join", args);
+    signatures.insert("cross_join", args);
+    signatures.insert("inner_join", args);
+    signatures.insert("left_join", args);
     signatures.insert("outer_join", args);
 }
 
 fn def_json(signatures: &mut SignaturesMap) {
     signatures.insert(
         "json",
-        Args::OneThenMore(
+        &Args::OneThenMore(
             ArgType::String,
-            ArgType::OneOf(vec![
-                ArgType::assign(ArgType::Named("overwrite"), ArgType::Bool),
-                ArgType::assign(ArgType::Named("schema_rows"), ArgType::Number),
+            ArgType::OneOf(&[
+                &ArgType::Assign(&ArgType::Named("overwrite"), &ArgType::Bool),
+                &ArgType::Assign(&ArgType::Named("schema_rows"), &ArgType::Number),
             ]),
         ),
     );
 }
 
 fn def_mutate(signatures: &mut SignaturesMap) {
-    let operand = ArgType::OneOf(vec![
-        ArgType::Identifier,
-        ArgType::Number,
-        ArgType::String,
-        ArgType::function("dt", Args::Ordered(vec![ArgType::Identifier])),
-        ArgType::function(
+    const OPERAND: &ArgType = &ArgType::OneOf(&[
+        &ArgType::Identifier,
+        &ArgType::Number,
+        &ArgType::String,
+        &ArgType::Function("dt", &Args::Ordered(&[ArgType::Identifier])),
+        &ArgType::Function(
             "field",
-            Args::Ordered(vec![ArgType::Identifier, ArgType::Identifier]),
+            &Args::Ordered(&[ArgType::Identifier, ArgType::Identifier]),
         ),
-        ArgType::function("len", Args::Ordered(vec![ArgType::Identifier])),
-        ArgType::function("max", Args::Ordered(vec![ArgType::Identifier])),
-        ArgType::function("mean", Args::Ordered(vec![ArgType::Identifier])),
-        ArgType::function("median", Args::Ordered(vec![ArgType::Identifier])),
-        ArgType::function("min", Args::Ordered(vec![ArgType::Identifier])),
-        ArgType::function("row", Args::None),
-        ArgType::function(
+        &ArgType::Function("len", &Args::Ordered(&[ArgType::Identifier])),
+        &ArgType::Function("max", &Args::Ordered(&[ArgType::Identifier])),
+        &ArgType::Function("mean", &Args::Ordered(&[ArgType::Identifier])),
+        &ArgType::Function("median", &Args::Ordered(&[ArgType::Identifier])),
+        &ArgType::Function("min", &Args::Ordered(&[ArgType::Identifier])),
+        &ArgType::Function("row", &Args::None),
+        &ArgType::Function(
             "to_ns",
-            Args::Ordered(vec![ArgType::OneOf(vec![
-                ArgType::Identifier,
-                ArgType::arith(ArgType::Identifier),
+            &Args::Ordered(&[ArgType::OneOf(&[
+                &ArgType::Identifier,
+                &ArgType::Arith(&ArgType::Identifier),
             ])]),
         ),
     ]);
 
-    let expr = ArgType::OneOf(vec![operand.clone(), ArgType::arith(operand)]);
+    const EXPR: &ArgType = &ArgType::OneOf(&[OPERAND, &ArgType::Arith(OPERAND)]);
 
     signatures.insert(
         "mutate",
-        Args::OneOrMore(ArgType::assign(ArgType::Identifier, expr)),
+        &Args::OneOrMore(ArgType::Assign(&ArgType::Identifier, EXPR)),
     );
 }
 
 fn def_parquet(signatures: &mut SignaturesMap) {
     signatures.insert(
         "parquet",
-        Args::OneThenMore(
+        &Args::OneThenMore(
             ArgType::String,
-            ArgType::assign(ArgType::Named("overwrite"), ArgType::Bool),
+            ArgType::Assign(&ArgType::Named("overwrite"), &ArgType::Bool),
         ),
     );
 }
@@ -418,10 +381,10 @@ fn def_parquet(signatures: &mut SignaturesMap) {
 fn def_relocate(signatures: &mut SignaturesMap) {
     signatures.insert(
         "relocate",
-        Args::OneOrMore(ArgType::OneOf(vec![
-            ArgType::Identifier,
-            ArgType::assign(ArgType::Named("after"), ArgType::Identifier),
-            ArgType::assign(ArgType::Named("before"), ArgType::Identifier),
+        &Args::OneOrMore(ArgType::OneOf(&[
+            &ArgType::Identifier,
+            &ArgType::Assign(&ArgType::Named("after"), &ArgType::Identifier),
+            &ArgType::Assign(&ArgType::Named("before"), &ArgType::Identifier),
         ])),
     );
 }
@@ -429,26 +392,29 @@ fn def_relocate(signatures: &mut SignaturesMap) {
 fn def_rename(signatures: &mut SignaturesMap) {
     signatures.insert(
         "rename",
-        Args::OneOrMore(ArgType::assign(ArgType::Identifier, ArgType::Identifier)),
+        &Args::OneOrMore(ArgType::Assign(&ArgType::Identifier, &ArgType::Identifier)),
     );
 }
 
 fn def_select(signatures: &mut SignaturesMap) {
-    let contains_fn = ArgType::function("contains", Args::Ordered(vec![ArgType::String]));
-    let ends_with_fn = ArgType::function("ends_with", Args::Ordered(vec![ArgType::String]));
-    let start_with_fn = ArgType::function("starts_with", Args::Ordered(vec![ArgType::String]));
+    const CONTAINS_FN: &ArgType =
+        &ArgType::Function("contains", &Args::Ordered(&[ArgType::String]));
+    const ENDS_WITH_FN: &ArgType =
+        &ArgType::Function("ends_with", &Args::Ordered(&[ArgType::String]));
+    const START_WITH_FN: &ArgType =
+        &ArgType::Function("starts_with", &Args::Ordered(&[ArgType::String]));
 
     signatures.insert(
         "select",
-        Args::OneOrMore(ArgType::OneOf(vec![
-            ArgType::Identifier,
-            ArgType::assign(ArgType::Identifier, ArgType::Identifier),
-            contains_fn.clone(),
-            ArgType::negate(contains_fn),
-            ends_with_fn.clone(),
-            ArgType::negate(ends_with_fn),
-            start_with_fn.clone(),
-            ArgType::negate(start_with_fn),
+        &Args::OneOrMore(ArgType::OneOf(&[
+            &ArgType::Identifier,
+            &ArgType::Assign(&ArgType::Identifier, &ArgType::Identifier),
+            CONTAINS_FN,
+            &ArgType::Negate(CONTAINS_FN),
+            ENDS_WITH_FN,
+            &ArgType::Negate(ENDS_WITH_FN),
+            START_WITH_FN,
+            &ArgType::Negate(START_WITH_FN),
         ])),
     );
 }
@@ -456,31 +422,31 @@ fn def_select(signatures: &mut SignaturesMap) {
 fn def_summarize(signatures: &mut SignaturesMap) {
     signatures.insert(
         "summarize",
-        Args::OneOrMore(ArgType::Assign(
-            Box::new(ArgType::Identifier),
-            Box::new(ArgType::OneOf(vec![
-                ArgType::function("list", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("max", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("mean", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("median", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("min", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("n", Args::None),
-                ArgType::function(
+        &Args::OneOrMore(ArgType::Assign(
+            &ArgType::Identifier,
+            &ArgType::OneOf(&[
+                &ArgType::Function("list", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("max", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("mean", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("median", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("min", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("n", &Args::None),
+                &ArgType::Function(
                     "quantile",
-                    Args::Ordered(vec![ArgType::Identifier, ArgType::Number]),
+                    &Args::Ordered(&[ArgType::Identifier, ArgType::Number]),
                 ),
-                ArgType::function("sd", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("sum", Args::Ordered(vec![ArgType::Identifier])),
-                ArgType::function("var", Args::Ordered(vec![ArgType::Identifier])),
-            ])),
+                &ArgType::Function("sd", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("sum", &Args::Ordered(&[ArgType::Identifier])),
+                &ArgType::Function("var", &Args::Ordered(&[ArgType::Identifier])),
+            ]),
         )),
     );
 }
 
 fn def_show(signatures: &mut SignaturesMap) {
-    signatures.insert("show", Args::None);
+    signatures.insert("show", &Args::None);
 }
 
 fn def_unnest(signatures: &mut SignaturesMap) {
-    signatures.insert("unnest", Args::OneOrMore(ArgType::Identifier));
+    signatures.insert("unnest", &Args::OneOrMore(ArgType::Identifier));
 }
