@@ -31,8 +31,8 @@ fn glimpse_parquet() -> Result<()> {
             │ Cols: 19              ┆              ┆                                         │
             ╞═══════════════════════╪══════════════╪═════════════════════════════════════════╡
             │ VendorID              ┆ i64          ┆ 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, ... │
-            │ tpep_pickup_datetime  ┆ datetime[μs] ┆ 2022-11-22 19:27:01, 2022-11-27...      │
-            │ tpep_dropoff_datetime ┆ datetime[μs] ┆ 2022-11-22 19:45:53, 2022-11-27...      │
+            │ tpep_pickup_datetime  ┆ datetime[μs] ┆ 2022-11-22T19:27:01,...                 │
+            │ tpep_dropoff_datetime ┆ datetime[μs] ┆ 2022-11-22T19:45:53,...                 │
             │ passenger_count       ┆ i64          ┆ 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, ... │
             │ trip_distance         ┆ f64          ┆ 3.14, 1.06, 2.36, 5.2, 0.0, 2.39, 1.... │
             │ rate_code             ┆ str          ┆ Standard, Standard, Standard, Standa... │
@@ -71,8 +71,8 @@ fn glimpse_csv() -> Result<()> {
             │ Cols: 19              ┆              ┆                                         │
             ╞═══════════════════════╪══════════════╪═════════════════════════════════════════╡
             │ VendorID              ┆ i64          ┆ 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, ... │
-            │ tpep_pickup_datetime  ┆ datetime[ns] ┆ 2022-11-22 19:27:01, 2022-11-27...      │
-            │ tpep_dropoff_datetime ┆ datetime[ns] ┆ 2022-11-22 19:45:53, 2022-11-27...      │
+            │ tpep_pickup_datetime  ┆ datetime[ns] ┆ 2022-11-22T19:27:01,...                 │
+            │ tpep_dropoff_datetime ┆ datetime[ns] ┆ 2022-11-22T19:45:53,...                 │
             │ passenger_count       ┆ i64          ┆ 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, ... │
             │ trip_distance         ┆ f64          ┆ 3.14, 1.06, 2.36, 5.2, 0.0, 2.39, 1.... │
             │ rate_code             ┆ str          ┆ Standard, Standard, Standard, Standa... │

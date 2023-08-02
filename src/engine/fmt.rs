@@ -337,8 +337,6 @@ where
 fn fmt_opts<'a>() -> FormatOptions<'a> {
     FormatOptions::default()
         .with_display_error(true)
-        .with_datetime_format(Some("%Y-%m-%d %H:%M:%S"))
-        .with_timestamp_format(Some("%Y-%m-%d %H:%M:%S"))
         .with_null("null")
 }
 

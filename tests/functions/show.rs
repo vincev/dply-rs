@@ -103,3 +103,30 @@ fn show() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn show_timestamps() -> Result<()> {
+    let input = indoc! {r#"
+        parquet("tests/data/timestamps.parquet") |
+            show()
+    "#};
+    let output = interpreter::eval_to_string(input)?;
+
+    assert_eq!(
+        output,
+        indoc!(
+            r#"
+            shape: (3, 3)
+            secs|micros|nanos
+            datetime[ms]|datetime[μs]|datetime[ns]
+            ---
+            2023-08-02T23:09:42|2023-08-02T23:09:42.456642|2023-08-02T23:09:42.456642001
+            2023-08-02T23:09:46|2023-08-02T23:09:46.159043|2023-08-02T23:09:46.159043342
+            2023-08-02T23:09:54|2023-08-02T23:09:54.041828|2023-08-02T23:09:54.041828923
+            ---
+            "#
+        )
+    );
+
+    Ok(())
+}
