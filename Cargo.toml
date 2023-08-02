@@ -12,25 +12,19 @@ rust-version = "1.70.0"
 anyhow = "1.0"
 chrono = { version = "0.4.26", default-features = false }
 clap = { version = "4.2", features = ["derive"] }
-comfy-table = "6"
+comfy-table = "7"
+datafusion = { version = "28", default-features = false }
 futures = "0.3.28"
 hashbrown = "0.14.0"
 home = "0.5"
-lru = "0.10.0"
+lru = "0.11.0"
 nom = "7"
 num-traits = "0.2.15"
 parking_lot = "0.12.1"
-reedline = "0.21"
+reedline = "0.22"
 regex = "1.8.4"
 thiserror = "1.0"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "sync"] }
-
-[dependencies.datafusion]
-#version = "27"
-# path = "../arrow-datafusion/datafusion/core"
-git = "https://github.com/apache/arrow-datafusion"
-rev = "a6dcd943051a083693c352c6b4279156548490a0"
-default-features = false
 
 [dev-dependencies]
 indoc = "2"
