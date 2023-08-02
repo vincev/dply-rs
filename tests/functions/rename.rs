@@ -46,7 +46,7 @@ fn rename() -> Result<()> {
             vendor_id|pickup_datetime|dropoff_datetime|pu_location_id|do_location_id|total_amount
             i64|datetime[μs]|datetime[μs]|i64|i64|f64
             ---
-            2|2022-11-22 19:27:01|2022-11-22 19:45:53|234|141|22.56
+            2|2022-11-22T19:27:01|2022-11-22T19:45:53|234|141|22.56
             ---
         "#
         )

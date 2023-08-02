@@ -8,6 +8,7 @@ Changes to the `dply` crate are documented in this file.
 * `parquet`: A folder path reads all parquet files in the folder.
 * `parquet`: write now uses compression to reduce file size.
 * `mutate`: Make `len` function to work on strings.
+* Improve display precision for microsecond and nanosecond timestamps.
 ### ⭐ Added
 * Added `json` function to read and write NdJSON files.
 * Added `config` function to set display options (number of columns, and column and table width).
