@@ -7,10 +7,10 @@ files, inspired by [dplyr](https://dplyr.tidyverse.org/index.html) and powered b
 A dply pipeline consists of a number of functions to read, transform, or write
 Parquet or CSV files.
 
-### Conversions between CSV, JSON, and Parquet files
+### Conversions between CSV, NdJSON, and Parquet files
 
 The functions `csv`, `json` and `parquet` read and write data for their respective
-formats. The following two steps pipeline converts a Parquet file to JSON:
+formats. The following two steps pipeline converts a Parquet file to NdJSON:
 
 ```
 $ dply -c 'parquet("nyctaxi.parquet") | json("nyctaxi.json")'
@@ -35,9 +35,9 @@ $ head -2 nyctaxi.json| jq
 }
 ```
 
-### Extracting nested fields from nested JSON
+### Extracting nested fields from nested NdJSON
 
-To extract a nested field in a JSON file we can use the `field` function in a
+To extract a nested field in a NdJSON file we can use the `field` function in a
 `mutate` step. The following example extracts the `sha` from the list of
 `commits` in the `payload` object:
 
@@ -61,7 +61,7 @@ shape: (4, 1)
 └──────────────────────────────────────────┘
 ```
 
-Complex JSON files can be converted to Parquet for faster query processing:
+Complex NdJSON files can be converted to Parquet for faster query processing:
 
 ```
 $ dply -c 'json("github.json") | parquet("github.parquet")'
