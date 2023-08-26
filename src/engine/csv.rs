@@ -15,8 +15,9 @@
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
     arrow::csv,
+    common::file_type::DEFAULT_CSV_EXTENSION,
     datasource::{
-        file_format::csv::{CsvFormat, DEFAULT_CSV_EXTENSION},
+        file_format::csv::CsvFormat,
         listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
         provider_as_source,
     },

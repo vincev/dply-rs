@@ -5,7 +5,7 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.2.0"
+version = "0.2.1"
 rust-version = "1.70.0"
 
 [dependencies]
@@ -13,7 +13,7 @@ anyhow = "1.0"
 chrono = { version = "0.4.26", default-features = false }
 clap = { version = "4.2", features = ["derive"] }
 comfy-table = "7"
-datafusion = { version = "28", default-features = false }
+datafusion = { version = "30", default-features = false }
 futures = "0.3.28"
 hashbrown = "0.14.0"
 home = "0.5"
@@ -21,7 +21,7 @@ lru = "0.11.0"
 nom = "7"
 num-traits = "0.2.15"
 parking_lot = "0.12.1"
-reedline = "0.22"
+reedline = "0.23"
 regex = "1.8.4"
 thiserror = "1.0"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "sync"] }

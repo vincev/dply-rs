@@ -18,11 +18,10 @@ use datafusion::{
     common::tree_node::{Transformed, TreeNode},
     logical_expr::{
         aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
-        window_frame::WindowFrame, BuiltInWindowFunction, Expr as DFExpr, GetIndexedField,
-        LogicalPlanBuilder, Volatility, WindowFunction,
+        window_frame::WindowFrame, BuiltInWindowFunction, Expr as DFExpr, LogicalPlanBuilder,
+        Volatility, WindowFunction,
     },
     physical_plan::functions::make_scalar_function,
-    scalar::ScalarValue,
 };
 
 use crate::parser::{Expr, Operator};
@@ -115,12 +114,7 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
         }
         Expr::Function(name, args) if name == "field" => {
             let field_name = args::identifier(&args[1]);
-            args::expr_to_qualified_col(&args[0], schema).map(|e| {
-                DFExpr::GetIndexedField(GetIndexedField {
-                    expr: Box::new(e),
-                    key: ScalarValue::Utf8(Some(field_name)),
-                })
-            })
+            args::expr_to_qualified_col(&args[0], schema).map(|e| e.field(field_name))
         }
         Expr::Function(name, args) if name == "len" => {
             let column = args::identifier(&args[0]);
@@ -151,27 +145,37 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
         }
         Expr::Function(name, _args) if name == "row" => Ok(row_fn()),
         Expr::Function(name, args) if name == "to_ns" => {
-            let arg = if let Expr::Identifier(id) = &args[0] {
+            if let Expr::Identifier(id) = &args[0] {
                 let data_type = plan
                     .schema()
                     .field_with_unqualified_name(id)
                     .map(|f| f.data_type())
                     .map_err(|_| anyhow!("to_ns: Unknown column {id}"))?;
                 let arg = args::str_to_col(id);
-                if let DataType::Interval(_) = data_type {
-                    cast(arg, DataType::Duration(TimeUnit::Nanosecond))
-                } else {
-                    arg
-                }
+                Ok(cast_to_ns(arg, data_type))
             } else {
-                // For complex expressions treat it as an interval.
+                // For complex expressions treat it as a duration.
                 let arg = eval_expr(&args[0], plan)?;
-                cast(arg, DataType::Duration(TimeUnit::Nanosecond))
-            };
-
-            Ok(cast(arg, DataType::Int64))
+                Ok(cast(arg, DataType::Int64))
+            }
         }
         _ => panic!("Unexpected mutate expression {expr}"),
+    }
+}
+
+fn cast_to_ns(expr: DFExpr, data_type: &DataType) -> DFExpr {
+    match data_type {
+        DataType::Interval(_) => cast(expr, DataType::Duration(TimeUnit::Nanosecond)),
+        DataType::Duration(tu) => {
+            let units = cast(expr, DataType::Int64);
+            match tu {
+                TimeUnit::Second => units * lit(1_000_000_000),
+                TimeUnit::Millisecond => units * lit(1_000_000),
+                TimeUnit::Microsecond => units * lit(1_000),
+                TimeUnit::Nanosecond => units,
+            }
+        }
+        _ => expr,
     }
 }
 
