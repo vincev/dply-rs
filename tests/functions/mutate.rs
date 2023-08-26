@@ -41,7 +41,7 @@ fn mutate_arith() -> Result<()> {
             r#"
             shape: (10, 6)
             tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance_mi|trip_distance_km|travel_time|avg_speed_km_h
-            datetime[μs]|datetime[μs]|f64|f64|interval[mdn]|f64
+            datetime[μs]|datetime[μs]|f64|f64|duration[μs]|f64
             ---
             2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|5.053328|18m 52s|16.070653
             2022-11-27T16:43:26|2022-11-27T16:50:06|1.06|1.7059|6m 40s|15.353104

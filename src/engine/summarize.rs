@@ -78,7 +78,7 @@ fn eval_args(args: &[Expr], schema: &DFSchema) -> Result<Vec<DFExpr>> {
                 let column = match rhs.as_ref() {
                     Expr::Function(name, _) if name == "n" => Ok(expr_fn::count(lit(1))),
                     Expr::Function(name, args) if name == "list" => {
-                        args::expr_to_col(&args[0], schema).map(list)
+                        args::expr_to_col(&args[0], schema).map(expr_fn::array_agg)
                     }
                     Expr::Function(name, args) if name == "max" => {
                         args::expr_to_col(&args[0], schema).map(expr_fn::max)
@@ -137,16 +137,6 @@ fn var(expr: DFExpr) -> DFExpr {
     ))
 }
 
-fn list(expr: DFExpr) -> DFExpr {
-    DFExpr::AggregateFunction(expr::AggregateFunction::new(
-        AggregateFunction::ArrayAgg,
-        vec![expr],
-        false,
-        None,
-        None,
-    ))
-}
-
 // This function implement an exact quantile as DataFusion only provide only
 // approximate quantile.
 fn quantile(expr: DFExpr, quantile: f64, data_type: &DataType) -> DFExpr {
@@ -156,7 +146,7 @@ fn quantile(expr: DFExpr, quantile: f64, data_type: &DataType) -> DFExpr {
     // calls to quantile produce different results.
     let quantile = create_udaf(
         &format!("quantile-{}", LAST_CALL.fetch_add(1, Ordering::Relaxed)),
-        data_type.clone(),
+        vec![data_type.clone()],
         Arc::new(data_type.clone()),
         Volatility::Immutable,
         Arc::new(move |dt| Ok(Box::new(Quantile::new(dt, quantile)))),

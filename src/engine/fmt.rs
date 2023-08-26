@@ -19,8 +19,9 @@ use datafusion::{
     arrow::datatypes::{DataType, IntervalUnit, TimeUnit},
     arrow::{
         array::{
-            Array, Float16Array, Float32Array, Float64Array, Int64Array, IntervalDayTimeArray,
-            IntervalMonthDayNanoArray, IntervalYearMonthArray,
+            Array, DurationMicrosecondArray, DurationMillisecondArray, DurationNanosecondArray,
+            DurationSecondArray, Float16Array, Float32Array, Float64Array, Int64Array,
+            IntervalDayTimeArray, IntervalMonthDayNanoArray, IntervalYearMonthArray,
         },
         record_batch::RecordBatch,
         util::display::{ArrayFormatter as ArrowArrayFormatter, FormatOptions},
@@ -262,6 +263,7 @@ enum ArrayFormatter<'a> {
     Float16(&'a Float16Array),
     Float32(&'a Float32Array),
     Float64(&'a Float64Array),
+    Duration(TimeUnit, &'a dyn Array),
     Interval(IntervalUnit, &'a dyn Array),
 }
 
@@ -277,6 +279,7 @@ impl<'a> ArrayFormatter<'a> {
             DataType::Float64 => {
                 ArrayFormatter::Float64(array.as_any().downcast_ref::<Float64Array>().unwrap())
             }
+            DataType::Duration(tu) => ArrayFormatter::Duration(tu.clone(), array),
             DataType::Interval(iu) => ArrayFormatter::Interval(iu.clone(), array),
             _ => ArrayFormatter::Arrow(ArrowArrayFormatter::try_new(array, options)?),
         };
@@ -308,7 +311,8 @@ impl<'a> ArrayFormatter<'a> {
                     fmt_float(a.value(idx))
                 }
             }
-            ArrayFormatter::Interval(tu, a) => fmt_interval(tu, *a, idx),
+            ArrayFormatter::Duration(tu, a) => fmt_duration(tu, *a, idx),
+            ArrayFormatter::Interval(iu, a) => fmt_interval(iu, *a, idx),
         }
     }
 }
@@ -383,11 +387,77 @@ fn fmt_usize(n: usize) -> String {
     s
 }
 
-fn fmt_interval(tu: &IntervalUnit, array: &dyn Array, idx: usize) -> String {
+fn fmt_duration(tu: &TimeUnit, array: &dyn Array, idx: usize) -> String {
     if array.is_null(idx) {
         "null".to_string()
     } else {
-        match tu {
+        let (secs, nsecs) = match tu {
+            TimeUnit::Second => {
+                let secs = array
+                    .as_any()
+                    .downcast_ref::<DurationSecondArray>()
+                    .unwrap()
+                    .value(idx);
+                (secs, 0)
+            }
+            TimeUnit::Millisecond => {
+                let msecs = array
+                    .as_any()
+                    .downcast_ref::<DurationMillisecondArray>()
+                    .unwrap()
+                    .value(idx);
+                (msecs / 1_000, (msecs % 1_000) * 1_000_000)
+            }
+            TimeUnit::Microsecond => {
+                let musecs = array
+                    .as_any()
+                    .downcast_ref::<DurationMicrosecondArray>()
+                    .unwrap()
+                    .value(idx);
+                (musecs / 1_000_000, (musecs % 1_000_000) * 1_000)
+            }
+            TimeUnit::Nanosecond => {
+                let nsecs = array
+                    .as_any()
+                    .downcast_ref::<DurationNanosecondArray>()
+                    .unwrap()
+                    .value(idx);
+                (nsecs / 1_000_000_000, nsecs % 1_000_000_000)
+            }
+        };
+
+        let days = secs / 86_400;
+        let hours = (secs % 86_400) / 3600;
+        let mins = (secs % 3_600) / 60;
+        let secs = secs % 60;
+
+        let dhm = if days > 0 {
+            format!("{days}d {hours}h {mins}m ")
+        } else if hours > 0 {
+            format!("{hours}h {mins}m ")
+        } else if mins > 0 {
+            format!("{mins}m ")
+        } else {
+            "".to_string()
+        };
+
+        if nsecs % 1_000 != 0 {
+            format!("{dhm}{secs}.{nsecs}s")
+        } else if nsecs % 1_000_000 != 0 {
+            format!("{dhm}{secs}.{}s", nsecs / 1_000)
+        } else if nsecs % 1_000_000_000 != 0 {
+            format!("{dhm}{secs}.{}s", nsecs / 1_000_000)
+        } else {
+            format!("{dhm}{secs}s")
+        }
+    }
+}
+
+fn fmt_interval(iu: &IntervalUnit, array: &dyn Array, idx: usize) -> String {
+    if array.is_null(idx) {
+        "null".to_string()
+    } else {
+        match iu {
             IntervalUnit::YearMonth => {
                 let interval = array
                     .as_any()
