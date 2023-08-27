@@ -4,6 +4,9 @@ Changes to the `dply` crate are documented in this file.
 ## 0.2.1 - Unreleased
 ### 🐛 Fixed
 * Allow user to override file extensions when loading data.
+### ⭐ Added
+* Add backticks to completions for columns names that are not alphanumeric.
+
 
 ## 0.2.0 - 2023-08-14
 ### 🔧 Changed
