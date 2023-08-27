@@ -13,18 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use lru::LruCache;
+use regex::Regex;
 
 const MAX_ENTRIES: usize = 40;
 
 /// A completions LRU cache.
 pub struct Completions {
     lru: LruCache<String, ()>,
+    name_re: regex::Regex,
 }
 
 impl Default for Completions {
     fn default() -> Self {
         Self {
             lru: LruCache::unbounded(),
+            name_re: Regex::new(r"^[[:alpha:]](_|\d|[[:alpha:]])+$").unwrap(),
         }
     }
 }
@@ -55,7 +58,14 @@ impl Completions {
 
     fn add_entry(&mut self, entry: &str) {
         if self.lru.get(entry).is_none() {
-            self.lru.put(entry.to_string(), ());
+            // Add backticks to completions if entry is not a valid name.
+            let entry = if self.name_re.is_match(entry) {
+                entry.to_string()
+            } else {
+                format!("`{entry}`")
+            };
+
+            self.lru.put(entry, ());
         }
     }
 }
