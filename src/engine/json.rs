@@ -55,7 +55,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         }
     } else {
         // Read the data frame and set it as input for the next task.
-        let table_path = ListingTableUrl::parse(path)?;
+        let table_path = ListingTableUrl::parse(&path)?;
 
         let num_cpus = std::thread::available_parallelism()
             .unwrap_or(NonZeroUsize::new(2).unwrap())
@@ -65,8 +65,15 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         let file_format = JsonFormat::default().with_schema_infer_max_rec(schema_infer_rows);
 
+        // Use default extension for recursive loading.
+        let extension = if Path::new(&path).is_dir() {
+            DEFAULT_JSON_EXTENSION
+        } else {
+            ""
+        };
+
         let listing_options = ListingOptions::new(Arc::new(file_format))
-            .with_file_extension(DEFAULT_JSON_EXTENSION)
+            .with_file_extension(extension)
             .with_target_partitions(num_cpus);
 
         let resolved_schema =

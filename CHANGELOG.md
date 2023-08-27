@@ -1,6 +1,10 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
+## 0.2.1 - Unreleased
+### 🐛 Fixed
+* Allow user to override file extensions when loading data.
+
 ## 0.2.0 - 2023-08-14
 ### 🔧 Changed
 * Use DataFusion as query engine.
