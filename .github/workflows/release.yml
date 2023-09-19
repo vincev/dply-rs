@@ -28,6 +28,11 @@ jobs:
           cpu: x86_64
           rust: stable
           binary: dply
+        - build: linux-20.04
+          os: ubuntu-20.04
+          cpu: x86_64
+          rust: stable
+          binary: dply
         - build: macos
           os: macos-latest
           cpu: x86_64
@@ -46,7 +51,9 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
     - name: Run build
-      run: cargo build --release --verbose
+      run: cargo build --release
+    - name: Run tests
+      run: cargo test --release
     - name: Upload build artifact
       uses: actions/upload-artifact@v3
       with:
