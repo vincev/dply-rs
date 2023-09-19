@@ -97,7 +97,7 @@ pub fn timestamp(expr: &Expr) -> Result<DFExpr> {
         })
         .map_err(|e| anyhow!("Invalid timestamp string {ts}: {e}"))?;
 
-    Ok(lit_timestamp_nano(dt.timestamp_nanos()))
+    Ok(lit_timestamp_nano(dt.timestamp_nanos_opt().unwrap()))
 }
 
 /// Returns the value of a named boolean variable like `overwrite = false`.

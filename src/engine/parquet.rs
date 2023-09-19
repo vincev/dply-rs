@@ -14,7 +14,7 @@
 // limitations under the License.
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
-    common::file_type::DEFAULT_PARQUET_EXTENSION,
+    common::DEFAULT_PARQUET_EXTENSION,
     datasource::{
         file_format::parquet::ParquetFormat,
         listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
