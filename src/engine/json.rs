@@ -15,7 +15,7 @@
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
     arrow::json,
-    common::file_type::DEFAULT_JSON_EXTENSION,
+    common::DEFAULT_JSON_EXTENSION,
     datasource::{
         file_format::json::JsonFormat,
         listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
