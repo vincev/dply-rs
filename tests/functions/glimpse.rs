@@ -15,15 +15,14 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn glimpse_parquet() -> Result<()> {
     let input = r#"parquet("tests/data/nyctaxi.parquet") | glimpse()"#;
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             ┌───────────────────────┬──────────────┬─────────────────────────────────────────┐
@@ -60,10 +59,9 @@ fn glimpse_parquet() -> Result<()> {
 #[test]
 fn glimpse_csv() -> Result<()> {
     let input = r#"csv("tests/data/nyctaxi.csv") | glimpse()"#;
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             ┌───────────────────────┬──────────────┬─────────────────────────────────────────┐

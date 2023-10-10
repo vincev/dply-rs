@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn relocate_default() -> Result<()> {
@@ -24,10 +24,9 @@ fn relocate_default() -> Result<()> {
             relocate(payment_type, passenger_count) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 19)
@@ -50,10 +49,9 @@ fn relocate_before_first() -> Result<()> {
             relocate(payment_type, passenger_count, before = VendorID) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 19)
@@ -76,10 +74,9 @@ fn relocate_before() -> Result<()> {
             relocate(payment_type, passenger_count, before = fare_amount) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 19)
@@ -102,10 +99,9 @@ fn relocate_after() -> Result<()> {
             relocate(payment_type, passenger_count, after = fare_amount) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 19)
@@ -128,10 +124,9 @@ fn relocate_after_last() -> Result<()> {
             relocate(payment_type, passenger_count, after = airport_fee) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 19)
@@ -154,10 +149,9 @@ fn relocate_same_col() -> Result<()> {
             relocate(payment_type, passenger_count, after = passenger_count) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 19)

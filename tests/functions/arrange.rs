@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn arrange() -> Result<()> {
@@ -25,10 +25,9 @@ fn arrange() -> Result<()> {
             arrange(desc(passenger_count), total_amount) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)
@@ -61,10 +60,9 @@ fn arrange_desc() -> Result<()> {
             arrange(passenger_count, desc(total_amount)) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)

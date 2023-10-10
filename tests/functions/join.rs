@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn left_join() -> Result<()> {
@@ -33,10 +33,9 @@ fn left_join() -> Result<()> {
             arrange(shape_id) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -73,10 +72,9 @@ fn left_join() -> Result<()> {
             arrange(shape_id) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 4)
@@ -117,10 +115,9 @@ fn inner_join() -> Result<()> {
             arrange(shape_id) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -162,10 +159,9 @@ fn outer_join() -> Result<()> {
             arrange(shape_id, left_val, shape_id_rhs, right_val) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 4)
@@ -207,10 +203,9 @@ fn cross_join() -> Result<()> {
             arrange(shape_id) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (6, 4)
@@ -260,10 +255,9 @@ fn multi_columns_join() -> Result<()> {
             arrange(shape_id) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 4)
@@ -305,10 +299,9 @@ fn anti_join() -> Result<()> {
             arrange(shape_id) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 2)

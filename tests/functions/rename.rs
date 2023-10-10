@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn rename() -> Result<()> {
@@ -36,10 +36,9 @@ fn rename() -> Result<()> {
             ) |
             head(1)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 6)

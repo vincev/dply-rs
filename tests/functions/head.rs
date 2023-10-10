@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn head() -> Result<()> {
@@ -29,10 +29,9 @@ fn head() -> Result<()> {
                 total_amount) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 5)
@@ -69,10 +68,9 @@ fn head_with_limit() -> Result<()> {
                 total_amount) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 5)

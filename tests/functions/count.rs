@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn count_column() -> Result<()> {
@@ -25,10 +25,9 @@ fn count_column() -> Result<()> {
             arrange(payment_type) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 2)
@@ -55,10 +54,9 @@ fn count_sorted() -> Result<()> {
             count(payment_type, sort = true) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 2)
@@ -87,10 +85,9 @@ fn count_agg_column_name() -> Result<()> {
             count(payment_type, sort = true) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 2)
@@ -119,10 +116,9 @@ fn count_multi_cols() -> Result<()> {
             arrange(payment_type, passenger_count) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (16, 3)
@@ -161,10 +157,9 @@ fn count_multi_cols_sorted() -> Result<()> {
             count(payment_type, passenger_count, sort = true) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (16, 3)
@@ -203,10 +198,9 @@ fn count_no_cols() -> Result<()> {
             count() |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 1)

@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn distinct() -> Result<()> {
@@ -25,10 +25,9 @@ fn distinct() -> Result<()> {
             arrange(passenger_count) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (8, 1)
@@ -54,10 +53,9 @@ fn distinct() -> Result<()> {
             arrange(passenger_count, store_and_fwd_flag) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)

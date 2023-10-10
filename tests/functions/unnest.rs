@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn unnest_ints() -> Result<()> {
@@ -27,10 +27,9 @@ fn unnest_ints() -> Result<()> {
             unnest(ints) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -65,10 +64,9 @@ fn unnest_str() -> Result<()> {
             unnest(tags) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -103,10 +101,9 @@ fn unnest_floats() -> Result<()> {
             unnest(floats) |
             head(12)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (12, 3)
@@ -141,10 +138,9 @@ fn unnest_structs() -> Result<()> {
             unnest(points) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)
@@ -172,10 +168,9 @@ fn unnest_structs() -> Result<()> {
             unnest(points, points) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 5)

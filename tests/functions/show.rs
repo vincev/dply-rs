@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn show() -> Result<()> {
@@ -30,10 +30,9 @@ fn show() -> Result<()> {
             filter(total_amount < 12) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (56, 5)
@@ -110,10 +109,9 @@ fn show_timestamps() -> Result<()> {
         parquet("tests/data/timestamps.parquet") |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 3)

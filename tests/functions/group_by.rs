@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn group_by_mean_sd_var() -> Result<()> {
@@ -31,10 +31,9 @@ fn group_by_mean_sd_var() -> Result<()> {
             arrange(desc(n)) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 5)
@@ -67,10 +66,9 @@ fn group_by_min_max() -> Result<()> {
             arrange(desc(n)) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -106,10 +104,9 @@ fn group_by_median_quantile() -> Result<()> {
             arrange(desc(n)) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 7)
@@ -145,10 +142,9 @@ fn summarize_median_quantile() -> Result<()> {
             arrange(desc(n)) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 6)
@@ -177,10 +173,9 @@ fn group_by_list() -> Result<()> {
             ) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (2, 3)
@@ -207,10 +202,9 @@ fn group_by_list() -> Result<()> {
             unnest(amounts, fares) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (13, 3)
@@ -251,10 +245,9 @@ fn summarize_list() -> Result<()> {
             ) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (1, 3)
@@ -279,10 +272,9 @@ fn summarize_list() -> Result<()> {
             unnest(amounts, fares) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (9, 3)

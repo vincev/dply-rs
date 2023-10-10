@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn select_columns() -> Result<()> {
@@ -30,10 +30,9 @@ fn select_columns() -> Result<()> {
             ) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 5)
@@ -63,10 +62,9 @@ fn select_rename() -> Result<()> {
             ) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 4)
@@ -91,10 +89,9 @@ fn select_starts_with() -> Result<()> {
             select(starts_with("tpep")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -125,10 +122,9 @@ fn select_not_starts_with() -> Result<()> {
             select(!starts_with("tpep")) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 2)
@@ -155,10 +151,9 @@ fn select_ends_with() -> Result<()> {
             select(ends_with("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -189,10 +184,9 @@ fn select_not_ends_with() -> Result<()> {
             select(!ends_with("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -217,10 +211,9 @@ fn select_contains() -> Result<()> {
             select(contains("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -251,10 +244,9 @@ fn select_not_contains() -> Result<()> {
             select(!contains("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)

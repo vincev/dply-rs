@@ -15,7 +15,7 @@
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn mutate_arith() -> Result<()> {
@@ -33,10 +33,9 @@ fn mutate_arith() -> Result<()> {
             relocate(trip_distance_km, after = trip_distance_mi) |
             head(10)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 6)
@@ -64,10 +63,9 @@ fn mutate_arith() -> Result<()> {
             select(group_id) |
             head(15)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (15, 1)
@@ -109,10 +107,9 @@ fn mutate_mean() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -144,10 +141,9 @@ fn mutate_median() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -179,10 +175,9 @@ fn mutate_min() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -214,10 +209,9 @@ fn mutate_max() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -249,10 +243,9 @@ fn mutate_dt() -> Result<()> {
             ) |
             head(2)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (2, 4)
@@ -281,10 +274,9 @@ fn mutate_len() -> Result<()> {
             select(ints_len, floats_len, tags_len) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -314,10 +306,9 @@ fn mutate_len() -> Result<()> {
             arrange(rate_code) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 3)
@@ -346,10 +337,9 @@ fn mutate_row_number() -> Result<()> {
             select(row, rate_code) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)
@@ -388,10 +378,9 @@ fn mutate_field() -> Result<()> {
             select(shape_id, x, y) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -421,10 +410,9 @@ fn mutate_field() -> Result<()> {
             arrange(rate_code) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 3)
