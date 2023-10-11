@@ -365,7 +365,11 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::Identifier,
         ArgType::Number,
         ArgType::String,
-        ArgType::function("dt", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("ymd_hms", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dnanos", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dmicros", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dmillis", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dsecs", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function(
             "field",
             Args::Ordered(vec![ArgType::Identifier, ArgType::Identifier]),

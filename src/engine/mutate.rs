@@ -97,8 +97,20 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
         Expr::Identifier(_) => args::expr_to_col(expr, plan.schema()),
         Expr::String(s) => Ok(lit(s.clone())),
         Expr::Number(n) => Ok(lit(*n)),
-        Expr::Function(name, args) if name == "dt" => {
+        Expr::Function(name, args) if name == "ymd_hms" => {
             args::expr_to_col(&args[0], schema).map(expr_fn::to_timestamp_millis)
+        }
+        Expr::Function(name, args) if name == "dnanos" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Nanosecond))
+        }
+        Expr::Function(name, args) if name == "dmicros" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Microsecond))
+        }
+        Expr::Function(name, args) if name == "dmillis" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Millisecond))
+        }
+        Expr::Function(name, args) if name == "dsecs" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Second))
         }
         Expr::Function(name, args) if name == "field" => {
             let field_name = args::identifier(&args[1]);
@@ -132,23 +144,12 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
                 .map(|e| window_fn(e, AggregateFunction::Max))
         }
         Expr::Function(name, _args) if name == "row" => Ok(row_fn()),
-        Expr::Function(name, args) if name == "to_ns" => {
-            if let Expr::Identifier(id) = &args[0] {
-                let data_type = plan
-                    .schema()
-                    .field_with_unqualified_name(id)
-                    .map(|f| f.data_type())
-                    .map_err(|_| anyhow!("to_ns: Unknown column {id}"))?;
-                let arg = args::str_to_col(id);
-                Ok(cast_to_ns(arg, data_type))
-            } else {
-                // For complex expressions treat it as a duration.
-                let arg = eval_expr(&args[0], plan)?;
-                Ok(cast(arg, DataType::Int64))
-            }
-        }
         _ => panic!("Unexpected mutate expression {expr}"),
     }
+}
+
+fn to_duration(expr: DFExpr, time_unit: TimeUnit) -> DFExpr {
+    cast(expr, DataType::Duration(time_unit))
 }
 
 fn cast_to_ns(expr: DFExpr, data_type: &DataType) -> DFExpr {
