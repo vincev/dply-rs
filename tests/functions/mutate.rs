@@ -16,7 +16,7 @@ fn mutate_arith() -> Result<()> {
             mutate(
                 travel_time = tpep_dropoff_datetime - tpep_pickup_datetime,
                 trip_distance_km = trip_distance_mi * 1.60934,
-                avg_speed_km_h = trip_distance_km / (to_ns(travel_time) / 3.6e12)
+                avg_speed_km_h = trip_distance_km / (secs(travel_time) / 3600)
             ) |
             relocate(trip_distance_km, after = trip_distance_mi) |
             head(10)
@@ -227,7 +227,7 @@ fn mutate_dt() -> Result<()> {
             select(trip_distance, tpep_pickup_datetime) |
             mutate(
                 date_string = "2022-11-27T16:43:26",
-                date_datetime = dt(date_string)
+                date_datetime = ymd_hms(date_string)
             ) |
             head(2)
     "#};
@@ -411,6 +411,81 @@ fn mutate_field() -> Result<()> {
             Negotiated|2|10
             Standard|228|8
             null|9|null
+            ---
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn mutate_durations() -> Result<()> {
+    // Convert from duration to integer
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            mutate(travel_time = tpep_dropoff_datetime - tpep_pickup_datetime) |
+            select(travel_time) |
+            mutate(
+                travel_time_secs = secs(travel_time),
+                travel_time_millis = millis(travel_time),
+                travel_time_micros = micros(travel_time),
+                travel_time_nanos = nanos(travel_time)
+            )|
+            head(5)
+    "#};
+
+    assert_interpreter!(
+        input,
+        indoc!(
+            r#"
+            shape: (5, 5)
+            travel_time|travel_time_secs|travel_time_millis|travel_time_micros|travel_time_nanos
+            duration[μs]|i64|i64|i64|i64
+            ---
+            18m 52s|1132|1132000|1132000000|1132000000000
+            6m 40s|400|400000|400000000|400000000000
+            13m 54s|834|834000|834000000|834000000000
+            15m 8s|908|908000|908000000|908000000000
+            20m 7s|1207|1207000|1207000000|1207000000000
+            ---
+       "#
+        )
+    );
+
+    // Convert from integer to duration
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            mutate(travel_time = tpep_dropoff_datetime - tpep_pickup_datetime) |
+            select(travel_time) |
+            mutate(
+                travel_time_secs = secs(travel_time),
+                travel_time_millis = millis(travel_time),
+                travel_time_micros = micros(travel_time),
+                travel_time_nanos = nanos(travel_time)
+            )|
+            mutate(
+                dtravel_time_millis = dmillis(travel_time_millis),
+                dtravel_time_micros = dmicros(travel_time_micros),
+                dtravel_time_nanos = dnanos(travel_time_nanos)
+            )|
+            select(travel_time, starts_with("dtravel")) |
+            head(5)
+    "#};
+
+    assert_interpreter!(
+        input,
+        indoc!(
+            r#"
+            shape: (5, 4)
+            travel_time|dtravel_time_millis|dtravel_time_micros|dtravel_time_nanos
+            duration[μs]|duration[ms]|duration[μs]|duration[ns]
+            ---
+            18m 52s|18m 52s|18m 52s|18m 52s
+            6m 40s|6m 40s|6m 40s|6m 40s
+            13m 54s|13m 54s|13m 54s|13m 54s
+            15m 8s|15m 8s|15m 8s|15m 8s
+            20m 7s|20m 7s|20m 7s|20m 7s
             ---
        "#
         )

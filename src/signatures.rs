@@ -370,6 +370,10 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::function("dmicros", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("dmillis", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("dsecs", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("nanos", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("micros", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("millis", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("secs", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function(
             "field",
             Args::Ordered(vec![ArgType::Identifier, ArgType::Identifier]),
@@ -380,13 +384,6 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::function("median", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("min", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("row", Args::None),
-        ArgType::function(
-            "to_ns",
-            Args::Ordered(vec![ArgType::OneOf(vec![
-                ArgType::Identifier,
-                ArgType::arith(ArgType::Identifier),
-            ])]),
-        ),
     ]);
 
     let expr = ArgType::OneOf(vec![operand.clone(), ArgType::arith(operand)]);

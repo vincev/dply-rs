@@ -3,7 +3,10 @@
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
     arrow::{array::ArrayRef, compute::kernels, datatypes::*},
-    common::tree_node::{Transformed, TreeNode},
+    common::{
+        tree_node::{Transformed, TreeNode},
+        DFSchema,
+    },
     logical_expr::{
         aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
         window_frame::WindowFrame, BuiltInWindowFunction, Expr as DFExpr, LogicalPlanBuilder,
@@ -112,6 +115,18 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
         Expr::Function(name, args) if name == "dsecs" => {
             args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Second))
         }
+        Expr::Function(name, args) if name == "nanos" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Nanosecond)
+        }
+        Expr::Function(name, args) if name == "micros" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Microsecond)
+        }
+        Expr::Function(name, args) if name == "millis" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Millisecond)
+        }
+        Expr::Function(name, args) if name == "secs" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Second)
+        }
         Expr::Function(name, args) if name == "field" => {
             let field_name = args::identifier(&args[1]);
             args::expr_to_qualified_col(&args[0], schema).map(|e| e.field(field_name))
@@ -149,22 +164,48 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
 }
 
 fn to_duration(expr: DFExpr, time_unit: TimeUnit) -> DFExpr {
-    cast(expr, DataType::Duration(time_unit))
+    let i64_expr = cast(expr, DataType::Int64);
+    cast(i64_expr, DataType::Duration(time_unit))
 }
 
-fn cast_to_ns(expr: DFExpr, data_type: &DataType) -> DFExpr {
-    match data_type {
-        DataType::Interval(_) => cast(expr, DataType::Duration(TimeUnit::Nanosecond)),
-        DataType::Duration(tu) => {
-            let units = cast(expr, DataType::Int64);
-            match tu {
-                TimeUnit::Second => units * lit(1_000_000_000),
-                TimeUnit::Millisecond => units * lit(1_000_000),
-                TimeUnit::Microsecond => units * lit(1_000),
-                TimeUnit::Nanosecond => units,
-            }
-        }
-        _ => expr,
+fn duration_to_i64(expr: &Expr, schema: &DFSchema, to_unit: TimeUnit) -> Result<DFExpr> {
+    let col_expr = args::expr_to_col(expr, schema)?;
+    let col_name = args::identifier(expr);
+
+    let data_type = schema
+        .field_with_unqualified_name(&col_name)
+        .map(|f| f.data_type())
+        .map_err(|_| anyhow!("Unknown column {col_name}"))?;
+
+    if let DataType::Duration(duration_unit) = data_type {
+        let units = cast(col_expr, DataType::Int64);
+        let result = match (duration_unit, to_unit) {
+            (TimeUnit::Second, TimeUnit::Second)
+            | (TimeUnit::Millisecond, TimeUnit::Millisecond)
+            | (TimeUnit::Microsecond, TimeUnit::Microsecond)
+            | (TimeUnit::Nanosecond, TimeUnit::Nanosecond) => units,
+
+            (TimeUnit::Second, TimeUnit::Millisecond)
+            | (TimeUnit::Microsecond, TimeUnit::Nanosecond)
+            | (TimeUnit::Millisecond, TimeUnit::Microsecond) => units * lit(1_000),
+
+            (TimeUnit::Second, TimeUnit::Microsecond)
+            | (TimeUnit::Millisecond, TimeUnit::Nanosecond) => units * lit(1_000_000),
+
+            (TimeUnit::Second, TimeUnit::Nanosecond) => units * lit(1_000_000_000),
+
+            (TimeUnit::Millisecond, TimeUnit::Second)
+            | (TimeUnit::Microsecond, TimeUnit::Millisecond)
+            | (TimeUnit::Nanosecond, TimeUnit::Microsecond) => units / lit(1_000.0),
+
+            (TimeUnit::Microsecond, TimeUnit::Second)
+            | (TimeUnit::Nanosecond, TimeUnit::Millisecond) => units / lit(1_000_000.0),
+            (TimeUnit::Nanosecond, TimeUnit::Second) => units / lit(1_000_000_000.0),
+        };
+
+        Ok(cast(result, DataType::Int64))
+    } else {
+        Err(anyhow!("Column '{col_name}' must be a duration type"))
     }
 }
 
