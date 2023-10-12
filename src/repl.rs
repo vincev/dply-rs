@@ -50,7 +50,7 @@ pub fn run() -> Result<()> {
     println!("Welcome to dply {}", env!("CARGO_PKG_VERSION"));
     println!("Use Tab for completions, arrows to move around, and Enter for selection.");
     println!("Enter twice with an empty line to execute the pipeline.");
-    println!("Read a file with 'parquet' or 'csv' to get columns completions.");
+    println!("Read a file with 'parquet', 'json', or 'csv' to get columns completions.");
     println!("For columns only completions start completions with a dot.");
 
     let prompt = DefaultPrompt {
