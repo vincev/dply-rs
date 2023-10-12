@@ -1,17 +1,5 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 /// A function signature arguments.
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -377,7 +365,15 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::Identifier,
         ArgType::Number,
         ArgType::String,
-        ArgType::function("dt", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("ymd_hms", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dnanos", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dmicros", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dmillis", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("dsecs", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("nanos", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("micros", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("millis", Args::Ordered(vec![ArgType::Identifier])),
+        ArgType::function("secs", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function(
             "field",
             Args::Ordered(vec![ArgType::Identifier, ArgType::Identifier]),
@@ -388,13 +384,6 @@ fn def_mutate(signatures: &mut SignaturesMap) {
         ArgType::function("median", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("min", Args::Ordered(vec![ArgType::Identifier])),
         ArgType::function("row", Args::None),
-        ArgType::function(
-            "to_ns",
-            Args::Ordered(vec![ArgType::OneOf(vec![
-                ArgType::Identifier,
-                ArgType::arith(ArgType::Identifier),
-            ])]),
-        ),
     ]);
 
     let expr = ArgType::OneOf(vec![operand.clone(), ArgType::arith(operand)]);

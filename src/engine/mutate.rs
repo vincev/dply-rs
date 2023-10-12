@@ -1,21 +1,12 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 use anyhow::{anyhow, bail, Result};
 use datafusion::{
     arrow::{array::ArrayRef, compute::kernels, datatypes::*},
-    common::tree_node::{Transformed, TreeNode},
+    common::{
+        tree_node::{Transformed, TreeNode},
+        DFSchema,
+    },
     logical_expr::{
         aggregate_function::AggregateFunction, cast, create_udf, expr, expr_fn, lit, utils,
         window_frame::WindowFrame, BuiltInWindowFunction, Expr as DFExpr, LogicalPlanBuilder,
@@ -109,8 +100,32 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
         Expr::Identifier(_) => args::expr_to_col(expr, plan.schema()),
         Expr::String(s) => Ok(lit(s.clone())),
         Expr::Number(n) => Ok(lit(*n)),
-        Expr::Function(name, args) if name == "dt" => {
+        Expr::Function(name, args) if name == "ymd_hms" => {
             args::expr_to_col(&args[0], schema).map(expr_fn::to_timestamp_millis)
+        }
+        Expr::Function(name, args) if name == "dnanos" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Nanosecond))
+        }
+        Expr::Function(name, args) if name == "dmicros" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Microsecond))
+        }
+        Expr::Function(name, args) if name == "dmillis" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Millisecond))
+        }
+        Expr::Function(name, args) if name == "dsecs" => {
+            args::expr_to_col(&args[0], schema).map(|e| to_duration(e, TimeUnit::Second))
+        }
+        Expr::Function(name, args) if name == "nanos" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Nanosecond)
+        }
+        Expr::Function(name, args) if name == "micros" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Microsecond)
+        }
+        Expr::Function(name, args) if name == "millis" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Millisecond)
+        }
+        Expr::Function(name, args) if name == "secs" => {
+            duration_to_i64(&args[0], schema, TimeUnit::Second)
         }
         Expr::Function(name, args) if name == "field" => {
             let field_name = args::identifier(&args[1]);
@@ -144,38 +159,53 @@ fn eval_expr(expr: &Expr, plan: &LogicalPlan) -> Result<DFExpr> {
                 .map(|e| window_fn(e, AggregateFunction::Max))
         }
         Expr::Function(name, _args) if name == "row" => Ok(row_fn()),
-        Expr::Function(name, args) if name == "to_ns" => {
-            if let Expr::Identifier(id) = &args[0] {
-                let data_type = plan
-                    .schema()
-                    .field_with_unqualified_name(id)
-                    .map(|f| f.data_type())
-                    .map_err(|_| anyhow!("to_ns: Unknown column {id}"))?;
-                let arg = args::str_to_col(id);
-                Ok(cast_to_ns(arg, data_type))
-            } else {
-                // For complex expressions treat it as a duration.
-                let arg = eval_expr(&args[0], plan)?;
-                Ok(cast(arg, DataType::Int64))
-            }
-        }
         _ => panic!("Unexpected mutate expression {expr}"),
     }
 }
 
-fn cast_to_ns(expr: DFExpr, data_type: &DataType) -> DFExpr {
-    match data_type {
-        DataType::Interval(_) => cast(expr, DataType::Duration(TimeUnit::Nanosecond)),
-        DataType::Duration(tu) => {
-            let units = cast(expr, DataType::Int64);
-            match tu {
-                TimeUnit::Second => units * lit(1_000_000_000),
-                TimeUnit::Millisecond => units * lit(1_000_000),
-                TimeUnit::Microsecond => units * lit(1_000),
-                TimeUnit::Nanosecond => units,
-            }
-        }
-        _ => expr,
+fn to_duration(expr: DFExpr, time_unit: TimeUnit) -> DFExpr {
+    let i64_expr = cast(expr, DataType::Int64);
+    cast(i64_expr, DataType::Duration(time_unit))
+}
+
+fn duration_to_i64(expr: &Expr, schema: &DFSchema, to_unit: TimeUnit) -> Result<DFExpr> {
+    let col_expr = args::expr_to_col(expr, schema)?;
+    let col_name = args::identifier(expr);
+
+    let data_type = schema
+        .field_with_unqualified_name(&col_name)
+        .map(|f| f.data_type())
+        .map_err(|_| anyhow!("Unknown column {col_name}"))?;
+
+    if let DataType::Duration(duration_unit) = data_type {
+        let units = cast(col_expr, DataType::Int64);
+        let result = match (duration_unit, to_unit) {
+            (TimeUnit::Second, TimeUnit::Second)
+            | (TimeUnit::Millisecond, TimeUnit::Millisecond)
+            | (TimeUnit::Microsecond, TimeUnit::Microsecond)
+            | (TimeUnit::Nanosecond, TimeUnit::Nanosecond) => units,
+
+            (TimeUnit::Second, TimeUnit::Millisecond)
+            | (TimeUnit::Microsecond, TimeUnit::Nanosecond)
+            | (TimeUnit::Millisecond, TimeUnit::Microsecond) => units * lit(1_000),
+
+            (TimeUnit::Second, TimeUnit::Microsecond)
+            | (TimeUnit::Millisecond, TimeUnit::Nanosecond) => units * lit(1_000_000),
+
+            (TimeUnit::Second, TimeUnit::Nanosecond) => units * lit(1_000_000_000),
+
+            (TimeUnit::Millisecond, TimeUnit::Second)
+            | (TimeUnit::Microsecond, TimeUnit::Millisecond)
+            | (TimeUnit::Nanosecond, TimeUnit::Microsecond) => units / lit(1_000.0),
+
+            (TimeUnit::Microsecond, TimeUnit::Second)
+            | (TimeUnit::Nanosecond, TimeUnit::Millisecond) => units / lit(1_000_000.0),
+            (TimeUnit::Nanosecond, TimeUnit::Second) => units / lit(1_000_000_000.0),
+        };
+
+        Ok(cast(result, DataType::Int64))
+    } else {
+        Err(anyhow!("Column '{col_name}' must be a duration type"))
     }
 }
 

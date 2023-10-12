@@ -1,21 +1,9 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn mutate_arith() -> Result<()> {
@@ -28,15 +16,14 @@ fn mutate_arith() -> Result<()> {
             mutate(
                 travel_time = tpep_dropoff_datetime - tpep_pickup_datetime,
                 trip_distance_km = trip_distance_mi * 1.60934,
-                avg_speed_km_h = trip_distance_km / (to_ns(travel_time) / 3.6e12)
+                avg_speed_km_h = trip_distance_km / (secs(travel_time) / 3600)
             ) |
             relocate(trip_distance_km, after = trip_distance_mi) |
             head(10)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 6)
@@ -64,10 +51,9 @@ fn mutate_arith() -> Result<()> {
             select(group_id) |
             head(15)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (15, 1)
@@ -109,10 +95,9 @@ fn mutate_mean() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -144,10 +129,9 @@ fn mutate_median() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -179,10 +163,9 @@ fn mutate_min() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -214,10 +197,9 @@ fn mutate_max() -> Result<()> {
             ) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -245,14 +227,13 @@ fn mutate_dt() -> Result<()> {
             select(trip_distance, tpep_pickup_datetime) |
             mutate(
                 date_string = "2022-11-27T16:43:26",
-                date_datetime = dt(date_string)
+                date_datetime = ymd_hms(date_string)
             ) |
             head(2)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (2, 4)
@@ -281,10 +262,9 @@ fn mutate_len() -> Result<()> {
             select(ints_len, floats_len, tags_len) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -314,10 +294,9 @@ fn mutate_len() -> Result<()> {
             arrange(rate_code) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 3)
@@ -346,10 +325,9 @@ fn mutate_row_number() -> Result<()> {
             select(row, rate_code) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)
@@ -388,10 +366,9 @@ fn mutate_field() -> Result<()> {
             select(shape_id, x, y) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 3)
@@ -421,10 +398,9 @@ fn mutate_field() -> Result<()> {
             arrange(rate_code) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 3)
@@ -435,6 +411,81 @@ fn mutate_field() -> Result<()> {
             Negotiated|2|10
             Standard|228|8
             null|9|null
+            ---
+       "#
+        )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn mutate_durations() -> Result<()> {
+    // Convert from duration to integer
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            mutate(travel_time = tpep_dropoff_datetime - tpep_pickup_datetime) |
+            select(travel_time) |
+            mutate(
+                travel_time_secs = secs(travel_time),
+                travel_time_millis = millis(travel_time),
+                travel_time_micros = micros(travel_time),
+                travel_time_nanos = nanos(travel_time)
+            )|
+            head(5)
+    "#};
+
+    assert_interpreter!(
+        input,
+        indoc!(
+            r#"
+            shape: (5, 5)
+            travel_time|travel_time_secs|travel_time_millis|travel_time_micros|travel_time_nanos
+            duration[μs]|i64|i64|i64|i64
+            ---
+            18m 52s|1132|1132000|1132000000|1132000000000
+            6m 40s|400|400000|400000000|400000000000
+            13m 54s|834|834000|834000000|834000000000
+            15m 8s|908|908000|908000000|908000000000
+            20m 7s|1207|1207000|1207000000|1207000000000
+            ---
+       "#
+        )
+    );
+
+    // Convert from integer to duration
+    let input = indoc! {r#"
+        parquet("tests/data/nyctaxi.parquet") |
+            mutate(travel_time = tpep_dropoff_datetime - tpep_pickup_datetime) |
+            select(travel_time) |
+            mutate(
+                travel_time_secs = secs(travel_time),
+                travel_time_millis = millis(travel_time),
+                travel_time_micros = micros(travel_time),
+                travel_time_nanos = nanos(travel_time)
+            )|
+            mutate(
+                dtravel_time_millis = dmillis(travel_time_millis),
+                dtravel_time_micros = dmicros(travel_time_micros),
+                dtravel_time_nanos = dnanos(travel_time_nanos)
+            )|
+            select(travel_time, starts_with("dtravel")) |
+            head(5)
+    "#};
+
+    assert_interpreter!(
+        input,
+        indoc!(
+            r#"
+            shape: (5, 4)
+            travel_time|dtravel_time_millis|dtravel_time_micros|dtravel_time_nanos
+            duration[μs]|duration[ms]|duration[μs]|duration[ns]
+            ---
+            18m 52s|18m 52s|18m 52s|18m 52s
+            6m 40s|6m 40s|6m 40s|6m 40s
+            13m 54s|13m 54s|13m 54s|13m 54s
+            15m 8s|15m 8s|15m 8s|15m 8s
+            20m 7s|20m 7s|20m 7s|20m 7s
             ---
        "#
         )

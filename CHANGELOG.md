@@ -1,11 +1,15 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
-## 0.2.1 - Unreleased
+## 0.2.1 - 2023-10-12
 ### 🐛 Fixed
 * Allow user to override file extensions when loading data.
+### 🔧 Changed
+* `mutate`: Rename `dt` to `ymd_hms` following the lubridate R package.
 ### ⭐ Added
 * Add backticks to completions for columns names that are not alphanumeric.
+* `mutate`: Add `dnanos`, `dmicros`, `dmillis`, and `dsecs` to convert numbers to duration.
+* `mutate`: Add `nanos`, `micros`, `millis`, and `secs` to convert duration to numbers.
 
 
 ## 0.2.0 - 2023-08-14

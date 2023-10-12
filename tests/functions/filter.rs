@@ -1,21 +1,9 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn filter_lt() -> Result<()> {
@@ -29,10 +17,9 @@ fn filter_lt() -> Result<()> {
             filter(total_amount < 8.8) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (7, 4)
@@ -66,10 +53,9 @@ fn filter_lte() -> Result<()> {
             filter(total_amount <= 8.8) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (11, 4)
@@ -107,10 +93,9 @@ fn filter_gt() -> Result<()> {
             filter(total_amount > 74.22) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 4)
@@ -140,10 +125,9 @@ fn filter_gte() -> Result<()> {
             filter(total_amount >= 74.22) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 4)
@@ -175,10 +159,9 @@ fn filter_eq() -> Result<()> {
             filter(passenger_count == 5) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 4)
@@ -215,10 +198,9 @@ fn filter_and() -> Result<()> {
             filter(payment_type != "Credit card" & passenger_count == 2) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (8, 4)
@@ -253,10 +235,9 @@ fn filter_or() -> Result<()> {
             filter(trip_distance == 3.6 | total_amount == 16.3) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (6, 4)
@@ -289,10 +270,9 @@ fn filter_with_parenthesis() -> Result<()> {
             filter(trip_distance == 3.6 | total_amount == 16.3 & payment_type == "Cash") |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 4)
@@ -318,10 +298,9 @@ fn filter_with_parenthesis() -> Result<()> {
             filter((trip_distance == 2.63 | total_amount == 9.8) & payment_type == "Cash") |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 4)
@@ -349,10 +328,9 @@ fn filter_dates() -> Result<()> {
           arrange(tpep_pickup_datetime) |
           show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (9, 2)
@@ -383,10 +361,9 @@ fn filter_dates() -> Result<()> {
           arrange(tpep_pickup_datetime) |
           show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 2)
@@ -412,10 +389,9 @@ fn filter_dates() -> Result<()> {
           arrange(tpep_pickup_datetime) |
           show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 2)
@@ -442,10 +418,9 @@ fn filter_list_contains() -> Result<()> {
           select(floats) |
           head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 1)
@@ -473,10 +448,9 @@ fn filter_list_contains() -> Result<()> {
           select(ints) |
           head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (4, 1)
@@ -498,10 +472,9 @@ fn filter_list_contains() -> Result<()> {
           select(tags) |
           head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 1)
@@ -534,10 +507,9 @@ fn filter_list_not_contains() -> Result<()> {
           select(ints) |
           head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 1)
@@ -565,10 +537,9 @@ fn filter_list_not_contains() -> Result<()> {
           select(tags) |
           head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 1)
@@ -598,10 +569,9 @@ fn filter_str_contains() -> Result<()> {
             arrange(payment_type) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (2, 1)
@@ -628,10 +598,9 @@ fn filter_str_not_contains() -> Result<()> {
             arrange(payment_type) |
             show()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 1)
@@ -658,10 +627,9 @@ fn filter_is_null() -> Result<()> {
             filter(is_null(ints) & contains(tags, "tag1")) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)
@@ -695,10 +663,9 @@ fn filter_is_not_null() -> Result<()> {
             filter(!is_null(ints) & contains(tags, "tag1")) |
             head()
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (10, 2)

@@ -1,21 +1,9 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 use anyhow::Result;
 use indoc::indoc;
 
-use dply::interpreter;
+use super::assert_interpreter;
 
 #[test]
 fn select_columns() -> Result<()> {
@@ -30,10 +18,9 @@ fn select_columns() -> Result<()> {
             ) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 5)
@@ -63,10 +50,9 @@ fn select_rename() -> Result<()> {
             ) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 4)
@@ -91,10 +77,9 @@ fn select_starts_with() -> Result<()> {
             select(starts_with("tpep")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -125,10 +110,9 @@ fn select_not_starts_with() -> Result<()> {
             select(!starts_with("tpep")) |
             head(5)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (5, 2)
@@ -155,10 +139,9 @@ fn select_ends_with() -> Result<()> {
             select(ends_with("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -189,10 +172,9 @@ fn select_not_ends_with() -> Result<()> {
             select(!ends_with("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -217,10 +199,9 @@ fn select_contains() -> Result<()> {
             select(contains("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
@@ -251,10 +232,9 @@ fn select_not_contains() -> Result<()> {
             select(!contains("time")) |
             head(3)
     "#};
-    let output = interpreter::eval_to_string(input)?;
 
-    assert_eq!(
-        output,
+    assert_interpreter!(
+        input,
         indoc!(
             r#"
             shape: (3, 2)
