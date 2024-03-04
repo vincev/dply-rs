@@ -1,7 +1,8 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use datafusion::logical_expr::{Expr as DFExpr, LogicalPlanBuilder};
+use polars::lazy::dsl::Expr as PolarsExpr;
+use polars::prelude::*;
 
 use crate::parser::{Expr, Operator};
 
@@ -11,7 +12,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(plan) = ctx.take_plan() {
+    if let Some(df) = ctx.take_df() {
         let schema_cols = ctx.columns();
         let mut select_columns = Vec::new();
 
@@ -31,7 +32,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     // select(alias = column)
                     let alias = args::identifier(lhs);
                     let column = args::identifier(rhs);
-                    let expr = args::str_to_col(&column).alias(&alias);
+                    let expr = col(&column).alias(&alias);
 
                     if !select_columns.contains(&expr) {
                         select_columns.push(expr);
@@ -43,7 +44,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("select error: Unknown column {column}");
                     }
 
-                    let expr = args::str_to_col(column);
+                    let expr = col(column);
                     if !select_columns.contains(&expr) {
                         select_columns.push(expr);
                     }
@@ -52,10 +53,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        let plan = LogicalPlanBuilder::from(plan)
-            .project(select_columns)?
-            .build()?;
-        ctx.set_plan(plan);
+        ctx.set_df(df.select(&select_columns))?;
     } else if ctx.is_grouping() {
         bail!("select error: must call summarize after a group_by");
     } else {
@@ -65,7 +63,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<DFExpr> {
+fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<PolarsExpr> {
     match expr {
         Expr::Function(name, args) if name == "starts_with" => {
             // select(starts_with("pattern"))
@@ -73,7 +71,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<DFEx
             schema_cols
                 .iter()
                 .filter(|c| c.starts_with(&pattern) ^ negate)
-                .map(args::str_to_col)
+                .map(|c| col(c))
                 .collect()
         }
         Expr::Function(name, args) if name == "ends_with" => {
@@ -82,7 +80,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<DFEx
             schema_cols
                 .iter()
                 .filter(|c| c.ends_with(&pattern) ^ negate)
-                .map(args::str_to_col)
+                .map(|c| col(c))
                 .collect()
         }
         Expr::Function(name, args) if name == "contains" => {
@@ -91,7 +89,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<DFEx
             schema_cols
                 .iter()
                 .filter(|c| c.contains(&pattern) ^ negate)
-                .map(args::str_to_col)
+                .map(|c| col(c))
                 .collect()
         }
         _ => Vec::new(),

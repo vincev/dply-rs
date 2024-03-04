@@ -20,7 +20,7 @@ fn count_column() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|n
-            str|i64
+            str|u32
             ---
             Cash|53
             Credit card|185
@@ -49,7 +49,7 @@ fn count_sorted() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|n
-            str|i64
+            str|u32
             ---
             Credit card|185
             Cash|53
@@ -80,7 +80,7 @@ fn count_agg_column_name() -> Result<()> {
             r#"
             shape: (5, 2)
             payment_type|nn
-            str|i64
+            str|u32
             ---
             Credit card|185
             Cash|53
@@ -111,7 +111,7 @@ fn count_multi_cols() -> Result<()> {
             r#"
             shape: (16, 3)
             payment_type|passenger_count|n
-            str|i64|i64
+            str|i64|u32
             ---
             Cash|1|36
             Cash|2|7
@@ -152,7 +152,7 @@ fn count_multi_cols_sorted() -> Result<()> {
             r#"
             shape: (16, 3)
             payment_type|passenger_count|n
-            str|i64|i64
+            str|i64|u32
             ---
             Credit card|1|144
             Cash|1|36
@@ -193,7 +193,7 @@ fn count_no_cols() -> Result<()> {
             r#"
             shape: (1, 1)
             n
-            i64
+            u32
             ---
             250
             ---

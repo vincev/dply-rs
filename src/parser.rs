@@ -391,7 +391,7 @@ pub fn parse(input: &str) -> Result<Vec<Expr>> {
     let input = input
         .lines()
         .filter(|line| comment(line).is_err())
-        .map(|line| format!("{line}\n"))
+        .map(|line| line.to_string() + "\n")
         .collect::<String>();
 
     match root(input.trim().trim_end_matches(';')) {

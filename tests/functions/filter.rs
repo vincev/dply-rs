@@ -335,17 +335,17 @@ fn filter_dates() -> Result<()> {
             r#"
             shape: (9, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[μs]|datetime[μs]
+            datetime[ns]|datetime[ns]
             ---
-            2022-11-01T07:31:16|2022-11-01T08:19:44
-            2022-11-01T10:45:13|2022-11-01T10:53:56
-            2022-11-01T11:17:08|2022-11-01T12:08:15
-            2022-11-01T11:33:46|2022-11-01T12:03:15
-            2022-11-01T16:18:07|2022-11-01T16:27:30
-            2022-11-01T17:43:51|2022-11-01T17:52:45
-            2022-11-01T17:48:38|2022-11-01T17:59:55
-            2022-11-01T19:25:41|2022-11-01T19:32:33
-            2022-11-01T19:39:09|2022-11-01T19:45:10
+            2022-11-01 07:31:16|2022-11-01 08:19:44
+            2022-11-01 10:45:13|2022-11-01 10:53:56
+            2022-11-01 11:17:08|2022-11-01 12:08:15
+            2022-11-01 11:33:46|2022-11-01 12:03:15
+            2022-11-01 16:18:07|2022-11-01 16:27:30
+            2022-11-01 17:43:51|2022-11-01 17:52:45
+            2022-11-01 17:48:38|2022-11-01 17:59:55
+            2022-11-01 19:25:41|2022-11-01 19:32:33
+            2022-11-01 19:39:09|2022-11-01 19:45:10
             ---
        "#
         )
@@ -368,12 +368,12 @@ fn filter_dates() -> Result<()> {
             r#"
             shape: (4, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[μs]|datetime[μs]
+            datetime[ns]|datetime[ns]
             ---
-            2022-11-01T17:43:51|2022-11-01T17:52:45
-            2022-11-01T17:48:38|2022-11-01T17:59:55
-            2022-11-01T19:25:41|2022-11-01T19:32:33
-            2022-11-01T19:39:09|2022-11-01T19:45:10
+            2022-11-01 17:43:51|2022-11-01 17:52:45
+            2022-11-01 17:48:38|2022-11-01 17:59:55
+            2022-11-01 19:25:41|2022-11-01 19:32:33
+            2022-11-01 19:39:09|2022-11-01 19:45:10
             ---
        "#
         )
@@ -396,12 +396,12 @@ fn filter_dates() -> Result<()> {
             r#"
             shape: (4, 2)
             tpep_pickup_datetime|tpep_dropoff_datetime
-            datetime[μs]|datetime[μs]
+            datetime[ns]|datetime[ns]
             ---
-            2022-11-02T02:02:12|2022-11-02T02:02:19
-            2022-11-02T10:17:58|2022-11-02T10:36:07
-            2022-11-02T10:40:38|2022-11-02T10:43:58
-            2022-11-02T11:06:01|2022-11-02T11:35:00
+            2022-11-02 02:02:12|2022-11-02 02:02:19
+            2022-11-02 10:17:58|2022-11-02 10:36:07
+            2022-11-02 10:40:38|2022-11-02 10:43:58
+            2022-11-02 11:06:01|2022-11-02 11:35:00
             ---
        "#
         )
@@ -481,16 +481,16 @@ fn filter_list_contains() -> Result<()> {
             tags
             list[str]
             ---
-            [tag7]
-            [tag2, tag4, tag7]
-            [tag5, tag6, tag7, tag7]
-            [tag2, tag3, tag7, tag8]
-            [tag4, tag7, tag8]
-            [tag2, tag2, tag2, tag7]
-            [tag7]
-            [tag5, tag7]
-            [tag6, tag7]
-            [tag5, tag6, tag7, tag9]
+            ["tag7"]
+            ["tag2", "tag4", "tag7"]
+            ["tag5", "tag6", "tag7", "tag7"]
+            ["tag2", "tag3", "tag7", "tag8"]
+            ["tag4", "tag7", "tag8"]
+            ["tag2", "tag2", "tag2", "tag7"]
+            ["tag7"]
+            ["tag5", "tag7"]
+            ["tag6", "tag7"]
+            ["tag5", "tag6", "tag7", "tag9"]
             ---
        "#
         )
@@ -546,11 +546,11 @@ fn filter_list_not_contains() -> Result<()> {
             tags
             list[str]
             ---
-            [tag2, tag5, tag8, tag8]
-            [tag9]
-            [tag5]
-            [tag7]
-            [tag2, tag3, tag4]
+            ["tag2", "tag5", "tag8", "tag8"]
+            ["tag9"]
+            ["tag5"]
+            ["tag7"]
+            ["tag2", "tag3", "tag4"]
             ---
        "#
         )
@@ -636,16 +636,16 @@ fn filter_is_null() -> Result<()> {
             ints|tags
             list[u32]|list[str]
             ---
-            null|[tag1, tag3, tag5]
-            null|[tag1, tag4, tag5, tag5]
-            null|[tag1, tag3, tag7, tag8]
-            null|[tag1, tag2, tag8]
-            null|[tag1, tag9]
-            null|[tag1, tag2, tag7]
-            null|[tag1, tag2, tag6]
-            null|[tag1, tag3]
-            null|[tag1, tag7, tag9, tag9]
-            null|[tag1, tag8]
+            null|["tag1", "tag3", "tag5"]
+            null|["tag1", "tag4", "tag5", "tag5"]
+            null|["tag1", "tag3", "tag7", "tag8"]
+            null|["tag1", "tag2", "tag8"]
+            null|["tag1", "tag9"]
+            null|["tag1", "tag2", "tag7"]
+            null|["tag1", "tag2", "tag6"]
+            null|["tag1", "tag3"]
+            null|["tag1", "tag7", "tag9", "tag9"]
+            null|["tag1", "tag8"]
             ---
        "#
         )
@@ -672,16 +672,16 @@ fn filter_is_not_null() -> Result<()> {
             ints|tags
             list[u32]|list[str]
             ---
-            [6]|[tag1, tag3, tag6, tag9]
-            [9, 23, 38, 92]|[tag1, tag5, tag9, tag9]
-            [4]|[tag1, tag5, tag9]
-            [8, 46, 49, 88]|[tag1]
-            [11, 49]|[tag1, tag4, tag8, tag8]
-            [47]|[tag1, tag6, tag9]
-            [34, 77]|[tag1, tag7]
-            [21, 28, 94]|[tag1, tag3, tag9]
-            [17, 43]|[tag1, tag2, tag5, tag9]
-            [26, 62]|[tag1, tag4, tag6]
+            [6]|["tag1", "tag3", "tag6", "tag9"]
+            [9, 23, 38, 92]|["tag1", "tag5", "tag9", "tag9"]
+            [4]|["tag1", "tag5", "tag9"]
+            [8, 46, 49, 88]|["tag1"]
+            [11, 49]|["tag1", "tag4", "tag8", "tag8"]
+            [47]|["tag1", "tag6", "tag9"]
+            [34, 77]|["tag1", "tag7"]
+            [21, 28, 94]|["tag1", "tag3", "tag9"]
+            [17, 43]|["tag1", "tag2", "tag5", "tag9"]
+            [26, 62]|["tag1", "tag4", "tag6"]
             ---
        "#
         )

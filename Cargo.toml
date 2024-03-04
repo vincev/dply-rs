@@ -5,26 +5,40 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.2.1"
+version = "0.3.0"
 rust-version = "1.70.0"
 
 [dependencies]
 anyhow = "1.0"
-chrono = { version = "0.4.26", default-features = false }
 clap = { version = "4.2", features = ["derive"] }
 comfy-table = "7"
-datafusion = { version = "32", default-features = false }
-futures = "0.3.28"
-hashbrown = "0.14.0"
 home = "0.5"
-lru = "0.12"
+lru = "0.12.0"
 nom = "7"
-num-traits = "0.2.15"
-parking_lot = "0.12.1"
-reedline = "0.25"
+reedline = "0.29"
 regex = "1.9.4"
 thiserror = "1.0"
-tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "sync"] }
+
+[dependencies.polars]
+version = "0.38.0"
+default-features = false
+features = [
+    "cross_join",
+    "csv",
+    "dtype-full",
+    "fmt",
+    "is_in",
+    "json",
+    "lazy",
+    "parquet",
+    "semi_anti_join",
+    "strings",
+    "timezones"
+]
 
 [dev-dependencies]
 indoc = "2"
+
+[profile.dev]
+opt-level = 0
+debug = 2

@@ -26,7 +26,7 @@ macro_rules! assert_interpreter {
             Ok(output) => {
                 if output != $expected {
                     panic!(
-                        "Interpreter error expected output:\n{}\n===\nGenerated output:\n{}\n===",
+                        "Interpreter error:\nexpected:\n\n{}\nfound:\n\n{}",
                         $expected, output
                     );
                 }

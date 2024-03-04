@@ -1,7 +1,7 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use datafusion::logical_expr::LogicalPlanBuilder;
+use polars::prelude::*;
 
 use crate::parser::{Expr, Operator};
 
@@ -21,9 +21,9 @@ enum RelocateTo {
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(plan) = ctx.take_plan() {
-        let mut schema_cols = ctx.columns().clone();
-        let mut relocate_cols = Vec::new();
+    if let Some(df) = ctx.take_df() {
+        let schema_cols = ctx.columns();
+        let mut relocate_cols = Vec::<&str>::new();
         let mut relocate_to = RelocateTo::Default;
 
         for arg in args {
@@ -48,14 +48,15 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("relocate error: Unknown column {column}");
                     }
 
-                    if !relocate_cols.contains(column) {
-                        relocate_cols.push(column.to_owned());
+                    if !relocate_cols.contains(&column.as_str()) {
+                        relocate_cols.push(column);
                     }
                 }
                 _ => {}
             }
         }
 
+        let mut schema_cols = schema_cols.iter().map(|s| s.as_str()).collect::<Vec<_>>();
         match relocate_to {
             RelocateTo::Default => {
                 // Relocate columns to the left.
@@ -76,14 +77,8 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         };
 
-        let columns = schema_cols
-            .into_iter()
-            .map(args::str_to_col)
-            .collect::<Vec<_>>();
-
-        let plan = LogicalPlanBuilder::from(plan).project(columns)?.build()?;
-
-        ctx.set_plan(plan);
+        let columns = schema_cols.into_iter().map(col).collect::<Vec<_>>();
+        ctx.set_df(df.select(&columns))?;
     } else if ctx.is_grouping() {
         bail!("relocate error: must call summarize after a group_by");
     } else {

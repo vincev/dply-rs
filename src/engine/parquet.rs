@@ -1,21 +1,8 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, bail, Result};
-use datafusion::{
-    common::DEFAULT_PARQUET_EXTENSION,
-    datasource::{
-        file_format::parquet::ParquetFormat,
-        listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
-        provider_as_source,
-    },
-    logical_expr::{LogicalPlanBuilder, UNNAMED_TABLE},
-    parquet::{
-        arrow::arrow_writer::ArrowWriter,
-        basic::{Compression, ZstdLevel},
-        file::properties::WriterProperties,
-    },
-};
-use std::{num::NonZeroUsize, path::Path, sync::Arc};
+use polars::prelude::*;
+use std::path::PathBuf;
 
 use crate::parser::Expr;
 
@@ -25,63 +12,29 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    let path = args::string(&args[0]);
-    let overwrite = args::named_bool(args, "overwrite");
+    // parquet("nyctaxi.parquet")
+    let path = PathBuf::from(args::string(&args[0]));
+    // parquet("nyctaxi.parquet", overwrite = true)
+    let overwrite = args::named_bool(args, "overwrite")?;
 
     // If there is an input dataframe save it to disk.
-    if let Some(plan) = ctx.take_plan() {
-        if !overwrite && Path::new(&path).exists() {
-            bail!("parquet error: file '{}' already exists.", path);
+    if let Some(df) = ctx.take_df() {
+        if !overwrite && path.exists() {
+            bail!("parquet error: file '{}' already exists.", path.display());
         }
-
-        ctx.set_plan(plan.clone());
-
-        let (schema, mut rx) = io::execute_plan(plan, ctx)?;
 
         let file = std::fs::File::create(&path)
-            .map_err(|e| anyhow!("parquet error: cannot create file '{}' {e}", path))?;
-        let props = WriterProperties::builder()
-            .set_compression(Compression::ZSTD(ZstdLevel::default()))
-            .build();
-        let mut writer = ArrowWriter::try_new(file, schema, Some(props))?;
+            .map_err(|e| anyhow!("parquet error: cannot create file '{}' {e}", path.display()))?;
 
-        while let Some(batch) = rx.blocking_recv() {
-            writer.write(&batch?)?;
-        }
+        let mut out_df = df.clone().collect()?;
+        ctx.set_df(df)?;
 
-        writer.close()?;
+        ParquetWriter::new(file).finish(&mut out_df)?;
     } else {
         // Read the data frame and set it as input for the next task.
-        let table_path = ListingTableUrl::parse(&path)?;
-
-        let num_cpus = std::thread::available_parallelism()
-            .unwrap_or(NonZeroUsize::new(2).unwrap())
-            .get();
-
-        // Use default extension for recursive loading.
-        let extension = if Path::new(&path).is_dir() {
-            DEFAULT_PARQUET_EXTENSION
-        } else {
-            ""
-        };
-
-        let file_format = ParquetFormat::new();
-        let listing_options = ListingOptions::new(Arc::new(file_format))
-            .with_file_extension(extension)
-            .with_target_partitions(num_cpus);
-
-        let resolved_schema =
-            ctx.block_on(listing_options.infer_schema(&ctx.session().state(), &table_path))?;
-
-        let config = ListingTableConfig::new(table_path)
-            .with_listing_options(listing_options)
-            .with_schema(resolved_schema);
-
-        let table_provider = ListingTable::try_new(config)?;
-        let table_source = provider_as_source(Arc::new(table_provider));
-        let plan = LogicalPlanBuilder::scan(UNNAMED_TABLE, table_source, None)?.build()?;
-
-        ctx.set_plan(plan);
+        let df = LazyFrame::scan_parquet(&path, ScanArgsParquet::default())
+            .map_err(|e| anyhow!("parquet error: cannot read file '{}' {e}", path.display()))?;
+        ctx.set_df(df)?;
     }
 
     Ok(())

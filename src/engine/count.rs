@@ -1,7 +1,7 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use datafusion::logical_expr::{self, Expr as DFExpr, LogicalPlan, LogicalPlanBuilder};
+use polars::prelude::*;
 
 use crate::parser::Expr;
 
@@ -11,7 +11,7 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(plan) = ctx.take_plan() {
+    if let Some(df) = ctx.take_df() {
         let schema_cols = ctx.columns();
         let mut columns = Vec::new();
 
@@ -21,7 +21,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     bail!("count error: Unknown column {column}");
                 }
 
-                let expr = args::str_to_col(column);
+                let expr = col(column);
                 if !columns.contains(&expr) {
                     columns.push(expr);
                 }
@@ -30,21 +30,25 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         let agg_col = find_agg_column(schema_cols.as_slice());
 
-        let plan = if !columns.is_empty() {
-            let plan = count(plan, columns.clone(), &agg_col)?;
+        let df = if !columns.is_empty() {
+            let ncol = columns.last().unwrap().clone();
+            let df = df
+                .group_by(&columns)
+                .agg([ncol.is_not_null().count().alias(&agg_col)]);
 
-            if args::named_bool(args, "sort") {
-                let mut sort_cols = vec![args::str_to_col(&agg_col).sort(false, false)];
-                sort_cols.extend(columns.into_iter().map(|c| c.sort(true, false)));
-                LogicalPlanBuilder::from(plan).sort(sort_cols)?.build()?
-            } else {
-                plan
+            let mut sort_mask = vec![false; columns.len()];
+
+            if args::named_bool(args, "sort")? {
+                columns.insert(0, col(&agg_col));
+                sort_mask.insert(0, true);
             }
+
+            df.sort_by_exprs(columns, sort_mask, false, false)
         } else {
-            count(plan, vec![], &agg_col)?
+            df.select(&[col(&schema_cols[0]).count().alias(&agg_col)])
         };
 
-        ctx.set_plan(plan);
+        ctx.set_df(df)?;
     } else if ctx.is_grouping() {
         bail!("count error: must call summarize after a group_by");
     } else {
@@ -52,14 +56,6 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn count(plan: LogicalPlan, group: Vec<DFExpr>, name: &str) -> Result<LogicalPlan> {
-    let agg_col = logical_expr::count(logical_expr::lit(1u8)).alias(name);
-    let plan = LogicalPlanBuilder::from(plan)
-        .aggregate(group, vec![agg_col])?
-        .build()?;
-    Ok(plan)
 }
 
 /// If there is a column named `n` use `nn`, or `nnn`, etc.

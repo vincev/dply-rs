@@ -66,7 +66,7 @@ fn left_join() -> Result<()> {
         indoc!(
             r#"
             shape: (10, 4)
-            shape_id|left_key|shape_id_rhs|right_val
+            shape_id|left_key|shape_id_right|right_val
             u32|f64|u32|f64
             ---
             1|2.0|null|null
@@ -144,7 +144,7 @@ fn outer_join() -> Result<()> {
             filter(shape_id < 8) |
             mutate(left_val = shape_id * 2) |
             outer_join(right_df) |
-            arrange(shape_id, left_val, shape_id_rhs, right_val) |
+            arrange(shape_id, left_val, right_val) |
             head()
     "#};
 
@@ -152,20 +152,20 @@ fn outer_join() -> Result<()> {
         input,
         indoc!(
             r#"
-            shape: (10, 4)
-            shape_id|left_val|shape_id_rhs|right_val
-            u32|f64|u32|f64
+            shape: (10, 3)
+            shape_id|left_val|right_val
+            u32|f64|f64
             ---
-            1|2.0|null|null
-            2|4.0|null|null
-            3|6.0|null|null
-            4|8.0|null|null
-            5|10.0|5|10.0
-            6|12.0|6|12.0
-            7|14.0|7|14.0
-            null|null|8|16.0
-            null|null|9|18.0
-            null|null|10|20.0
+            1|2.0|null
+            2|4.0|null
+            3|6.0|null
+            4|8.0|null
+            5|10.0|10.0
+            6|12.0|12.0
+            7|14.0|14.0
+            8|null|16.0
+            9|null|18.0
+            10|null|20.0
             ---
        "#
         )
@@ -197,7 +197,7 @@ fn cross_join() -> Result<()> {
         indoc!(
             r#"
             shape: (6, 4)
-            shape_id|left_val|shape_id_rhs|right_val
+            shape_id|left_val|shape_id_right|right_val
             u32|f64|u32|f64
             ---
             21|42.0|1|2.0

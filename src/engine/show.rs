@@ -10,8 +10,9 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(_args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(plan) = ctx.take_plan() {
-        ctx.show(plan)?;
+    if let Some(df) = ctx.take_df() {
+        let df = df.collect()?;
+        ctx.print(df)?;
     } else if ctx.is_grouping() {
         bail!("show error: must call summarize after a group_by");
     } else {
