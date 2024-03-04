@@ -153,6 +153,7 @@ impl Completer for CustomCompleter {
                 .map(|value| Suggestion {
                     value,
                     description: None,
+                    style: None,
                     extra: None,
                     span: Span::new(prefix_pos, pos),
                     append_whitespace: false,
@@ -170,6 +171,7 @@ impl Completer for CustomCompleter {
                 .map(|value| Suggestion {
                     value,
                     description: None,
+                    style: None,
                     extra: None,
                     span: Span::new(prefix_pos, pos),
                     append_whitespace: false,

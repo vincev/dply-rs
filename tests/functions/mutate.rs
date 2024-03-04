@@ -16,7 +16,7 @@ fn mutate_arith() -> Result<()> {
             mutate(
                 travel_time = tpep_dropoff_datetime - tpep_pickup_datetime,
                 trip_distance_km = trip_distance_mi * 1.60934,
-                avg_speed_km_h = trip_distance_km / (secs(travel_time) / 3600)
+                avg_speed_km_h = trip_distance_km / (travel_time / 3.6e12)
             ) |
             relocate(trip_distance_km, after = trip_distance_mi) |
             head(10)
@@ -28,18 +28,18 @@ fn mutate_arith() -> Result<()> {
             r#"
             shape: (10, 6)
             tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance_mi|trip_distance_km|travel_time|avg_speed_km_h
-            datetime[μs]|datetime[μs]|f64|f64|duration[μs]|f64
+            datetime[ns]|datetime[ns]|f64|f64|duration[ns]|f64
             ---
-            2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|5.053328|18m 52s|16.070653
-            2022-11-27T16:43:26|2022-11-27T16:50:06|1.06|1.7059|6m 40s|15.353104
-            2022-11-12T16:58:37|2022-11-12T17:12:31|2.36|3.798042|13m 54s|16.394428
-            2022-11-30T22:24:08|2022-11-30T22:39:16|5.2|8.368568|15m 8s|33.179344
-            2022-11-26T23:03:41|2022-11-26T23:23:48|0.0|0.0|20m 7s|0.0
-            2022-11-30T14:46:43|2022-11-30T15:17:39|2.39|3.846323|30m 56s|7.46054
-            2022-11-22T14:36:34|2022-11-22T14:46:38|1.52|2.446197|10m 4s|14.579981
-            2022-11-28T09:54:14|2022-11-28T10:02:07|0.51|0.820763|7m 53s|6.246825
-            2022-11-09T17:39:58|2022-11-09T17:58:30|0.98|1.577153|18m 32s|5.105892
-            2022-11-20T00:33:58|2022-11-20T00:42:35|2.14|3.443988|8m 37s|23.981345
+            2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|5.0533276|18m 52s|16.070653
+            2022-11-27 16:43:26|2022-11-27 16:50:06|1.06|1.7059004|6m 40s|15.353104
+            2022-11-12 16:58:37|2022-11-12 17:12:31|2.36|3.7980424|13m 54s|16.394428
+            2022-11-30 22:24:08|2022-11-30 22:39:16|5.2|8.368568|15m 8s|33.179344
+            2022-11-26 23:03:41|2022-11-26 23:23:48|0.0|0.0|20m 7s|0.0
+            2022-11-30 14:46:43|2022-11-30 15:17:39|2.39|3.8463226|30m 56s|7.46054
+            2022-11-22 14:36:34|2022-11-22 14:46:38|1.52|2.4461968|10m 4s|14.579981
+            2022-11-28 09:54:14|2022-11-28 10:02:07|0.51|0.8207634|7m 53s|6.246825
+            2022-11-09 17:39:58|2022-11-09 17:58:30|0.98|1.5771532|18m 32s|5.105892
+            2022-11-20 00:33:58|2022-11-20 00:42:35|2.14|3.443988|8m 37s|23.981345
             ---
        "#
         )
@@ -226,7 +226,7 @@ fn mutate_dt() -> Result<()> {
         parquet("tests/data/nyctaxi.parquet") |
             select(trip_distance, tpep_pickup_datetime) |
             mutate(
-                date_string = "2022-11-27T16:43:26",
+                date_string = "2022-11-27 16:43:26",
                 date_datetime = ymd_hms(date_string)
             ) |
             head(2)
@@ -238,10 +238,10 @@ fn mutate_dt() -> Result<()> {
             r#"
             shape: (2, 4)
             trip_distance|tpep_pickup_datetime|date_string|date_datetime
-            f64|datetime[μs]|str|datetime[ms]
+            f64|datetime[ns]|str|datetime[ns]
             ---
-            3.14|2022-11-22T19:27:01|2022-11-27T16:43:26|2022-11-27T16:43:26
-            1.06|2022-11-27T16:43:26|2022-11-27T16:43:26|2022-11-27T16:43:26
+            3.14|2022-11-22 19:27:01|2022-11-27 16:43:26|2022-11-27 16:43:26
+            1.06|2022-11-27 16:43:26|2022-11-27 16:43:26|2022-11-27 16:43:26
             ---
        "#
         )
@@ -269,17 +269,17 @@ fn mutate_len() -> Result<()> {
             r#"
             shape: (10, 3)
             ints_len|floats_len|tags_len
-            i32|i32|i32
+            u32|u32|u32
             ---
             3|4|4
             1|3|1
-            null|4|1
+            0|4|1
             2|4|1
-            null|4|3
+            0|4|3
             1|1|3
             4|1|4
-            null|2|null
-            4|null|null
+            0|2|0
+            4|0|0
             1|4|4
             ---
        "#
@@ -301,7 +301,7 @@ fn mutate_len() -> Result<()> {
             r#"
             shape: (4, 3)
             rate_code|n|rate_len
-            str|i64|i32
+            str|u32|u32
             ---
             JFK|11|3
             Negotiated|2|10
@@ -405,7 +405,7 @@ fn mutate_field() -> Result<()> {
             r#"
             shape: (4, 3)
             rate_code|n|rate_len
-            str|i64|i32
+            str|u32|u32
             ---
             JFK|11|3
             Negotiated|2|10
@@ -441,7 +441,7 @@ fn mutate_durations() -> Result<()> {
             r#"
             shape: (5, 5)
             travel_time|travel_time_secs|travel_time_millis|travel_time_micros|travel_time_nanos
-            duration[μs]|i64|i64|i64|i64
+            duration[ns]|i64|i64|i64|i64
             ---
             18m 52s|1132|1132000|1132000000|1132000000000
             6m 40s|400|400000|400000000|400000000000
@@ -479,7 +479,7 @@ fn mutate_durations() -> Result<()> {
             r#"
             shape: (5, 4)
             travel_time|dtravel_time_millis|dtravel_time_micros|dtravel_time_nanos
-            duration[μs]|duration[ms]|duration[μs]|duration[ns]
+            duration[ns]|duration[μs]|duration[μs]|duration[μs]
             ---
             18m 52s|18m 52s|18m 52s|18m 52s
             6m 40s|6m 40s|6m 40s|6m 40s

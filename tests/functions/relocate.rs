@@ -19,9 +19,9 @@ fn relocate_default() -> Result<()> {
             r#"
             shape: (1, 19)
             payment_type|passenger_count|VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance|rate_code|store_and_fwd_flag|PULocationID|DOLocationID|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee
-            str|i64|i64|datetime[μs]|datetime[μs]|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
+            str|i64|i64|datetime[ns]|datetime[ns]|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
             ---
-            Credit card|1|2|2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
+            Credit card|1|2|2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
             ---
         "#
         )
@@ -44,9 +44,9 @@ fn relocate_before_first() -> Result<()> {
             r#"
             shape: (1, 19)
             payment_type|passenger_count|VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance|rate_code|store_and_fwd_flag|PULocationID|DOLocationID|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee
-            str|i64|i64|datetime[μs]|datetime[μs]|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
+            str|i64|i64|datetime[ns]|datetime[ns]|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
             ---
-            Credit card|1|2|2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
+            Credit card|1|2|2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
             ---
         "#
         )
@@ -69,9 +69,9 @@ fn relocate_before() -> Result<()> {
             r#"
             shape: (1, 19)
             VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance|rate_code|store_and_fwd_flag|PULocationID|DOLocationID|payment_type|passenger_count|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee
-            i64|datetime[μs]|datetime[μs]|f64|str|str|i64|i64|str|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
+            i64|datetime[ns]|datetime[ns]|f64|str|str|i64|i64|str|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
             ---
-            2|2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|Standard|N|234|141|Credit card|1|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
+            2|2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|Standard|N|234|141|Credit card|1|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
             ---
         "#
         )
@@ -94,9 +94,9 @@ fn relocate_after() -> Result<()> {
             r#"
             shape: (1, 19)
             VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance|rate_code|store_and_fwd_flag|PULocationID|DOLocationID|fare_amount|payment_type|passenger_count|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee
-            i64|datetime[μs]|datetime[μs]|f64|str|str|i64|i64|f64|str|i64|f64|f64|f64|f64|f64|f64|f64|f64
+            i64|datetime[ns]|datetime[ns]|f64|str|str|i64|i64|f64|str|i64|f64|f64|f64|f64|f64|f64|f64|f64
             ---
-            2|2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|Standard|N|234|141|14.5|Credit card|1|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
+            2|2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|Standard|N|234|141|14.5|Credit card|1|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
             ---
         "#
         )
@@ -119,9 +119,9 @@ fn relocate_after_last() -> Result<()> {
             r#"
             shape: (1, 19)
             VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|trip_distance|rate_code|store_and_fwd_flag|PULocationID|DOLocationID|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee|payment_type|passenger_count
-            i64|datetime[μs]|datetime[μs]|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64|str|i64
+            i64|datetime[ns]|datetime[ns]|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64|str|i64
             ---
-            2|2022-11-22T19:27:01|2022-11-22T19:45:53|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0|Credit card|1
+            2|2022-11-22 19:27:01|2022-11-22 19:45:53|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0|Credit card|1
             ---
         "#
         )
@@ -144,9 +144,9 @@ fn relocate_same_col() -> Result<()> {
             r#"
             shape: (1, 19)
             VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|passenger_count|payment_type|trip_distance|rate_code|store_and_fwd_flag|PULocationID|DOLocationID|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|airport_fee
-            i64|datetime[μs]|datetime[μs]|i64|str|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
+            i64|datetime[ns]|datetime[ns]|i64|str|f64|str|str|i64|i64|f64|f64|f64|f64|f64|f64|f64|f64|f64
             ---
-            2|2022-11-22T19:27:01|2022-11-22T19:45:53|1|Credit card|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
+            2|2022-11-22 19:27:01|2022-11-22 19:45:53|1|Credit card|3.14|Standard|N|234|141|14.5|1.0|0.5|3.76|0.0|0.3|22.56|2.5|0.0
             ---
         "#
         )

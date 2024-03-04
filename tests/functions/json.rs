@@ -19,7 +19,7 @@ fn json_load() -> Result<()> {
             r#"
             shape: (1, 1)
             n
-            i64
+            u32
             ---
             4
             ---

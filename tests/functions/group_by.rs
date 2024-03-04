@@ -26,7 +26,7 @@ fn group_by_mean_sd_var() -> Result<()> {
             r#"
             shape: (5, 5)
             payment_type|mean_price|std_price|var_price|n
-            str|f64|f64|f64|i64
+            str|f64|f64|f64|u32
             ---
             Credit card|22.378757|16.095337|259.059865|185
             Cash|18.458491|12.545236|157.382955|53
@@ -61,7 +61,7 @@ fn group_by_min_max() -> Result<()> {
             r#"
             shape: (5, 4)
             payment_type|min_price|max_price|n
-            str|f64|f64|i64
+            str|f64|f64|u32
             ---
             Credit card|8.5|84.36|185
             Cash|3.3|63.1|53
@@ -99,12 +99,12 @@ fn group_by_median_quantile() -> Result<()> {
             r#"
             shape: (5, 7)
             payment_type|median_price|q25_price|q50_price|q75_price|q95_price|n
-            str|f64|f64|f64|f64|f64|i64
+            str|f64|f64|f64|f64|f64|u32
             ---
-            Credit card|16.56|12.43|16.56|23.76|56.09|185
-            Cash|14.8|11.8|14.8|22.3|41.55|53
-            Unknown|22.72|18.17|22.72|28.39|45.5|9
-            Dispute|-0.5|-8.3|-8.3|-8.3|-8.3|2
+            Credit card|16.56|12.43|16.56|23.76|64.114|185
+            Cash|14.8|11.8|14.8|22.3|49.67|53
+            Unknown|22.72|18.17|22.72|28.39|50.882|9
+            Dispute|-0.5|-4.4|-0.5|3.4|6.52|2
             No charge|8.8|8.8|8.8|8.8|8.8|1
             ---
        "#
@@ -137,9 +137,9 @@ fn summarize_median_quantile() -> Result<()> {
             r#"
             shape: (1, 6)
             median|q25|q50|q75|q95|n
-            u32|u32|u32|u32|u32|i64
+            f64|f64|f64|f64|f64|u32
             ---
-            50|25|50|75|95|100
+            50.5|25.75|50.5|75.25|95.05|100
             ---
        "#
         )
@@ -240,7 +240,7 @@ fn summarize_list() -> Result<()> {
             r#"
             shape: (1, 3)
             amounts|fares|n
-            list[f64]|list[f64]|i64
+            list[f64]|list[f64]|u32
             ---
             [3.3, 7.3, 8.3]|[2.5, 4.0, 5.0]|3
             ---
@@ -267,7 +267,7 @@ fn summarize_list() -> Result<()> {
             r#"
             shape: (9, 3)
             amounts|fares|n
-            f64|f64|i64
+            f64|f64|u32
             ---
             3.3|2.5|3
             3.3|4.0|3

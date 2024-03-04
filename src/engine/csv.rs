@@ -1,17 +1,8 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, bail, Result};
-use datafusion::{
-    arrow::csv,
-    common::DEFAULT_CSV_EXTENSION,
-    datasource::{
-        file_format::csv::CsvFormat,
-        listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl},
-        provider_as_source,
-    },
-    logical_expr::{LogicalPlanBuilder, UNNAMED_TABLE},
-};
-use std::{num::NonZeroUsize, path::Path, sync::Arc};
+use polars::prelude::*;
+use std::path::PathBuf;
 
 use crate::parser::Expr;
 
@@ -21,59 +12,30 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    let path = args::string(&args[0]);
-    let overwrite = args::named_bool(args, "overwrite");
+    // csv("nyctaxi.csv")
+    let path = PathBuf::from(args::string(&args[0]));
+    // csv("nyctaxi.csv", overwrite = true)
+    let overwrite = args::named_bool(args, "overwrite")?;
 
     // If there is an input dataframe save it to disk.
-    if let Some(plan) = ctx.take_plan() {
-        if !overwrite && Path::new(&path).exists() {
-            bail!("csv error: file '{}' already exists.", path);
+    if let Some(df) = ctx.take_df() {
+        if !overwrite && path.exists() {
+            bail!("csv error: file '{}' already exists", path.display());
         }
-
-        ctx.set_plan(plan.clone());
-
-        let (_, mut rx) = io::execute_plan(plan, ctx)?;
 
         let file = std::fs::File::create(&path)
-            .map_err(|e| anyhow!("csv error: cannot create file '{}' {e}", path))?;
-        let mut writer = csv::Writer::new(file);
+            .map_err(|e| anyhow!("csv error: cannot create file '{}' {e}", path.display()))?;
 
-        while let Some(batch) = rx.blocking_recv() {
-            writer.write(&batch?)?;
-        }
+        let mut out_df = df.clone().collect()?;
+        ctx.set_df(df)?;
+
+        CsvWriter::new(file).finish(&mut out_df)?;
     } else {
-        // Read the data frame and set it as input for the next task.
-        let table_path = ListingTableUrl::parse(&path)?;
-
-        let num_cpus = std::thread::available_parallelism()
-            .unwrap_or(NonZeroUsize::new(2).unwrap())
-            .get();
-
-        let file_format = CsvFormat::default();
-
-        // Use default extension for recursive loading.
-        let extension = if Path::new(&path).is_dir() {
-            DEFAULT_CSV_EXTENSION
-        } else {
-            ""
-        };
-
-        let listing_options = ListingOptions::new(Arc::new(file_format))
-            .with_file_extension(extension)
-            .with_target_partitions(num_cpus);
-
-        let resolved_schema =
-            ctx.block_on(listing_options.infer_schema(&ctx.session().state(), &table_path))?;
-
-        let config = ListingTableConfig::new(table_path)
-            .with_listing_options(listing_options)
-            .with_schema(resolved_schema);
-
-        let table_provider = ListingTable::try_new(config)?;
-        let table_source = provider_as_source(Arc::new(table_provider));
-        let plan = LogicalPlanBuilder::scan(UNNAMED_TABLE, table_source, None)?.build()?;
-
-        ctx.set_plan(plan);
+        let reader = LazyCsvReader::new(&path).with_infer_schema_length(Some(1000));
+        let df = reader
+            .finish()
+            .map_err(|e| anyhow!("csv error: cannot read file '{}' {e}", path.display()))?;
+        ctx.set_df(df)?;
     }
 
     Ok(())

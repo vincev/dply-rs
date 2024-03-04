@@ -1,8 +1,9 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, bail, Result};
-use chrono::{NaiveDate, NaiveDateTime};
-use datafusion::{common::DFSchema, logical_expr::Expr as DFExpr, prelude::*};
+use polars::export::chrono::prelude::*;
+use polars::lazy::dsl::Expr as PolarsExpr;
+use polars::prelude::*;
 use std::str::FromStr;
 
 use crate::parser::{Expr, Operator};
@@ -17,16 +18,6 @@ pub fn string(expr: &Expr) -> String {
     }
 }
 
-/// Returns the value from a number expression.
-///
-/// Panics if the expression is not a number.
-pub fn number(expr: &Expr) -> f64 {
-    match expr {
-        Expr::Number(s) => *s,
-        _ => panic!("{expr} is not a number expression"),
-    }
-}
-
 /// Returns the string from an identifier expression.
 ///
 /// Panics if the expression is not an identifier.
@@ -37,43 +28,29 @@ pub fn identifier(expr: &Expr) -> String {
     }
 }
 
-/// Returns a datafusion column expression and quotes the name.
-///
-/// The `col` function in datafusion makes identifiers lower case, this function
-/// quotes the name so that it preserves case.
-pub fn str_to_col(s: impl Into<String>) -> DFExpr {
-    DFExpr::Column(Column::new_unqualified(s))
+/// Returns a Polars column if it is in the schema.
+pub fn column(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
+    let column = identifier(expr);
+    schema
+        .get(&column)
+        .map(|_| col(&column))
+        .ok_or_else(|| anyhow!("Unknown column '{expr}'"))
 }
 
-/// Returns a datafusion column if it is in the schema.
-pub fn expr_to_col(expr: &Expr, schema: &DFSchema) -> Result<DFExpr> {
-    let column = identifier(expr);
-    if schema.has_column_with_unqualified_name(&column) {
-        Ok(str_to_col(column))
-    } else {
-        Err(anyhow!("Unknown column '{expr}'"))
-    }
-}
-
-/// Returns a datafusion qualified column if it is in the schema.
+/// Returns the value from a number expression.
 ///
-/// This is needed for when window function expressions are transformed to a
-/// column expression as their name needs the table.
-pub fn expr_to_qualified_col(expr: &Expr, schema: &DFSchema) -> Result<DFExpr> {
-    let column = identifier(expr);
-
-    if let Ok(field) = schema.field_with_unqualified_name(&column) {
-        let qualifier = field.qualifier().cloned();
-        Ok(DFExpr::Column(Column::new(qualifier, field.name())))
-    } else {
-        Err(anyhow!("Unknown column '{expr}'"))
+/// Panics if the expression is not a number.
+pub fn number(expr: &Expr) -> f64 {
+    match expr {
+        Expr::Number(s) => *s,
+        _ => panic!("{expr} is not a number expression"),
     }
 }
 
 /// Returns a date time from a string.
 ///
 /// Returns an error if the string is not a valid date time.
-pub fn timestamp(expr: &Expr) -> Result<DFExpr> {
+pub fn timestamp(expr: &Expr) -> Result<NaiveDateTime> {
     let ts = string(expr);
     let ts = ts.trim();
 
@@ -85,23 +62,22 @@ pub fn timestamp(expr: &Expr) -> Result<DFExpr> {
         })
         .map_err(|e| anyhow!("Invalid timestamp string {ts}: {e}"))?;
 
-    Ok(lit_timestamp_nano(dt.timestamp_nanos_opt().unwrap()))
+    Ok(dt)
 }
 
-/// Returns the value of a named boolean variable like `overwrite = false`.
-pub fn named_bool(args: &[Expr], name: &str) -> bool {
+pub fn named_bool(args: &[Expr], name: &str) -> Result<bool> {
     for arg in args {
         if let Expr::BinaryOp(lhs, Operator::Assign, rhs) = arg {
             match (lhs.as_ref(), rhs.as_ref()) {
                 (Expr::Identifier(lhs), Expr::Identifier(rhs)) if lhs == name => {
-                    return bool::from_str(rhs).unwrap_or(false);
+                    return Ok(bool::from_str(rhs)?);
                 }
                 _ => {}
             }
         }
     }
 
-    false
+    Ok(false)
 }
 
 /// Returns the value of a named integer variable like `schema_rows = 2000`.

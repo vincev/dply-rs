@@ -1,7 +1,7 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use datafusion::logical_expr::LogicalPlanBuilder;
+use polars::prelude::*;
 
 use crate::parser::Expr;
 
@@ -11,9 +11,10 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
-    if let Some(plan) = ctx.take_plan() {
+    if let Some(df) = ctx.take_df() {
         let schema_cols = ctx.columns();
         let mut columns = Vec::with_capacity(args.len());
+        let mut descending = Vec::with_capacity(args.len());
 
         for arg in args {
             match arg {
@@ -24,7 +25,8 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("arrange error: Unknown column {column}");
                     }
 
-                    columns.push(args::str_to_col(&column).sort(false, false));
+                    columns.push(col(&column));
+                    descending.push(true);
                 }
                 Expr::Identifier(column) => {
                     // arrange(column)
@@ -32,14 +34,14 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("arrange error: Unknown column {column}");
                     }
 
-                    columns.push(args::str_to_col(column).sort(true, false));
+                    columns.push(col(column));
+                    descending.push(false);
                 }
                 _ => {}
             }
         }
 
-        let plan = LogicalPlanBuilder::from(plan).sort(columns)?.build()?;
-        ctx.set_plan(plan);
+        ctx.set_df(df.sort_by_exprs(columns, descending, true, false))?;
     } else if ctx.is_grouping() {
         bail!("arrange error: must call summarize after a group_by");
     } else {
