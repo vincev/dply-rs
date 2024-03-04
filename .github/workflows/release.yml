@@ -21,31 +21,35 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, macos, windows]
+        build: [linux, macos-intel, macos-m1, windows]
         include:
         - build: linux
           os: ubuntu-latest
+          os_label: ubuntu
           cpu: x86_64
           rust: stable
           binary: dply
-        - build: linux-20.04
-          os: ubuntu-20.04
+        - build: macos-intel
+          os: macos-12
+          os_label: macos
           cpu: x86_64
           rust: stable
           binary: dply
-        - build: macos
-          os: macos-latest
-          cpu: x86_64
+        - build: macos-m1
+          os: macos-14
+          os_label: macos
+          cpu: m1
           rust: stable
           binary: dply
         - build: windows
           os: windows-latest
+          os_label: windows
           cpu: x86_64
           rust: stable
           binary: dply.exe
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
@@ -55,8 +59,8 @@ jobs:
     - name: Run tests
       run: cargo test --release
     - name: Upload build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: dply-${{ inputs.version }}-${{ matrix.cpu }}-${{ matrix.os }}
+        name: dply-${{ inputs.version }}-${{ matrix.cpu }}-${{ matrix.os_label }}
         path: |
           target/release/${{ matrix.binary }}
