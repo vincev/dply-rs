@@ -15,7 +15,7 @@ comfy-table = "7"
 home = "0.5"
 lru = "0.12.0"
 nom = "7"
-reedline = "0.29"
+reedline = "0.30"
 regex = "1.9.4"
 thiserror = "1.0"
 
