@@ -5,7 +5,7 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.3.0"
+version = "0.3.1"
 rust-version = "1.70.0"
 
 [dependencies]
@@ -15,12 +15,12 @@ comfy-table = "7"
 home = "0.5"
 lru = "0.12.0"
 nom = "7"
-reedline = "0.30"
+reedline = "0.31"
 regex = "1.9.4"
 thiserror = "1.0"
 
 [dependencies.polars]
-version = "0.38.0"
+version = "0.39.0"
 default-features = false
 features = [
     "cross_join",

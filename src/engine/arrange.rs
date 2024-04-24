@@ -41,7 +41,13 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             }
         }
 
-        ctx.set_df(df.sort_by_exprs(columns, descending, true, false))?;
+        let sort_opts = SortMultipleOptions {
+            descending,
+            nulls_last: true,
+            ..Default::default()
+        };
+
+        ctx.set_df(df.sort_by_exprs(columns, sort_opts))?;
     } else if ctx.is_grouping() {
         bail!("arrange error: must call summarize after a group_by");
     } else {
