@@ -36,14 +36,19 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 .group_by(&columns)
                 .agg([ncol.is_not_null().count().alias(&agg_col)]);
 
-            let mut sort_mask = vec![false; columns.len()];
+            let mut descending = vec![false; columns.len()];
 
             if args::named_bool(args, "sort")? {
                 columns.insert(0, col(&agg_col));
-                sort_mask.insert(0, true);
+                descending.insert(0, true);
             }
 
-            df.sort_by_exprs(columns, sort_mask, false, false)
+            let sort_opts = SortMultipleOptions {
+                descending,
+                ..Default::default()
+            };
+
+            df.sort_by_exprs(columns, sort_opts)
         } else {
             df.select(&[col(&schema_cols[0]).count().alias(&agg_col)])
         };

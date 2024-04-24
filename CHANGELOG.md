@@ -1,6 +1,11 @@
 # dply changelog
 Changes to the `dply` crate are documented in this file.
 
+## 0.3.1 - Unreleased
+### 🔧 Changed
+* Update to Polars 0.39
+
+
 ## 0.3.0 - 2024-03-04
 ### ⭐ Added
 * Add support for struct unnesting into columns (see [unnest_struct](https://github.com/vincev/dply-rs/blob/0626169d97b346b0a0eea6a9843bcda98ddfa1d1/tests/functions/unnest.rs#L122) test).
