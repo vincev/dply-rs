@@ -89,8 +89,9 @@ pub fn glimpse(w: &mut dyn Write, df: LazyFrame) -> Result<()> {
         row.add_cell(format!("{}", col.dtype()).into());
 
         let mut values = Vec::with_capacity(10);
-        for value in col.iter() {
-            values.push(format!("{}", value));
+        for idx in 0..col.len() {
+            let value = col.str_value(idx).unwrap_or_default();
+            values.push(value.into_owned());
         }
 
         row.add_cell(values.join(", ").into());
