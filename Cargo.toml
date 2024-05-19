@@ -15,12 +15,12 @@ comfy-table = "7"
 home = "0.5"
 lru = "0.12.0"
 nom = "7"
-reedline = "0.31"
+reedline = "0.32"
 regex = "1.9.4"
 thiserror = "1.0"
 
 [dependencies.polars]
-version = "0.39.0"
+version = "0.39.2"
 default-features = false
 features = [
     "cross_join",
