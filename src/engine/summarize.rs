@@ -28,8 +28,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(group) = ctx.take_group() {
         let columns = group
             .logical_plan
-            .schema()
-            .map(|s| s.into_owned())
+            .compute_schema()
             .map_err(anyhow::Error::from)
             .and_then(|schema| eval_args(args, ctx, &schema, true))
             .map_err(|e| anyhow!("summarize error: {e}"))?;
