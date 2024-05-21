@@ -113,7 +113,7 @@ impl Context {
 
         self.columns = group
             .logical_plan
-            .schema()
+            .compute_schema()
             .map_err(|e| anyhow!("Schema error: {e}"))?
             .iter_names()
             .map(|s| s.to_string())
@@ -225,7 +225,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "json" => json::eval(args, ctx)?,
             "left_join" => joins::eval(args, ctx, JoinType::Left)?,
             "mutate" => mutate::eval(args, ctx)?,
-            "outer_join" => joins::eval(args, ctx, JoinType::Outer { coalesce: true })?,
+            "outer_join" => joins::eval(args, ctx, JoinType::Outer)?,
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,

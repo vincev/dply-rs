@@ -2,6 +2,12 @@
 
 Changes to the `dply` crate are documented in this file.
 
+## 0.3.2 - Unreleased
+
+### 🔧 Changed
+
+- Update to Polars 0.40
+
 ## 0.3.1 - 2024-05-19
 
 ### 🔧 Changed

@@ -58,7 +58,7 @@ fn mutate_arith() -> Result<()> {
             r#"
             shape: (15, 1)
             group_id
-            u32
+            u64
             ---
             1
             2

@@ -73,7 +73,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context, join_type: JoinType) -> Result<()>
                 (lhs_cols, rhs_cols)
             };
 
-            let join_args = JoinArgs::new(join_type);
+            let join_args = JoinArgs::new(join_type).with_coalesce(JoinCoalesce::CoalesceColumns);
             ctx.set_df(lhs_df.join(rhs_df.clone(), lhs_cols, rhs_cols, join_args))?;
         } else {
             bail!("join error: undefined dataframe variable '{rhs_df_name}'");
