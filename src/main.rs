@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #![warn(clippy::all, rust_2018_idioms)]
 
+// Enable jemalloc as it improves performance in MacOS.
+#[cfg(all(not(debug_assertions), target_family = "unix"))]
+use jemallocator::Jemalloc;
+
+#[global_allocator]
+#[cfg(all(not(debug_assertions), target_family = "unix",))]
+static ALLOC: Jemalloc = Jemalloc;
+
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use std::fs;

@@ -2,11 +2,12 @@
 
 Changes to the `dply` crate are documented in this file.
 
-## 0.3.2 - Unreleased
+## 0.3.2 - 2024-05-25
 
 ### 🔧 Changed
 
 - Update to Polars 0.40
+- Use jemallocator as default allocator [#65](https://github.com/vincev/dply-rs/issues/65)
 
 ## 0.3.1 - 2024-05-19
 
