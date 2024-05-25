@@ -20,7 +20,7 @@ regex = "1.9.4"
 thiserror = "1.0"
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = "0.3.2"
+jemallocator = "*"
 
 [dependencies.polars]
 version = "0.40.0"
