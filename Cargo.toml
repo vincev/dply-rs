@@ -19,8 +19,8 @@ reedline = "0.32"
 regex = "1.9.4"
 thiserror = "1.0"
 
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = "*"
+[target.'cfg(target_family = "unix")'.dependencies]
+jemallocator = { version = "0.5", features = ["disable_initial_exec_tls"] }
 
 [dependencies.polars]
 version = "0.40.0"
