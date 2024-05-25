@@ -19,6 +19,9 @@ reedline = "0.32"
 regex = "1.9.4"
 thiserror = "1.0"
 
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+jemallocator = "0.3.2"
+
 [dependencies.polars]
 version = "0.40.0"
 default-features = false
@@ -31,6 +34,7 @@ features = [
     "json",
     "lazy",
     "parquet",
+    "performant",
     "semi_anti_join",
     "strings",
     "timezones"

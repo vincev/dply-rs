@@ -8,6 +8,13 @@ use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;
 
+#[cfg(not(target_env = "msvc"))]
+use jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 use dply::{interpreter, repl};
 
 /// Cli interface.
