@@ -76,7 +76,7 @@ impl Context {
     }
 
     /// Sets the dataframe to be used in pipeline steps.
-    fn set_df(&mut self, df: LazyFrame) -> Result<()> {
+    fn set_df(&mut self, mut df: LazyFrame) -> Result<()> {
         assert!(self.group.is_none());
 
         self.columns = df
@@ -225,7 +225,7 @@ fn eval_pipeline_step(expr: &Expr, ctx: &mut Context) -> Result<()> {
             "json" => json::eval(args, ctx)?,
             "left_join" => joins::eval(args, ctx, JoinType::Left)?,
             "mutate" => mutate::eval(args, ctx)?,
-            "outer_join" => joins::eval(args, ctx, JoinType::Outer)?,
+            "outer_join" => joins::eval(args, ctx, JoinType::Full)?,
             "parquet" => parquet::eval(args, ctx)?,
             "relocate" => relocate::eval(args, ctx)?,
             "rename" => rename::eval(args, ctx)?,

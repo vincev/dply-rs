@@ -33,7 +33,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             .and_then(|schema| eval_args(args, ctx, &schema, true))
             .map_err(|e| anyhow!("summarize error: {e}"))?;
         ctx.set_df(group.agg(&columns))?;
-    } else if let Some(df) = ctx.take_df() {
+    } else if let Some(mut df) = ctx.take_df() {
         let columns = df
             .schema()
             .map_err(anyhow::Error::from)

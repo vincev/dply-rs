@@ -43,7 +43,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         let sort_opts = SortMultipleOptions {
             descending,
-            nulls_last: true,
+            nulls_last: vec![true],
             ..Default::default()
         };
 

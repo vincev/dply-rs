@@ -16,7 +16,7 @@ fn mutate_arith() -> Result<()> {
             mutate(
                 travel_time = tpep_dropoff_datetime - tpep_pickup_datetime,
                 trip_distance_km = trip_distance_mi * 1.60934,
-                avg_speed_km_h = trip_distance_km / (travel_time / 3.6e12)
+                avg_speed_km_h = trip_distance_km / (nanos(travel_time) / 3.6e12)
             ) |
             relocate(trip_distance_km, after = trip_distance_mi) |
             head(10)

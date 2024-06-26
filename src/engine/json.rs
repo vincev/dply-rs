@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, bail, Result};
 use polars::prelude::*;
-use std::path::PathBuf;
+use std::{num::NonZeroUsize, path::PathBuf};
 
 use crate::parser::Expr;
 
@@ -33,7 +33,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     } else {
         // Read the data frame and set it as input for the next task.
         let df = LazyJsonLineReader::new(&path)
-            .with_infer_schema_length(Some(1000))
+            .with_infer_schema_length(NonZeroUsize::new(1000))
             .finish()
             .map_err(|e| anyhow!("json error: cannot read file '{}' {e}", path.display()))?;
         ctx.set_df(df)?;
