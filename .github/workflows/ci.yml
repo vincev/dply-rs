@@ -27,24 +27,24 @@ jobs:
       matrix:
         build: [linux]
         include:
-        - build: linux
-          os: ubuntu-latest
-          rust: stable
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Remove unnecessary files
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-    - name: Check formatting
-      run: cargo fmt --all -- --check
-    - name: Run tests
-      run: |
-        df -h .
-        cargo clean
-        cargo test --verbose
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run tests
+        run: |
+          df -h .
+          cargo clean
+          cargo test --verbose
