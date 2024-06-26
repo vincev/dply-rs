@@ -3,12 +3,9 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
 // Enable jemalloc as it improves performance in MacOS.
-#[cfg(all(not(debug_assertions), target_family = "unix"))]
-use jemallocator::Jemalloc;
-
 #[global_allocator]
-#[cfg(all(not(debug_assertions), target_family = "unix",))]
-static ALLOC: Jemalloc = Jemalloc;
+#[cfg(all(not(debug_assertions), target_family = "unix"))]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;

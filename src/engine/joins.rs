@@ -12,11 +12,14 @@ use super::*;
 ///
 /// Parameters are checked before evaluation by the typing module.
 pub fn eval(args: &[Expr], ctx: &mut Context, join_type: JoinType) -> Result<()> {
-    if let Some(lhs_df) = ctx.take_df() {
+    if let Some(mut lhs_df) = ctx.take_df() {
         let rhs_df_name = args::identifier(&args[0]);
         if let Some(rhs_df) = ctx.get_df(&rhs_df_name) {
             let lhs_schema = lhs_df.schema().map_err(|e| anyhow!("join error: {e}"))?;
-            let rhs_schema = rhs_df.schema().map_err(|e| anyhow!("join error: {e}"))?;
+            let rhs_schema = rhs_df
+                .clone()
+                .schema()
+                .map_err(|e| anyhow!("join error: {e}"))?;
 
             let lhs_schema_cols = lhs_schema
                 .iter_names()
