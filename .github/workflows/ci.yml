@@ -18,7 +18,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CARGO_HTTP_MULTIPLEXING: false
 
 jobs:
   build:
