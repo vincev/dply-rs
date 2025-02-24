@@ -2,7 +2,7 @@
 
 Changes to the `dply` crate are documented in this file.
 
-## 0.3.3 - Unreleased
+## 0.3.3 - 2025-02-24
 
 ### 🔧 Changed
 
