@@ -18,6 +18,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: -C debuginfo=0  # Do not produce debug symbols to keep memory usage down
+  RUST_BACKTRACE: 1
 
 jobs:
   build:
@@ -33,14 +35,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Remove unnecessary files
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust }}
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run tests
