@@ -12,9 +12,9 @@ enum RelocateTo {
     /// Relocate at the beginning.
     Default,
     /// Relocate before the given column.
-    Before(String),
+    Before(PlSmallStr),
     /// Relocate after the given column.
-    After(String),
+    After(PlSmallStr),
 }
 
 /// Evaluates a select call.
@@ -44,7 +44,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     };
                 }
                 Expr::Identifier(column) => {
-                    if !schema_cols.contains(column) {
+                    if !schema_cols.contains(&PlSmallStr::from_str(column)) {
                         bail!("relocate error: Unknown column {column}");
                     }
 

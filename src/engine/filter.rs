@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use anyhow::{bail, Result};
-use polars::export::regex;
 use polars::lazy::dsl::Expr as PolarsExpr;
 use polars::prelude::*;
 
@@ -28,7 +27,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(mut df) = ctx.take_df() {
         for arg in args {
             let expr = df
-                .schema()
+                .collect_schema()
                 .map_err(anyhow::Error::from)
                 .and_then(|schema| eval_expr(arg, &schema))
                 .map_err(|e| anyhow!("filter error: {e}"))?;
@@ -120,8 +119,8 @@ fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<P
             let re = regex::Regex::new(s)
                 .map_err(|_| anyhow!("invalid contains regex '{s}' for column '{column}'"))?;
 
-            let function = move |s: Series| {
-                let ca = s.list()?;
+            let function = move |c: Column| {
+                let ca = c.list()?;
                 let mut bools = Vec::with_capacity(ca.len());
 
                 ca.into_iter().for_each(|arr| {
@@ -139,7 +138,8 @@ fn list_contains(column: &str, pattern: &Expr, elem_type: &DataType) -> Result<P
                     bools.push(found);
                 });
 
-                Ok(Some(BooleanChunked::new(ca.name(), bools).into_series()))
+                let s = BooleanChunked::new(ca.name().to_owned(), bools).into_series();
+                Ok(Some(Column::new(ca.name().to_owned(), s)))
             };
 
             // Using apply avoid crash with debug build.

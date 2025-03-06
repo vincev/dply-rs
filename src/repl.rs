@@ -139,7 +139,7 @@ impl Completer for CustomCompleter {
     fn complete(&mut self, line: &str, pos: usize) -> Vec<Suggestion> {
         let line = &line[..pos];
         let prefix_pos = line
-            .rfind(&[',', '|', ' ', '\t', '\n'])
+            .rfind([',', '|', ' ', '\t', '\n'])
             .map(|p| p + 1)
             .unwrap_or(0);
 
@@ -161,7 +161,7 @@ impl Completer for CustomCompleter {
                 .collect()
         } else {
             let prefix_pos = line
-                .rfind(&['(', ',', '|', ' ', '\t', '\n'])
+                .rfind(['(', ',', '|', ' ', '\t', '\n'])
                 .map(|p| p + 1)
                 .unwrap_or(0);
 

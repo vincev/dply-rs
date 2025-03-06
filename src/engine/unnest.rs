@@ -26,14 +26,16 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     if let Some(mut df) = ctx.take_df() {
         for arg in args {
             let column = args::identifier(arg);
-            let schema = df.schema().map_err(|e| anyhow!("unnest error: {e}"))?;
+            let schema = df
+                .collect_schema()
+                .map_err(|e| anyhow!("unnest error: {e}"))?;
 
             match schema.get(&column) {
                 Some(DataType::List(_)) => {
-                    df = df.explode(vec![col(&column)]);
+                    df = df.explode(vec![col(column)]);
                 }
                 Some(DataType::Struct(_)) => {
-                    df = df.unnest([&column]);
+                    df = df.unnest([column]);
                 }
                 Some(_) => bail!("unnest error: '{column}' is not a list or struct type"),
                 None => bail!("unnest error: unknown column '{column}'"),

@@ -1,6 +1,7 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use lru::LruCache;
+use polars::prelude::*;
 use regex::Regex;
 
 const MAX_ENTRIES: usize = 40;
@@ -22,7 +23,7 @@ impl Default for Completions {
 
 impl Completions {
     /// Add entries to completions history.
-    pub fn add(&mut self, entries: &[String]) {
+    pub fn add(&mut self, entries: &[PlSmallStr]) {
         // Make sure these entries are in the cache irrespective of their size
         // to handle the case where we have a dataframe with many columns.
         if entries.len() > MAX_ENTRIES {
@@ -69,7 +70,7 @@ mod tests {
         // This insertion should have all columns, simulates a dataframe that has
         // more columns than MAX_ENTRIES.
         let entries = (0..MAX_ENTRIES + 10)
-            .map(|idx| format!("entry{idx}"))
+            .map(|idx| PlSmallStr::from_string(format!("entry{idx}")))
             .collect::<Vec<_>>();
 
         completions.add(&entries);
@@ -77,7 +78,7 @@ mod tests {
 
         // Inserts a subsets of columns smaller than MAX_ENTRIES.
         let entries = (1000..1020)
-            .map(|idx| format!("entry{idx}"))
+            .map(|idx| PlSmallStr::from_string(format!("entry{idx}")))
             .collect::<Vec<_>>();
         completions.add(&entries);
 
@@ -89,13 +90,13 @@ mod tests {
         }
 
         let entries = (2000..2200)
-            .map(|idx| format!("entry{idx}"))
+            .map(|idx| PlSmallStr::from_string(format!("entry{idx}")))
             .collect::<Vec<_>>();
         completions.add(&entries);
         assert_eq!(completions.iter().count(), entries.len());
 
         let entries = (3000..3100)
-            .map(|idx| format!("entry{idx}"))
+            .map(|idx| PlSmallStr::from_string(format!("entry{idx}")))
             .collect::<Vec<_>>();
         completions.add(&entries);
         assert_eq!(completions.iter().count(), entries.len());

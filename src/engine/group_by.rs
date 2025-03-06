@@ -17,7 +17,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         for arg in args {
             if let Expr::Identifier(column) = arg {
-                if !schema_cols.contains(column) {
+                if !schema_cols.contains(&PlSmallStr::from_str(column)) {
                     bail!("group_by error: Unknown column {column}");
                 }
 

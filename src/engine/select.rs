@@ -32,7 +32,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     // select(alias = column)
                     let alias = args::identifier(lhs);
                     let column = args::identifier(rhs);
-                    let expr = col(&column).alias(&alias);
+                    let expr = col(column).alias(alias);
 
                     if !select_columns.contains(&expr) {
                         select_columns.push(expr);
@@ -40,7 +40,8 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                 }
                 Expr::Identifier(column) => {
                     // select(column)
-                    if !schema_cols.contains(column) {
+                    let column = PlSmallStr::from_str(column);
+                    if !schema_cols.contains(&column) {
                         bail!("select error: Unknown column {column}");
                     }
 
@@ -63,7 +64,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
     Ok(())
 }
 
-fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<PolarsExpr> {
+fn filter_columns(expr: &Expr, schema_cols: &[PlSmallStr], negate: bool) -> Vec<PolarsExpr> {
     match expr {
         Expr::Function(name, args) if name == "starts_with" => {
             // select(starts_with("pattern"))
@@ -71,7 +72,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<Pola
             schema_cols
                 .iter()
                 .filter(|c| c.starts_with(&pattern) ^ negate)
-                .map(|c| col(c))
+                .map(|c| col(c.to_owned()))
                 .collect()
         }
         Expr::Function(name, args) if name == "ends_with" => {
@@ -80,7 +81,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<Pola
             schema_cols
                 .iter()
                 .filter(|c| c.ends_with(&pattern) ^ negate)
-                .map(|c| col(c))
+                .map(|c| col(c.to_owned()))
                 .collect()
         }
         Expr::Function(name, args) if name == "contains" => {
@@ -89,7 +90,7 @@ fn filter_columns(expr: &Expr, schema_cols: &[String], negate: bool) -> Vec<Pola
             schema_cols
                 .iter()
                 .filter(|c| c.contains(&pattern) ^ negate)
-                .map(|c| col(c))
+                .map(|c| col(c.to_owned()))
                 .collect()
         }
         _ => Vec::new(),

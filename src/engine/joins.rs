@@ -15,27 +15,32 @@ pub fn eval(args: &[Expr], ctx: &mut Context, join_type: JoinType) -> Result<()>
     if let Some(mut lhs_df) = ctx.take_df() {
         let rhs_df_name = args::identifier(&args[0]);
         if let Some(rhs_df) = ctx.get_df(&rhs_df_name) {
-            let lhs_schema = lhs_df.schema().map_err(|e| anyhow!("join error: {e}"))?;
+            let lhs_schema = lhs_df
+                .collect_schema()
+                .map_err(|e| anyhow!("join error: {e}"))?;
             let rhs_schema = rhs_df
                 .clone()
-                .schema()
+                .collect_schema()
                 .map_err(|e| anyhow!("join error: {e}"))?;
 
             let lhs_schema_cols = lhs_schema
                 .iter_names()
-                .map(|s| s.to_string())
+                .map(|s| s.to_owned())
                 .collect::<HashSet<_>>();
 
             let rhs_schema_cols = rhs_schema
                 .iter_names()
-                .map(|s| s.to_string())
+                .map(|s| s.to_owned())
                 .collect::<HashSet<_>>();
 
             // If no join columns are specified use common columns
-            let (lhs_cols, rhs_cols) = if args.len() == 1 {
+            let (lhs_cols, rhs_cols) = if let JoinType::Cross = join_type {
+                // Cross join doesn't take any columns.
+                (vec![], vec![])
+            } else if args.len() == 1 {
                 let common_cols = lhs_schema_cols
                     .intersection(&rhs_schema_cols)
-                    .map(|s| col(s))
+                    .map(|s| col(s.to_owned()))
                     .collect::<Vec<_>>();
                 if common_cols.is_empty() {
                     bail!("join error: Missing join columns for '{rhs_df_name}'");
@@ -52,13 +57,13 @@ pub fn eval(args: &[Expr], ctx: &mut Context, join_type: JoinType) -> Result<()>
                         if !lhs_schema_cols.contains(&lhs_col) {
                             bail!("join error: Unknown column '{lhs_col}'");
                         }
-                        lhs_cols.push(col(&lhs_col));
+                        lhs_cols.push(col(lhs_col.clone()));
 
                         let rhs_col = args::identifier(rhs);
                         if !rhs_schema_cols.contains(&rhs_col) {
                             bail!("join error: Unknown column '{rhs_col}'");
                         }
-                        rhs_cols.push(col(&rhs_col));
+                        rhs_cols.push(col(rhs_col.clone()));
 
                         let have_same_type = lhs_schema
                             .get(&lhs_col)

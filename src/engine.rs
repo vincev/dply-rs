@@ -39,7 +39,7 @@ pub struct Context {
     /// Group passed to aggregate functions.
     group: Option<LazyGroupBy>,
     /// Dataframe columns.
-    columns: Vec<String>,
+    columns: Vec<PlSmallStr>,
     /// Optional output used for testing.
     output: Option<Vec<u8>>,
     /// Output format configuration
@@ -60,7 +60,7 @@ impl Context {
     }
 
     /// Returns the active dataframe or group columns.
-    fn columns(&self) -> &Vec<String> {
+    fn columns(&self) -> &Vec<PlSmallStr> {
         &self.columns
     }
 
@@ -80,10 +80,10 @@ impl Context {
         assert!(self.group.is_none());
 
         self.columns = df
-            .schema()
+            .collect_schema()
             .map_err(|e| anyhow!("Schema error: {e}"))?
             .iter_names()
-            .map(|s| s.to_string())
+            .map(|s| s.to_owned())
             .collect::<Vec<_>>();
 
         self.update_completions();
@@ -116,7 +116,7 @@ impl Context {
             .compute_schema()
             .map_err(|e| anyhow!("Schema error: {e}"))?
             .iter_names()
-            .map(|s| s.to_string())
+            .map(|s| s.to_owned())
             .collect::<Vec<_>>();
 
         self.update_completions();
