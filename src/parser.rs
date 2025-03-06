@@ -3,15 +3,18 @@
 
 //! Parser for dply expressions.
 use anyhow::{bail, Result};
-use nom::branch::alt;
-use nom::bytes::complete::{is_a, is_not, tag};
-use nom::character::complete::{alpha1, alphanumeric1, char, multispace0, newline};
-use nom::combinator::{cut, map, recognize, value, verify};
-use nom::error::{context, convert_error, VerboseError};
-use nom::multi::{many0, many0_count, many1_count, separated_list0, separated_list1};
-use nom::number::complete::double;
-use nom::sequence::{delimited, pair, preceded, terminated, tuple};
-use nom::IResult;
+use nom::{
+    branch::alt,
+    bytes::complete::{is_a, is_not, tag},
+    character::complete::{alpha1, alphanumeric1, char, multispace0, newline},
+    combinator::{cut, map, recognize, value, verify},
+    error::context,
+    multi::{many0, many0_count, many1_count, separated_list0, separated_list1},
+    number::complete::double,
+    sequence::{delimited, pair, preceded, terminated},
+    IResult, Parser,
+};
+use nom_language::error::{convert_error, VerboseError};
 use std::fmt;
 
 /// A parsed dply expression.
@@ -175,22 +178,23 @@ fn fmt_debug(expr: &Expr, indent: usize, f: &mut fmt::Formatter<'_>) -> fmt::Res
 }
 
 fn ws(input: &str) -> IResult<&str, (), VerboseError<&str>> {
-    value((), many0_count(is_a(" \t")))(input)
+    value((), many0_count(is_a(" \t"))).parse(input)
 }
 
 fn comment(input: &str) -> IResult<&str, (), VerboseError<&str>> {
-    value((), pair(preceded(ws, char('#')), is_not("\n\r")))(input)
+    value((), pair(preceded(ws, char('#')), is_not("\n\r"))).parse(input)
 }
 
 fn name(input: &str) -> IResult<&str, &str, VerboseError<&str>> {
     recognize(pair(
         alt((alpha1, tag("_"))),
         many0_count(alt((alphanumeric1, tag("_")))),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn identifier(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
-    map(preceded(ws, name), |s| Expr::Identifier(s.to_string()))(input)
+    map(preceded(ws, name), |s| Expr::Identifier(s.to_string())).parse(input)
 }
 
 fn quoted(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -198,7 +202,8 @@ fn quoted(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     map(
         preceded(char('`'), cut(terminated(literal, char('`')))),
         |s: &str| Expr::Identifier(s.to_string()),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn string(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -206,7 +211,8 @@ fn string(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     map(
         preceded(char('"'), cut(terminated(literal, char('"')))),
         |s: &str| Expr::String(s.to_string()),
-    )(input)
+    )
+    .parse(input)
 }
 
 /// A group expression `(a == b & c == d) | f != g`.
@@ -221,7 +227,8 @@ fn group(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
                 cut(preceded(multispace0, char(')'))),
             ),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn expression(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -239,7 +246,8 @@ fn expression(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
                 group,
             )),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn unary_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -254,7 +262,8 @@ fn unary_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         map(pair(operator, expression), |(op, expr)| {
             Expr::UnaryOp(op, Box::new(expr))
         }),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn compare_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -270,14 +279,15 @@ fn compare_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     context(
         "binary_op",
         map(
-            tuple((
+            (
                 preceded(multispace0, expression),
                 preceded(multispace0, operator),
                 preceded(multispace0, alt((compare_op, expression))),
-            )),
+            ),
             |(lhs, op, rhs)| Expr::BinaryOp(Box::new(lhs), op, Box::new(rhs)),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn logical_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -289,14 +299,15 @@ fn logical_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     context(
         "logical_op",
         map(
-            tuple((
+            (
                 preceded(multispace0, alt((compare_op, expression))),
                 preceded(multispace0, operator),
                 preceded(multispace0, alt((logical_op, compare_op, expression))),
-            )),
+            ),
             |(lhs, op, rhs)| Expr::BinaryOp(Box::new(lhs), op, Box::new(rhs)),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn arith_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -311,28 +322,30 @@ fn arith_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     context(
         "logical_op",
         map(
-            tuple((
+            (
                 preceded(multispace0, expression),
                 preceded(multispace0, operator),
                 preceded(multispace0, alt((arith_op, expression))),
-            )),
+            ),
             |(lhs, op, rhs)| Expr::BinaryOp(Box::new(lhs), op, Box::new(rhs)),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn assign_op(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     context(
         "logical_op",
         map(
-            tuple((
+            (
                 preceded(multispace0, alt((quoted, identifier))),
                 preceded(multispace0, map(tag("="), |_| Operator::Assign)),
                 preceded(multispace0, alt((arith_op, expression))),
-            )),
+            ),
             |(lhs, op, rhs)| Expr::BinaryOp(Box::new(lhs), op, Box::new(rhs)),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn argument(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -344,7 +357,8 @@ fn argument(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
                 assign_op, logical_op, compare_op, unary_op, arith_op, expression,
             )),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn function(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -358,18 +372,19 @@ fn function(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         "function",
         preceded(
             many0(is_a(" \t")),
-            map(tuple((name, args)), |(s, args)| {
+            map((name, args), |(s, args)| {
                 Expr::Function(s.to_string(), args)
             }),
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 /// Parses a pipeline.
 ///
 /// A pipeline can be a list of function calls or identifiers separated by a pipe.
 fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
-    let separator = tuple((multispace0, tag("|"), multispace0));
+    let separator = (multispace0, tag("|"), multispace0);
 
     context(
         "pipeline",
@@ -377,13 +392,14 @@ fn pipeline(input: &str) -> IResult<&str, Expr, VerboseError<&str>> {
             separated_list0(separator, cut(alt((function, identifier)))),
             Expr::Pipeline,
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 /// Parses one or more pipelines.
 fn root(input: &str) -> IResult<&str, Vec<Expr>, VerboseError<&str>> {
     let separator = alt((char(';'), newline));
-    separated_list1(many1_count(separator), cut(pipeline))(input)
+    separated_list1(many1_count(separator), cut(pipeline)).parse(input)
 }
 
 /// Parses one or more dply pipelines.

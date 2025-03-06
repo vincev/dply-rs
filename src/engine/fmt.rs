@@ -42,7 +42,7 @@ pub fn df_test(out: &mut dyn Write, df: DataFrame) -> Result<()> {
         let row = df
             .get_columns()
             .iter()
-            .map(|s| s.get(i).unwrap().str_value().to_owned())
+            .map(|s| s.get(i).unwrap().str_value())
             .collect::<Vec<_>>()
             .join("|");
         writeln!(out, "{row}")?;
