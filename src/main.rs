@@ -5,7 +5,7 @@
 // Enable jemalloc as it improves performance in MacOS.
 #[global_allocator]
 #[cfg(all(not(debug_assertions), target_family = "unix"))]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
