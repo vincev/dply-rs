@@ -5,25 +5,27 @@ repository = "https://github.com/vincev/dply-rs"
 edition = "2021"
 license = "Apache-2.0"
 name = "dply"
-version = "0.3.3"
+version = "0.3.4"
 rust-version = "1.70.0"
 
 [dependencies]
 anyhow = "1.0"
+chrono = "0.4.40"
 clap = { version = "4.2", features = ["derive"] }
 comfy-table = "7"
 home = "0.5"
-lru = "0.12.0"
-nom = "7"
-reedline = "0.32"
+lru = "0.13.0"
+nom = "8"
+nom-language = "0.1.0"
+reedline = "0.38"
 regex = "1.9.4"
-thiserror = "1.0"
+thiserror = "2.0"
 
 [target.'cfg(target_family = "unix")'.dependencies]
-jemallocator = { version = "0.5", features = ["disable_initial_exec_tls"] }
+tikv-jemallocator = { version = "0.6.0", features = ["disable_initial_exec_tls"] }
 
 [dependencies.polars]
-version = "0.41.0"
+version = "0.46.0"
 default-features = false
 features = [
     "cross_join",
@@ -37,6 +39,7 @@ features = [
     "performant",
     "semi_anti_join",
     "strings",
+    "temporal",
     "timezones"
 ]
 

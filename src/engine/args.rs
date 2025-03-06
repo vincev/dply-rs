@@ -1,7 +1,7 @@
 // Copyright (C) 2023 Vince Vasta
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, bail, Result};
-use polars::export::chrono::prelude::*;
+use chrono::prelude::*;
 use polars::lazy::dsl::Expr as PolarsExpr;
 use polars::prelude::*;
 use std::str::FromStr;
@@ -21,9 +21,9 @@ pub fn string(expr: &Expr) -> String {
 /// Returns the string from an identifier expression.
 ///
 /// Panics if the expression is not an identifier.
-pub fn identifier(expr: &Expr) -> String {
+pub fn identifier(expr: &Expr) -> PlSmallStr {
     match expr {
-        Expr::Identifier(s) => s.to_owned(),
+        Expr::Identifier(s) => PlSmallStr::from_str(s),
         _ => panic!("{expr} is not an identifier expression"),
     }
 }
@@ -33,7 +33,7 @@ pub fn column(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
     let column = identifier(expr);
     schema
         .get(&column)
-        .map(|_| col(&column))
+        .map(|_| col(column))
         .ok_or_else(|| anyhow!("Unknown column '{expr}'"))
 }
 

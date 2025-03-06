@@ -21,17 +21,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, macos-intel, macos-m1, windows]
+        build: [linux, macos-m1, windows]
         include:
         - build: linux
           os: ubuntu-latest
           os_label: ubuntu
-          cpu: x86_64
-          rust: stable
-          binary: dply
-        - build: macos-intel
-          os: macos-12
-          os_label: macos
           cpu: x86_64
           rust: stable
           binary: dply

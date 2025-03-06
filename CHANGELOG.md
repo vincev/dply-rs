@@ -2,6 +2,11 @@
 
 Changes to the `dply` crate are documented in this file.
 
+## 0.3.4 - 2025-03-06
+
+- Update Polars to version 0.46
+- Update nom to version 8
+
 ## 0.3.3 - 2025-02-24
 
 ### 🔧 Changed

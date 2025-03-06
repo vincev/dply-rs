@@ -35,7 +35,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         ctx.set_df(group.agg(&columns))?;
     } else if let Some(mut df) = ctx.take_df() {
         let columns = df
-            .schema()
+            .collect_schema()
             .map_err(anyhow::Error::from)
             .and_then(|schema| eval_args(args, ctx, &schema, false))
             .map_err(|e| anyhow!("summarize error: {e}"))?;
@@ -68,7 +68,9 @@ fn eval_args(
                 aliases.insert(alias.clone());
 
                 let column = match rhs.as_ref() {
-                    Expr::Function(name, _) if name == "n" => Ok(col(&schema_cols[0]).count()),
+                    Expr::Function(name, _) if name == "n" => {
+                        Ok(col(schema_cols[0].to_owned()).count())
+                    }
                     Expr::Function(name, args) if name == "list" => args::column(&args[0], schema)
                         .map(|c| if grouping { c } else { c.implode() }),
                     Expr::Function(name, args) if name == "max" => {
@@ -86,7 +88,7 @@ fn eval_args(
                     Expr::Function(name, args) if name == "quantile" => {
                         let quantile = args::number(&args[1]);
                         args::column(&args[0], schema)
-                            .map(|c| c.quantile(lit(quantile), QuantileInterpolOptions::Linear))
+                            .map(|c| c.quantile(lit(quantile), QuantileMethod::Linear))
                     }
                     Expr::Function(name, args) if name == "sd" => {
                         args::column(&args[0], schema).map(|c| c.std(1))
@@ -100,7 +102,7 @@ fn eval_args(
                     _ => panic!("Unexpected summarize expression {rhs}"),
                 }?;
 
-                columns.push(column.alias(&alias));
+                columns.push(column.alias(alias));
             }
             _ => panic!("Unexpected summarize expression: {arg}"),
         }

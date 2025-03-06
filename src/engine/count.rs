@@ -17,7 +17,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
         for arg in args {
             if let Expr::Identifier(column) = arg {
-                if !schema_cols.contains(column) {
+                if !schema_cols.contains(&PlSmallStr::from_str(column)) {
                     bail!("count error: Unknown column {column}");
                 }
 
@@ -34,12 +34,12 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
             let ncol = columns.last().unwrap().clone();
             let df = df
                 .group_by(&columns)
-                .agg([ncol.is_not_null().count().alias(&agg_col)]);
+                .agg([ncol.is_not_null().count().alias(agg_col.clone())]);
 
             let mut descending = vec![false; columns.len()];
 
             if args::named_bool(args, "sort")? {
-                columns.insert(0, col(&agg_col));
+                columns.insert(0, col(agg_col.clone()));
                 descending.insert(0, true);
             }
 
@@ -50,7 +50,7 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 
             df.sort_by_exprs(columns, sort_opts)
         } else {
-            df.select(&[col(&schema_cols[0]).count().alias(&agg_col)])
+            df.select(&[col(schema_cols[0].clone()).count().alias(agg_col.clone())])
         };
 
         ctx.set_df(df)?;
@@ -64,12 +64,12 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
 }
 
 /// If there is a column named `n` use `nn`, or `nnn`, etc.
-fn find_agg_column(cols: &[String]) -> String {
+fn find_agg_column(cols: &[PlSmallStr]) -> PlSmallStr {
     let mut col = "n".to_string();
 
-    while cols.contains(&col) {
+    while cols.contains(&PlSmallStr::from_str(&col)) {
         col.push('n');
     }
 
-    col
+    PlSmallStr::from_string(col)
 }

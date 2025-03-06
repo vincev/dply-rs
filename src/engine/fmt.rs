@@ -29,7 +29,7 @@ pub fn df_test(out: &mut dyn Write, df: DataFrame) -> Result<()> {
     let row = df
         .fields()
         .into_iter()
-        .map(|f| f.data_type().to_string())
+        .map(|f| f.dtype.to_string())
         .collect::<Vec<_>>()
         .join("|");
     writeln!(out, "{row}")?;
@@ -42,7 +42,7 @@ pub fn df_test(out: &mut dyn Write, df: DataFrame) -> Result<()> {
         let row = df
             .get_columns()
             .iter()
-            .map(|s| s.str_value(i).unwrap())
+            .map(|s| s.get(i).unwrap().str_value())
             .collect::<Vec<_>>()
             .join("|");
         writeln!(out, "{row}")?;
@@ -62,8 +62,9 @@ pub fn glimpse(w: &mut dyn Write, df: LazyFrame) -> Result<()> {
         .collect()?
         .max_horizontal()?
         .unwrap_or_default()
-        .max::<usize>()?
-        .unwrap_or_default();
+        .u32()?
+        .max()
+        .unwrap_or_default() as usize;
 
     let df = df.fetch(100)?;
     let num_cols = df.get_columns().len();
@@ -90,8 +91,8 @@ pub fn glimpse(w: &mut dyn Write, df: LazyFrame) -> Result<()> {
 
         let mut values = Vec::with_capacity(10);
         for idx in 0..col.len() {
-            let value = col.str_value(idx).unwrap_or_default();
-            values.push(value.into_owned());
+            let value = col.get(idx).unwrap().str_value();
+            values.push(value);
         }
 
         row.add_cell(values.join(", ").into());

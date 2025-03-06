@@ -39,11 +39,11 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                     }
 
                     let expr = df
-                        .schema()
+                        .collect_schema()
                         .map_err(anyhow::Error::from)
                         .and_then(|schema| eval_expr(rhs, &schema))
                         .map_err(|e| anyhow!("mutate error: {e}"))?;
-                    df = df.with_column(expr.alias(&alias));
+                    df = df.with_column(expr.alias(alias));
                 }
                 _ => panic!("Unexpected mutate expression: {arg}"),
             }
@@ -148,8 +148,8 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
         Expr::Function(name, args) if name == "len" => {
             let column = args::identifier(&args[0]);
             match schema.get(&column) {
-                Some(DataType::List(_)) => Ok(col(&column).list().len()),
-                Some(DataType::String) => Ok(col(&column).str().len_chars()),
+                Some(DataType::List(_)) => Ok(col(column).list().len().fill_null(0)),
+                Some(DataType::String) => Ok(col(column).str().len_chars()),
                 Some(_) => Err(anyhow!("`len` column '{column}' must be list or String")),
                 None => Err(anyhow!("Unknown column '{column}'")),
             }
@@ -158,8 +158,8 @@ fn eval_expr(expr: &Expr, schema: &Schema) -> Result<PolarsExpr> {
             let (col_name, _) = schema
                 .get_at_index(0)
                 .ok_or_else(|| anyhow!("No columns found"))?;
-            Ok(col(col_name).map(
-                |s| Ok(Some(Series::from_iter(1..=(s.len() as u64)))),
+            Ok(col(col_name.to_owned()).map(
+                |c| Ok(Some(Series::from_iter(1..=(c.len() as u64)).into())),
                 GetOutput::from_type(DataType::UInt64),
             ))
         }

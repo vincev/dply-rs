@@ -25,12 +25,12 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
                         bail!("arrange error: Unknown column {column}");
                     }
 
-                    columns.push(col(&column));
+                    columns.push(col(column));
                     descending.push(true);
                 }
                 Expr::Identifier(column) => {
                     // arrange(column)
-                    if !schema_cols.contains(column) {
+                    if !schema_cols.contains(&PlSmallStr::from_str(column)) {
                         bail!("arrange error: Unknown column {column}");
                     }
 

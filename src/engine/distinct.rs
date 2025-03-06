@@ -27,7 +27,10 @@ pub fn eval(args: &[Expr], ctx: &mut Context) -> Result<()> {
         }
 
         let df = if !select_columns.is_empty() {
-            let columns = select_columns.iter().map(|c| col(c)).collect::<Vec<_>>();
+            let columns = select_columns
+                .iter()
+                .map(|c| col(c.to_owned()))
+                .collect::<Vec<_>>();
             df.select(&columns)
                 .unique_stable(Some(select_columns), UniqueKeepStrategy::First)
         } else {
